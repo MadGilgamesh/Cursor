@@ -3,6 +3,8 @@ export * from './character.js';
 export * from './combat.js';
 export * from './contracts.js';
 export * from './data/index.js';
+export * from './investigation.js';
+export * from './lore.js';
 export * from './portal.js';
 export * from './fixed-point.js';
 export * from './game-contracts.js';

@@ -66,6 +66,24 @@ export const portalHomeSchema = z.object({
   wellFloor: z.int().min(0),
   candles: z.int().min(0),
 });
+
+/** Skrót Wiedzy, Spraw i Sigili na pulpicie Dom (GDD 11, DoD 5). */
+export const loreHomeSchema = z.object({
+  knowledge: z.int().min(0).max(80),
+  scars: z.array(z.string()),
+  madnessUi: z.boolean(),
+  sanityTier: z.enum(['calm', 'uneasy', 'shaken', 'edge', 'broken']),
+  caseOpen: z.boolean(),
+  residents: z.int().min(0),
+  reforgeLeft: z.int().min(0),
+  colourSigils: z.int().min(0),
+  collegeEndsAt: z.iso.datetime({ offset: true }).nullable(),
+  readingEndsAt: z.iso.datetime({ offset: true }).nullable(),
+  composure: z.int().min(0),
+  insight: z.int().min(0),
+  stealth: z.int().min(0),
+});
+export type LoreHome = z.infer<typeof loreHomeSchema>;
 export type PortalHome = z.infer<typeof portalHomeSchema>;
 
 /** Pulpit Dom: wszystko, czego potrzebuje ekran główny, w jednym żądaniu. */
@@ -77,6 +95,7 @@ export const dashboardResponseSchema = z.object({
   /** Aktywne i zakończone, jeszcze nieodebrane aktywności. */
   activities: z.array(activitySchema),
   portal: portalHomeSchema,
+  lore: loreHomeSchema,
 });
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 

@@ -11,6 +11,7 @@ import {
   missionSilver,
   missionTier,
 } from './balance.js';
+import { deepeningSanity } from './lore.js';
 import type { MissionDef } from './data/missions.js';
 import { createRng } from './rng.js';
 
@@ -21,6 +22,8 @@ export interface MissionResolution {
   /** Szansa sukcesu w punktach bazowych, policzona przy starcie. */
   chanceBp: number;
   maxLife: number;
+  /** Stopień Pogłębienia zapisany przy starcie (0 = brak). */
+  deepening?: number;
 }
 
 export interface MissionResult {
@@ -37,6 +40,7 @@ export interface MissionResult {
 
 export function resolveMission(input: MissionResolution): MissionResult {
   const tier = missionTier(input.mission.tierId);
+  const deepening = input.deepening ?? 0;
   const rng = createRng(input.seed);
   const success = rng.rollBp(input.chanceBp);
   const texts = success ? input.mission.successTexts : input.mission.failureTexts;
@@ -45,10 +49,10 @@ export function resolveMission(input: MissionResolution): MissionResult {
     return {
       balanceVersion: BALANCE_VERSION,
       success: true,
-      experience: missionExperience(tier.vigorCost, input.level),
-      silver: missionSilver(tier.vigorCost, input.level),
+      experience: missionExperience(tier.vigorCost, input.level, deepening),
+      silver: missionSilver(tier.vigorCost, input.level, deepening),
       lifeLoss: 0,
-      sanityLoss: 0,
+      sanityLoss: deepeningSanity(deepening),
       outcome,
     };
   }

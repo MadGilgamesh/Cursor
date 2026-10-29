@@ -2,7 +2,7 @@
 
 Mobilna gra webowa (PWA) typu PvE RPG w mrocznym, lovecraftowskim klimacie, wzorowana mechanicznie na Isekai Guardians. Projekt gry opisuje dokument projektowy (GDD).
 
-To repozytorium zawiera **fundament techniczny**: monorepo, klienta PWA, autorytatywny serwer API, bazę z migracjami, kolejkę zadań, logowanie i szkielet interfejsu. Systemów gry (walka, zlecenia, Seanse…) jeszcze tu nie ma — powstaną etapami według GDD.
+To repozytorium zawiera **fundament techniczny** i kolejne etapy gry według GDD: monorepo, klienta PWA, autorytatywny serwer API, bazę z migracjami, kolejkę zadań i logowanie. Co wchodzi w który etap, opisują sekcje poniżej.
 
 ## Stos technologiczny i uzasadnienie
 
@@ -178,6 +178,26 @@ Formuły są w `packages/shared/src/portal.ts` (`BALANCE_VERSION` 3). Testy: chi
 - Szept „Poczytalność nie spada” działa tylko w walce Studni, nie zamraża regeneracji paska.
 - Sprzęt z Seansu to srebro, nie przedmiot. Wzmacnianie w Kuźni, Stopnie 4–5, Podręczniki, osiągnięcia i tytuły nie wchodzą w ten etap.
 - Gwiazdki, Sigile jako warunek wejścia i Patronat zostają przy swoich etapach (3 i 9). Sigile następnego boga za awatara są tylko zapisane.
+
+## Etap 3 — Wiedza Zakazana i Sigile
+
+Wiedza Zakazana (0–80) obniża maksimum Poczytalności: `100 − floor(0,75 · Wiedza)`. Przy 80 maksimum wynosi 40. Nadwyżka ponad nowy limit zostaje do najbliższej zmiany paska — ta sama zasada co przy nagrodach ponad limit. Blizna Głosu dokłada karę −5 (minimum paska to 1). Załamanie rzuca Bliznę Umysłu (25%, maks. 3). Progi Poczytalności obejmują Krawędź (10–1%): Panika 10%, a przy krytycznej Krawędzi +20% do obrażeń. Blizna Pustych Oczu daje odporność na Panikę. Efekty obłędu w interfejsie (winieta, odwrócony sigil) mają wyłącznik.
+
+Sprawy (Drobne i Poważne) powstają z ziarna trzymanego tylko w bazie. Publiczny widok nie zawiera kluczy `solution`, `pointsAt`, `answerIndex`, `correctIndex`, `truthful` ani `seed`. Ścieżka przeszukań (Znój 3–5, Wiedza 0) zawsze wskazuje właściwą odpowiedź, więc 3/3 da się dojść. Przesłuchanie może kłamać i może nic nie ujawnić. Ukryty trop widać dopiero przy Poczytalności ≤ 30%. Wizja zawęża do dwóch indeksów. Porażka Sprawy znika Mieszkańca z przesłuchania „kto?” i podnosi niepokój na 24 h. Drobna 3/3: 1 Klucz Snu, +1 Wiedzy, +40 reputacji Zakonu. Poważna 3/3: 3 Odpryski Sigilu boga Sprawy, +2 Wiedzy, +80 reputacji i 1 Ichor (założenie tego etapu; właściwe rytuały są w Etapie 7). Częściowa odpowiedź: +10 reputacji i 15 srebra.
+
+Cztery frakcje Soli, Pieczęcie i sklep Ambasadora (znajomy, próg 280). Podróż jest dopiero w Etapie 4, więc przepustka i skrzynia płacą srebrem (20 i 50), a nie biletem. Wytrych daje +1 Skrytości, świeca +1 Świecę. Kolegium ma pięć kursów; odbiór jest jawnym żądaniem, nie dzieje się przy odczycie. Konstelacja: punkty to poziom minus odblokowane węzły; lampa i sól wykluczają się; wygasłą gwiazdę odsłania tom. Kaplica trenuje Opanowanie, Wgląd i Skrytość za 5 Znoju. Opanowanie wchodzi do utraty Poczytalności od Grozy.
+
+Bestiariusz: strony przy 10/50/200/1000 zabiciach typu `domena:etap`. Czwarta strona daje raz 1 Sigil tego boga. Księgi Domen wymagają Wiedzy `3·(k−1)`; lektura daje 1 Sigil i, przy tomie wygasłym, otwiera Konstelację. Kalendarz: kamienie 7/14/21/28 dają 1/1/2/3 Sigile ostatnio odblokowanego boga przy odbiorze dziennego zadania. Przerwa serii cofa do ostatniego kamienia bez ponownej wypłaty. Pogłębienie zlecenia podnosi próg statystyki ×1,6 na stopień (bez twardego sufitu 70% szansy). Od IV stopnia sukces zabiera `2·(stopień−3)` Poczytalności i daje 1 Odprysk Sigilu ostatniego odblokowanego boga. Blizna Liczenia: +5% szansy zlecenia i +10% czasu.
+
+Portal, część 2: Domena 3 (Kolor spoza Przestworzy, modyfikator Spust — co rundę −2% maks. Życia i −1 Poczytalności). Każda wygrana w Domenie 3 daje +1 Odłamek Meteorytu; Strażnicy Studni nadal dają 2, jak w Etapie 2. Sigil jest wymagany, gdy walka ma gwiazdkę albo jest to etap 6+ Domeny 3+. Taka walka zużywa Sigil zamiast klucza i nie zwraca Odłamka przy porażce. ★1–★5 Domen 1–3: statystyki ×1,5ⁿ, Życie i obrażenia ×1,25ⁿ. Przekucie na Ołtarzu: 3 klucze + 1 Ichor → 1 Sigil odblokowanego boga, maks. 5 na dobę UTC; od Wiedzy 20 bez Ichoru. Wymiana: dokładnie 10 Odprysków → 1 Sigil. `BALANCE_VERSION` 4.
+
+Symulacja (interpolacja tabeli 10.3, próg wejścia przy statystyce ≥ 1,0405× wroga):
+
+- Domena 3 kończy się w dniu 70. Cel GDD to dzień 62 ±15% (do 71). Model się mieści, około 12,9% obok. 7 i 8,9 klucza dziennie dają ten sam dzień, bo ogranicza statystyka.
+- ★1 Bokruga przy 8,9 klucza dziennie (aktywny F2P z 10.13) kończy się w dniu 22. „Osiągalne ok. dnia 18” jest obok o około 22%. Odblokowanie ★1 jest w dniu 13, razem ze snem Domeny 1. Krzywej nie dociągamy.
+- Domena 1 nadal kończy się w dniu 13 wobec celu dnia 11 (luka z Etapu 2).
+
+Świadomie odłożone: Spisek, mutacja dzielnicy i Zegar Koniunkcji przy przegranej Sprawie, Rytuał Pieczęci z 20% na drugi Sigil (Etap 7), Patronat, Domena 4 (Ghaal-Tureth) i cztery miasta.
 
 ## Konwencje
 

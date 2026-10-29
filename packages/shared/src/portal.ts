@@ -8,7 +8,8 @@
 import { HOUR_MS, pow125 } from './balance.js';
 import { createRng, type Rng } from './rng.js';
 
-export const PORTAL_DOMAINS_THIS_STAGE = 2;
+export const PORTAL_DOMAINS_THIS_STAGE = 3;
+export const PORTAL_STARS_MAX = 5;
 export const PORTAL_STAGES = 10;
 export const PORTAL_SUBSTAGES = 8;
 export const PORTAL_FIGHTS_PER_DOMAIN = PORTAL_STAGES * PORTAL_SUBSTAGES;
@@ -79,7 +80,7 @@ export const HUNT_SHARD_CIRCLE = 5;
 export const HUNT_SHARD_CHANCE_BP = 1_000;
 
 export type PortalRole = 'minion' | 'boss' | 'avatar';
-export type PortalModifier = 'ib-vengeance' | 'pressure';
+export type PortalModifier = 'ib-vengeance' | 'pressure' | 'drain';
 
 export interface PortalCoord {
   domain: number;
@@ -106,23 +107,27 @@ export function portalRole(stage: number, substage: number): PortalRole {
   return stage === PORTAL_STAGES ? 'avatar' : 'boss';
 }
 
+/** ★n: statystyki ×1,5ⁿ, Życie i obrażenia ×1,25ⁿ (GDD 10.13). */
+export const starStatMultiplier = (stars: number) => 1.5 ** stars;
+export const starVitalMultiplier = (stars: number) => 1.25 ** stars;
+
 /** Statystyka walki przy danym f (GDD 10.13). `f` może być ułamkowe. */
-export function portalEnemyStat(floor: number, role: PortalRole = 'minion'): number {
+export function portalEnemyStat(floor: number, role: PortalRole = 'minion', stars = 0): number {
   const base = 15 * floor ** 1.8 + 10;
   const bonus = role === 'avatar' ? 1.3 : role === 'boss' ? 1.15 : 1;
-  return Math.round(base * bonus);
+  return Math.round(base * bonus * starStatMultiplier(stars));
 }
 
-export function portalEnemyLife(floor: number, role: PortalRole = 'minion'): number {
+export function portalEnemyLife(floor: number, role: PortalRole = 'minion', stars = 0): number {
   const base = 60 + 20 * floor;
   const bonus = role === 'avatar' ? 2 : role === 'boss' ? 1.5 : 1;
-  return Math.round(base * bonus);
+  return Math.round(base * bonus * starVitalMultiplier(stars));
 }
 
-export function portalEnemyDamage(floor: number, role: PortalRole = 'minion'): number {
+export function portalEnemyDamage(floor: number, role: PortalRole = 'minion', stars = 0): number {
   const base = 8 + 1.2 * floor;
   const bonus = role === 'avatar' ? 1.3 : role === 'boss' ? 1.15 : 1;
-  return Math.round(base * bonus);
+  return Math.round(base * bonus * starVitalMultiplier(stars));
 }
 
 /**
@@ -158,7 +163,17 @@ export function portalAuraDread(domain: number): number {
 export function portalModifier(domain: number): PortalModifier | null {
   if (domain === 1) return 'ib-vengeance';
   if (domain === 2) return 'pressure';
+  if (domain === 3) return 'drain';
   return null;
+}
+
+/**
+ * Sigil Boga otwiera etapy 6–10 Domen 3+ oraz wszystkie ★ (GDD 5.12.5).
+ * Domeny 1–2 i etapy 1–5 biorą Klucz Snu.
+ */
+export function portalSigilRequired(coord: PortalCoord, stars = 0): boolean {
+  if (stars > 0) return true;
+  return coord.domain >= 3 && coord.stage >= 6;
 }
 
 /** XP podstawy: `10 · (2·L_p + 4)` (GDD 10.13). */
@@ -193,8 +208,7 @@ export interface PortalPayout {
 
 /**
  * Nagroda walki (GDD 10.13). Awatar ma mnożnik ×5 zamiast ×2 bossa — to ten sam
- * podetap, nie dwa mnożniki naraz. Etapy 6–10 Domen 3+ (×1,5) są policzone,
- * ale w tym etapie te Domeny są zamknięte.
+ * podetap, nie dwa mnożniki naraz. Etapy 6–10 Domen 3+ dokładają ×1,5.
  */
 export function portalPayout(
   coord: PortalCoord,
@@ -323,6 +337,72 @@ export function portalAccess(
   if (cleared.domain <= 0) return 'skip';
   if (portalFightIndex(requested) <= portalFightIndex(cleared)) return 'repeat';
   return 'skip';
+}
+
+export interface StarTrack {
+  /** Ile pełnych ★ tej Domeny już zamknięto. */
+  cleared: number;
+  stage: number;
+  substage: number;
+}
+
+export const emptyStarTrack = (): StarTrack => ({ cleared: 0, stage: 0, substage: 0 });
+
+/** Sen Domeny jest skończony, gdy awatar padł albo gracz jest już dalej. */
+export function domainDreamCleared(dream: PortalClear, domain: number): boolean {
+  if (dream.domain > domain) return true;
+  return (
+    dream.domain === domain && dream.stage === PORTAL_STAGES && dream.substage === PORTAL_SUBSTAGES
+  );
+}
+
+/**
+ * ★n otwiera się po ★(n−1), a ★1 po awatarze Snu. Pominięcie podetapu odpada
+ * tak samo jak w Śnie.
+ */
+export function portalStarAccess(
+  requested: PortalCoord,
+  stars: number,
+  dream: PortalClear,
+  track: StarTrack,
+  maxDomain = PORTAL_DOMAINS_THIS_STAGE,
+): PortalAccess {
+  if (!coordValid(requested) || stars < 1 || stars > PORTAL_STARS_MAX) return 'skip';
+  if (requested.domain > maxDomain) return 'locked';
+  if (!domainDreamCleared(dream, requested.domain)) return 'locked';
+  if (stars > track.cleared + 1) return 'locked';
+  if (stars <= track.cleared) return 'repeat';
+  const cleared: PortalClear = {
+    domain: requested.domain,
+    stage: track.stage,
+    substage: track.substage,
+  };
+  const next =
+    track.stage <= 0
+      ? { domain: requested.domain, stage: 1, substage: 1 }
+      : nextPortalFight(cleared);
+  if (
+    requested.domain === next.domain &&
+    requested.stage === next.stage &&
+    requested.substage === next.substage
+  ) {
+    return 'first';
+  }
+  if (track.stage > 0 && portalFightIndex(requested) <= portalFightIndex(cleared)) return 'repeat';
+  return 'skip';
+}
+
+/** Bogowie, których Sigil można już przekuć: bieżąca Domena i wszystkie skończone. */
+export function unlockedPortalGods(
+  dream: PortalClear,
+  maxDomain = PORTAL_DOMAINS_THIS_STAGE,
+): number[] {
+  let highest = 1;
+  for (let domain = 1; domain < maxDomain; domain += 1) {
+    if (domainDreamCleared(dream, domain)) highest = domain + 1;
+  }
+  if (dream.domain > highest) highest = Math.min(maxDomain, dream.domain);
+  return Array.from({ length: Math.min(maxDomain, highest) }, (_, index) => index + 1);
 }
 
 /** Zlecenie ≥ 1 h: 20% na Odłamek; 8 h: 1 Odłamek (GDD 5.12.5). Tylko sukces. */

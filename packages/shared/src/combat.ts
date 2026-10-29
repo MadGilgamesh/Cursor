@@ -45,6 +45,10 @@ export interface PlayerCombatant {
   /** `D_broni` z poziomem klasy (GDD 10.4). */
   weaponDamage: number;
   knowledge: number;
+  /** Opanowanie z Kaplicy. Bez pola walka liczy się jak przy 0 — dziennik Etapu 1 zostaje. */
+  composure?: number;
+  /** Blizna „Pustka w Oczach” znosi Panikę. */
+  panicImmune?: boolean;
 }
 
 export interface EnemyCombatant {
@@ -63,6 +67,7 @@ export const COMBAT_EVENT_KINDS = [
   'panic',
   'gaze',
   'heal',
+  'drain',
 ] as const;
 export type CombatEventKind = (typeof COMBAT_EVENT_KINDS)[number];
 
@@ -111,6 +116,7 @@ function variance(rng: Rng): number {
  * te same ziarno i wejścia dają ten sam dziennik.
  * - `ib-vengeance`: co 4. rundę wróg leczy 5% Życia początkowego.
  * - `pressure`: Unik gracza −10%, a od 5. rundy dodatkowe −2% za rundę.
+ * - `drain`: co rundę −2% maksimum Życia i −1 Poczytalności (Kolor).
  */
 export function simulateCombat(
   player: PlayerCombatant,
@@ -133,7 +139,7 @@ export function simulateCombat(
     events.push({ ...event, playerLife, enemyLife: enemyLifeLeft, sanity });
   };
 
-  const dreadLoss = Math.min(sanity, dreadSanityLoss(enemy.dread));
+  const dreadLoss = Math.min(sanity, dreadSanityLoss(enemy.dread, player.composure ?? 0));
   if (dreadLoss > 0) {
     sanity -= dreadLoss;
     push({
@@ -150,7 +156,7 @@ export function simulateCombat(
 
   const playerAttack = (round: number) => {
     const effects = SANITY_EFFECTS[tierNow()];
-    if (rng.rollBp(effects.panicBp)) {
+    if (!player.panicImmune && rng.rollBp(effects.panicBp)) {
       push({ round, actor: 'player', kind: 'panic', damage: 0, word: false, frenzy: false });
       return;
     }
@@ -225,6 +231,13 @@ export function simulateCombat(
   let rounds = 0;
   for (let round = 1; round <= COMBAT_MAX_ROUNDS; round++) {
     rounds = round;
+    if (modifier === 'drain' && playerLife > 0) {
+      const loss = Math.max(1, Math.round(player.maxLife * 0.02));
+      playerLife = Math.max(0, playerLife - loss);
+      sanity = Math.max(0, sanity - 1);
+      push({ round, actor: 'enemy', kind: 'drain', damage: loss, word: false, frenzy: false });
+      if (playerLife <= 0) break;
+    }
     if (modifier === 'ib-vengeance' && round % 4 === 0 && enemyLifeLeft > 0) {
       const heal = Math.max(1, Math.round(enemy.life * 0.05));
       enemyLifeLeft = Math.min(enemy.life, enemyLifeLeft + heal);

@@ -154,6 +154,7 @@ export const timedActivities = pgTable(
         chanceBp: number;
         maxLife: number;
         loop: number;
+        deepening?: number;
       }>()
       .notNull(),
     status: text('status').$type<'active' | 'completed' | 'claimed'>().notNull(),
@@ -323,6 +324,8 @@ export const missionProgress = pgTable(
     missionId: text('mission_id').notNull(),
     successes: integer('successes').notNull().default(0),
     loops: integer('loops').notNull().default(0),
+    /** Stopień Pogłębienia 0–5 (GDD 5.9). */
+    deepening: integer('deepening').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.characterId, t.missionId] })],
 );
@@ -405,7 +408,56 @@ export const portalStates = pgTable('portal_states', {
     .notNull()
     .default({}),
   activeEchoId: text('active_echo_id'),
+  ichor: integer('ichor').notNull().default(0),
+  reforgeDay: text('reforge_day'),
+  reforgeCount: integer('reforge_count').notNull().default(0),
+  /** Postęp ★: klucz to numer Domeny. */
+  starTracks: jsonb('star_tracks')
+    .$type<Record<string, { cleared: number; stage: number; substage: number }>>()
+    .notNull()
+    .default({}),
 });
+
+export interface ResidentState {
+  id: string;
+  familiarity: number;
+  gone: boolean;
+}
+
+/** Wiedza, Sprawy, frakcje, Kolegium i Bestiariusz (GDD 6, Etap 3). */
+export const loreStates = pgTable('lore_states', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  knowledge: integer('knowledge').notNull().default(0),
+  scars: jsonb('scars').$type<string[]>().notNull().default([]),
+  madnessUi: boolean('madness_ui').notNull().default(true),
+  composure: integer('composure').notNull().default(0),
+  insight: integer('insight').notNull().default(0),
+  stealth: integer('stealth').notNull().default(0),
+  courseId: text('course_id'),
+  courseEndsAt: tstz('course_ends_at'),
+  coursesDone: jsonb('courses_done').$type<string[]>().notNull().default([]),
+  constellation: jsonb('constellation').$type<string[]>().notNull().default([]),
+  extinctOpen: boolean('extinct_open').notNull().default(false),
+  reputation: jsonb('reputation').$type<Record<string, number>>().notNull().default({}),
+  seals: jsonb('seals').$type<Record<string, number>>().notNull().default({}),
+  residents: jsonb('residents').$type<ResidentState[]>().notNull().default([]),
+  caseSeed: text('case_seed'),
+  caseFound: jsonb('case_found').$type<string[]>().notNull().default([]),
+  caseDeadline: tstz('case_deadline'),
+  caseStatus: text('case_status').notNull().default('none'),
+  documentClueId: text('document_clue_id'),
+  documentEndsAt: tstz('document_ends_at'),
+  readingId: text('reading_id'),
+  readingEndsAt: tstz('reading_ends_at'),
+  booksRead: jsonb('books_read').$type<string[]>().notNull().default([]),
+  bestiary: jsonb('bestiary').$type<Record<string, number>>().notNull().default({}),
+  bestiarySigils: jsonb('bestiary_sigils').$type<string[]>().notNull().default([]),
+  unrestUntil: tstz('unrest_until'),
+});
+
+export type LoreStateRow = typeof loreStates.$inferSelect;
 
 export type AccountRow = typeof accounts.$inferSelect;
 export type PortalStateRow = typeof portalStates.$inferSelect;

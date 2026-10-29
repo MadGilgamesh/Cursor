@@ -15,10 +15,12 @@ import {
   chooseWhisper,
   decomposeItem,
   engraveKey,
+  exchangeSigilShards,
   fightPortal,
   fightWell,
   holdSeance,
   portalOf,
+  reforgeSigil,
 } from './portal.js';
 
 async function characterOf(db: Executor, accountId: string): Promise<CharacterRow> {
@@ -36,6 +38,10 @@ const coordSchema = z.object({
   stage: z.int().min(1).max(10),
   substage: z.int().min(1).max(8),
 });
+const fightSchema = coordSchema.extend({
+  stars: z.int().min(0).max(5).optional(),
+});
+const godSchema = z.object({ domain: z.int().min(1).max(11) });
 const whisperSchema = z.object({ whisper: z.enum(WELL_WHISPERS) });
 const echoSchema = z.object({ echoId: z.string().min(1).max(80) });
 const itemSchema = z.object({ itemId: z.uuid() });
@@ -63,13 +69,39 @@ export function portalRoutes(app: FastifyInstance, deps: AppDeps): void {
 
   app.post(
     '/portal/fight',
-    mutate((tx, character, request) =>
-      fightPortal(
+    mutate((tx, character, request) => {
+      const body = fightSchema.parse(request.body);
+      return fightPortal(
         tx,
         playerActor(request, character.accountId),
         character,
         clock,
-        coordSchema.parse(request.body),
+        body,
+        body.stars ?? 0,
+      );
+    }),
+  );
+  app.post(
+    '/portal/reforge',
+    mutate((tx, character, request) =>
+      reforgeSigil(
+        tx,
+        playerActor(request, character.accountId),
+        character,
+        clock,
+        godSchema.parse(request.body).domain,
+      ),
+    ),
+  );
+  app.post(
+    '/portal/exchange',
+    mutate((tx, character, request) =>
+      exchangeSigilShards(
+        tx,
+        playerActor(request, character.accountId),
+        character,
+        clock,
+        godSchema.parse(request.body).domain,
       ),
     ),
   );

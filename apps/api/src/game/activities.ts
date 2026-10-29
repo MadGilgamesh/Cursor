@@ -6,10 +6,15 @@ import { randomBytes } from 'node:crypto';
 
 import {
   BALANCE_VERSION,
+  COUNTING_CHANCE_BONUS_BP,
+  COUNTING_DURATION_BONUS_BP,
   ERROR_CODES,
   MISSION_MAX_LOOPS,
   computeLoadout,
+  DEEPENING_MAX,
+  deepenedRequirement,
   findMission,
+  unlockedPortalGods,
   adjustResource,
   grantClassExperience,
   grantExperience,
@@ -36,7 +41,14 @@ import {
 } from '../db/schema.js';
 import { AppError, uniqueViolationConstraint } from '../errors.js';
 import { toCharacterDto } from '../serializers.js';
-import { assertCanAct, enterHospital, equippedOf, missionSnapshot } from './avatar.js';
+import {
+  assertCanAct,
+  enterHospital,
+  enterSanatorium,
+  equippedOf,
+  missionSnapshot,
+} from './avatar.js';
+import { loadLore, loreExtras } from './lore-state.js';
 import {
   loadResources,
   materializeAll,
@@ -44,7 +56,7 @@ import {
   saveResources,
   toResourcesDto,
 } from './resources.js';
-import { grantMissionShards } from './portal-state.js';
+import { grantMissionShards, grantSigilShards, loadPortal } from './portal-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 
 type Tx = Executor;
@@ -117,7 +129,9 @@ export async function startMission(
       const now = clock.now();
       const character = await lockCharacter(tx, characterId);
       await assertCanAct(tx, character, now);
-      const ctx = resourceContext(character.level);
+      const lore = await loadLore(tx, characterId);
+      const extras = loreExtras(lore);
+      const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
       const [known] = await tx
         .select()
         .from(missionProgress)
@@ -132,13 +146,20 @@ export async function startMission(
       if (loop && (known?.loops ?? 0) >= MISSION_MAX_LOOPS) {
         throw new AppError(409, ERROR_CODES.loopFinished, 'Pętla tego zlecenia dobiegła końca');
       }
+      const degree = known?.deepening ?? 0;
       const snapshot = await missionSnapshot(
         tx,
         character,
         mission,
-        tier.requiredStat,
+        deepenedRequirement(tier.requiredStat, degree),
         known?.successes ?? 0,
       );
+      let chanceBp = snapshot.chanceBp;
+      let durationMs = tier.durationMs;
+      if (lore.scars.includes('counting')) {
+        chanceBp = Math.min(10_000, chanceBp + COUNTING_CHANCE_BONUS_BP);
+        durationMs = Math.round(durationMs * (1 + COUNTING_DURATION_BONUS_BP / 10_000));
+      }
 
       const [open] = await tx
         .select({ id: timedActivities.id })
@@ -179,13 +200,14 @@ export async function startMission(
           payload: {
             level: character.level,
             vigorCost: tier.vigorCost,
-            chanceBp: snapshot.chanceBp,
+            chanceBp,
             maxLife: snapshot.maxLife,
             loop: nextLoop,
+            deepening: degree,
           },
           status: 'active',
           startAt: now,
-          endAt: new Date(now.getTime() + tier.durationMs),
+          endAt: new Date(now.getTime() + durationMs),
           resultSeed: randomBytes(16).toString('base64url'),
           balanceVersion: BALANCE_VERSION,
         })
@@ -358,26 +380,53 @@ export async function claimActivities(
     if (!updatedCharacter) throw new Error('UPDATE nie zwrócił postaci');
 
     const wallet = await walletOf(tx, characterId);
-    const ctx = resourceContext(updatedCharacter.level);
+    const lore = await loadLore(tx, characterId);
+    const extras = loreExtras(lore);
+    const ctx = resourceContext(updatedCharacter.level, extras.knowledge, extras.sanityPenalty);
     let resources = materializeAll(await loadResources(tx, characterId), ctx, now);
     for (const row of claimed) {
       const result = row.result;
-      if (!result || result.success) continue;
+      if (!result) continue;
       const maxLife = resourceMax('life', ctx);
       const maxSanity = resourceMax('sanity', ctx);
-      resources = {
-        ...resources,
-        life: adjustResource('life', resources.life, now.getTime(), maxLife, -result.lifeLoss),
-        sanity: adjustResource(
-          'sanity',
-          resources.sanity,
-          now.getTime(),
-          maxSanity,
-          -result.sanityLoss,
-        ),
-      };
-      if (resources.life.value <= 0) {
-        resources = await enterHospital(tx, updatedCharacter, resources, now, 0);
+      if (!result.success) {
+        resources = {
+          ...resources,
+          life: adjustResource('life', resources.life, now.getTime(), maxLife, -result.lifeLoss),
+          sanity: adjustResource(
+            'sanity',
+            resources.sanity,
+            now.getTime(),
+            maxSanity,
+            -result.sanityLoss,
+          ),
+        };
+        if (resources.life.value <= 0) {
+          resources = await enterHospital(tx, updatedCharacter, resources, now, 0);
+        }
+      } else if (result.sanityLoss > 0) {
+        resources = {
+          ...resources,
+          sanity: adjustResource(
+            'sanity',
+            resources.sanity,
+            now.getTime(),
+            maxSanity,
+            -result.sanityLoss,
+          ),
+        };
+        if (resources.sanity.value <= 0) {
+          resources = await enterSanatorium(tx, updatedCharacter, resources, now);
+        }
+      }
+      if (result.success && (row.payload.deepening ?? 0) >= 4) {
+        const portal = await loadPortal(tx, characterId);
+        const gods = unlockedPortalGods({
+          domain: portal.clearedDomain,
+          stage: portal.clearedStage,
+          substage: portal.clearedSubstage,
+        });
+        await grantSigilShards(tx, characterId, gods[gods.length - 1] ?? 1, 1, now);
       }
     }
     await saveResources(tx, characterId, resources);
@@ -438,4 +487,57 @@ export async function openActivities(db: Executor, characterId: string) {
       ),
     )
     .orderBy(asc(timedActivities.endAt));
+}
+
+/** Pogłębienie przy szansie 100% (GDD 5.9). Następny start używa progu ×1,6^stopień. */
+export async function deepenMission(
+  { db }: GameDeps,
+  who: AuditActor,
+  characterId: string,
+  missionId: string,
+): Promise<{ deepening: number }> {
+  const mission = findMission(missionId);
+  if (!mission) throw new AppError(404, ERROR_CODES.notFound, 'Nie ma takiego zlecenia');
+  const tier = missionTier(mission.tierId);
+  return db.transaction(async (tx) => {
+    const character = await lockCharacter(tx, characterId);
+    const [known] = await tx
+      .select()
+      .from(missionProgress)
+      .where(
+        and(
+          eq(missionProgress.characterId, characterId),
+          eq(missionProgress.missionId, mission.id),
+        ),
+      )
+      .limit(1);
+    const degree = known?.deepening ?? 0;
+    if (degree >= DEEPENING_MAX) {
+      throw new AppError(409, ERROR_CODES.requirement, 'Pogłębienie nie idzie już głębiej');
+    }
+    const snapshot = await missionSnapshot(
+      tx,
+      character,
+      mission,
+      deepenedRequirement(tier.requiredStat, degree),
+      known?.successes ?? 0,
+    );
+    if (snapshot.chanceBp < 10_000) {
+      throw new AppError(409, ERROR_CODES.requirement, 'Pogłębienie wymaga pewnego zlecenia');
+    }
+    const deepening = degree + 1;
+    await tx
+      .insert(missionProgress)
+      .values({ characterId, missionId: mission.id, deepening })
+      .onConflictDoUpdate({
+        target: [missionProgress.characterId, missionProgress.missionId],
+        set: { deepening },
+      });
+    await writeAudit(tx, who, {
+      action: 'mission.deepen',
+      characterId,
+      after: { missionId, deepening },
+    });
+    return { deepening };
+  });
 }

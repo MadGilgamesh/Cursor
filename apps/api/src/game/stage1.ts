@@ -75,7 +75,7 @@ import {
   statBlock,
 } from './avatar.js';
 import { materializeAll, saveResources, toResourcesDto } from './resources.js';
-import { grantHuntShard, grantLootKeys } from './portal-state.js';
+import { grantHuntShard, grantLootKeys, touchCalendar } from './portal-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 
 const audit = async (
@@ -669,6 +669,7 @@ export async function claimDaily(
   const xp = dailyTaskExperience(experienceToNextLevel(character.level));
   await awardExperience(db, character, xp, null);
   await grantLootKeys(db, character.id, 1, now);
+  await touchCalendar(db, character.id, now);
   for (let i = 0; i < DAILY_TASK_COFFEE; i++) await giveItem(db, character.id, 'consumable.coffee');
   await db
     .update(dailyStates)

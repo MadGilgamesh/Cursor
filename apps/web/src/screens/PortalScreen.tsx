@@ -1,10 +1,11 @@
-import { usePortal, usePortalFight } from '../api/portal';
+import { usePortal, usePortalFight, useReforge } from '../api/portal';
 import { errorMessage, t } from '../i18n';
 
 /** Brama Srebrnego Klucza — walka w Międzysnie (GDD 5.12). */
 export function PortalScreen() {
   const portal = usePortal();
   const fight = usePortalFight();
+  const reforge = useReforge();
   const view = portal.data;
   const next = view?.next;
 
@@ -25,6 +26,21 @@ export function PortalScreen() {
           <p className="text-sm text-bone-400">
             Studnia: piętro {view.well.floor}/{view.well.max}. Świece: {view.candles}.
           </p>
+          <p data-testid="portal-altar" className="text-sm text-bone-200">
+            Ołtarz Bramy: Sigil Bokruga {view.altar.bokrugSigils}, Sigil Koloru{' '}
+            {view.altar.colourSigils}. Ichor {view.altar.ichor}. Przekuć dziś:{' '}
+            {view.altar.reforgeLeft}.
+          </p>
+          <button
+            type="button"
+            className="min-h-12 w-full rounded-xl bg-abyss-700 font-display text-bone-50"
+            disabled={reforge.isPending || view.altar.reforgeLeft < 1 || view.keys.total < 3}
+            onClick={() => {
+              reforge.mutate(1);
+            }}
+          >
+            Przekuj Sigil Bokruga
+          </button>
           {next?.open ? (
             <button
               type="button"
@@ -52,9 +68,9 @@ export function PortalScreen() {
           {` · +${fight.data.experience} PD`}
         </p>
       ) : null}
-      {fight.error || portal.error ? (
+      {fight.error || portal.error || reforge.error ? (
         <p role="alert" className="text-sm text-ichor-400">
-          {errorMessage(fight.error ?? portal.error)}
+          {errorMessage(fight.error ?? reforge.error ?? portal.error)}
         </p>
       ) : null}
     </div>

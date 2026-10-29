@@ -1,5 +1,5 @@
 /**
- * Domeny 1–2 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
+ * Domeny 1–3 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
  * Echa bogów (boss Etapu 5 i herold Etapu 9) są poza pulą Seansu.
  */
 import type { EchoRarity, PortalModifier } from '../portal.js';
@@ -57,6 +57,27 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Pomiot Hydry',
       'Matka Hydra',
       'Ojciec Dagon',
+    ],
+  },
+  {
+    domain: 3,
+    god: 'Kolor spoza Przestworzy',
+    place: 'Szara farma i studnia',
+    modifier: 'drain',
+    modifierName: 'Wysysanie',
+    materialId: 'colour-ash',
+    materialName: 'Popiół Koloru',
+    units: [
+      'Poszarzałe Zwierzęta',
+      'Spaczone Drzewa',
+      'Rodzina z Farmy',
+      'Pnącza ze Studni',
+      'Świetliki Koloru',
+      'Szare Kolosy',
+      'Globule z Meteorytu',
+      'Płonąca Studnia',
+      'Rój Kolorów',
+      'Kolor',
     ],
   },
 ];
@@ -158,6 +179,20 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     rarity: 'phantom',
     aspect: 'strength',
     godDomain: 2,
+  },
+  {
+    id: 'echo.god.colour.wraith',
+    name: 'Globul z Meteorytu',
+    rarity: 'wraith',
+    aspect: 'accuracy',
+    godDomain: 3,
+  },
+  {
+    id: 'echo.god.colour.phantom',
+    name: 'Rój Kolorów',
+    rarity: 'phantom',
+    aspect: 'evasion',
+    godDomain: 3,
   },
 ];
 

@@ -38,7 +38,7 @@ describe('resolveMission', () => {
   it('przy pewnym sukcesie liczy nagrody z balansu i wybiera opis sukcesu', () => {
     const result = resolveMission({ ...base, seed: 'sukces' });
     expect(mission.successTexts).toContain(result.outcome);
-    expect(result).toMatchObject({ balanceVersion: 3, success: true, experience: 144, silver: 10 });
+    expect(result).toMatchObject({ balanceVersion: 4, success: true, experience: 144, silver: 10 });
   });
 
   it('przy pewnej porażce zlecenia Zakonu zabiera Życie i Poczytalność', () => {
