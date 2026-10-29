@@ -157,6 +157,15 @@ export const TOMES: readonly TomeDef[] = [
     domain: 5,
     extinct: false,
   },
+  {
+    id: 'tome.hastur',
+    name: 'Akt w Żółci',
+    hours: 4,
+    knowledge: 1,
+    sanityPerQuarter: 4,
+    domain: 6,
+    extinct: false,
+  },
 ];
 
 export function findTome(id: string): TomeDef | undefined {
@@ -315,7 +324,8 @@ export function deepeningSanity(degree: number): number {
 }
 
 export const CASE_REWARDS = {
-  minor: { keys: 1, sigilShards: 0, knowledge: 1, reputation: 40, ichor: 0 },
-  serious: { keys: 0, sigilShards: 3, knowledge: 2, reputation: 80, ichor: 1 },
+  minor: { keys: 1, sigilShards: 0, sigils: 0, knowledge: 1, reputation: 40, ichor: 0 },
+  serious: { keys: 0, sigilShards: 3, sigils: 0, knowledge: 2, reputation: 80, ichor: 1 },
+  conspiracy: { keys: 0, sigilShards: 0, sigils: 2, knowledge: 2, reputation: 80, ichor: 0 },
   partial: { keys: 0, sigilShards: 0, knowledge: 0, reputation: 10, ichor: 0, silver: 15 },
 } as const;

@@ -4,7 +4,7 @@
  */
 import { createRng, type Rng } from './rng.js';
 
-export const CASE_SCALES = ['minor', 'serious'] as const;
+export const CASE_SCALES = ['minor', 'serious', 'conspiracy'] as const;
 export type CaseScale = (typeof CASE_SCALES)[number];
 
 export const CASE_QUESTIONS = ['who', 'where', 'intent'] as const;
@@ -55,8 +55,12 @@ export const RESIDENTS = [
 
 export const MINOR_DEADLINE_HOURS = 24;
 export const SERIOUS_DEADLINE_HOURS = 72;
-/** Dokument: Drobna 30 min, Poważna 4 h (GDD 6.3). */
-export const DOCUMENT_WAIT_MS = { minor: 30 * 60_000, serious: 4 * 60 * 60_000 } as const;
+/** Dokument: Drobna 30 min, Poważna i Spisek 4 h (GDD 6.3). */
+export const DOCUMENT_WAIT_MS: Record<CaseScale, number> = {
+  minor: 30 * 60_000,
+  serious: 4 * 60 * 60_000,
+  conspiracy: 4 * 60 * 60_000,
+};
 export const VISION_SANITY_COST = 4;
 export const INTERVIEW_FAMILIARITY = 20;
 export const INTERVIEW_INSIGHT = 5;
@@ -152,7 +156,7 @@ function clue(
     pointsAt,
     truthful,
     hidden,
-    knowledge: document && scale === 'serious' ? 3 : 0,
+    knowledge: document && scale !== 'minor' ? 3 : 0,
     toil,
     sanity: source === 'vision' ? VISION_SANITY_COST : 0,
     waitMs: document ? DOCUMENT_WAIT_MS[scale] : 0,
@@ -163,8 +167,13 @@ function clue(
 /** Sprawa z szablonu i ziarna. Ścieżka przeszukań zawsze pokrywa 3/3. */
 export function generateCase(seed: string): CaseBlueprint {
   const rng = createRng(seed);
-  const scale: CaseScale = rng.nextInt(0, 1) === 0 ? 'minor' : 'serious';
-  const god = 1 + rng.nextInt(0, 2);
+  const conspiracy = seed.startsWith('conspiracy:');
+  const scale: CaseScale = conspiracy
+    ? 'conspiracy'
+    : rng.nextInt(0, 1) === 0
+      ? 'minor'
+      : 'serious';
+  const god = conspiracy ? 1 + rng.nextInt(0, 5) : 1 + rng.nextInt(0, 2);
   const options = {} as Record<CaseQuestionId, readonly string[]>;
   const solution = {} as Record<CaseQuestionId, number>;
   const clues: ClueDef[] = [];
@@ -199,7 +208,8 @@ export function generateCase(seed: string): CaseBlueprint {
   return {
     scale,
     god,
-    deadlineHours: scale === 'minor' ? MINOR_DEADLINE_HOURS : SERIOUS_DEADLINE_HOURS,
+    deadlineHours:
+      scale === 'minor' ? MINOR_DEADLINE_HOURS : scale === 'serious' ? SERIOUS_DEADLINE_HOURS : 168,
     options,
     solution,
     clues,

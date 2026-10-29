@@ -418,6 +418,8 @@ export const portalStates = pgTable('portal_states', {
     .$type<Record<string, { cleared: number; stage: number; substage: number }>>()
     .notNull()
     .default({}),
+  /** Pęk Kluczy. *Klucznik* loży podnosi limit ponad 6. */
+  keyCap: integer('key_cap').notNull().default(6),
 });
 
 export interface ResidentState {
@@ -657,6 +659,137 @@ export const chatReports = pgTable(
   },
   (t) => [uniqueIndex('chat_reports_once').on(t.messageId, t.reporterId)],
 );
+
+export const lodges = pgTable(
+  'lodges',
+  {
+    id: id(),
+    name: text('name').notNull(),
+    donationXp: integer('donation_xp').notNull().default(0),
+    treasury: integer('treasury').notNull().default(0),
+    skills: jsonb('skills').$type<string[]>().notNull().default([]),
+    recruitment: boolean('recruitment').notNull().default(true),
+    cutter: boolean('cutter').notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('lodges_name_lower_unique').on(sql`lower(${t.name})`)],
+);
+
+export const lodgeMembers = pgTable(
+  'lodge_members',
+  {
+    lodgeId: uuid('lodge_id')
+      .notNull()
+      .references(() => lodges.id, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    joinedAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.lodgeId, t.characterId] }),
+    uniqueIndex('lodge_members_character_unique').on(t.characterId),
+  ],
+);
+
+export const lodgeSummons = pgTable(
+  'lodge_summons',
+  {
+    id: id(),
+    lodgeId: uuid('lodge_id')
+      .notNull()
+      .references(() => lodges.id, { onDelete: 'cascade' }),
+    tier: integer('tier').notNull(),
+    status: text('status').notNull().default('signing'),
+    fightAt: tstz('fight_at').notNull(),
+    replay: jsonb('replay').$type<Record<string, unknown>>(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('lodge_summons_lodge_idx').on(t.lodgeId, t.status)],
+);
+
+export const lodgeSignups = pgTable(
+  'lodge_signups',
+  {
+    summonId: uuid('summon_id')
+      .notNull()
+      .references(() => lodgeSummons.id, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.summonId, t.characterId] })],
+);
+
+export const lodgeVoyages = pgTable('lodge_voyages', {
+  id: id(),
+  lodgeId: uuid('lodge_id')
+    .notNull()
+    .references(() => lodges.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('sailing'),
+  endsAt: tstz('ends_at').notNull(),
+  result: jsonb('result').$type<Record<string, unknown>>(),
+  createdAt: createdAt(),
+});
+
+export const voyageSignups = pgTable(
+  'voyage_signups',
+  {
+    voyageId: uuid('voyage_id')
+      .notNull()
+      .references(() => lodgeVoyages.id, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.voyageId, t.characterId] })],
+);
+
+export const dreams = pgTable('dreams', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  path: text('path').notNull(),
+  startedAt: tstz('started_at').notNull(),
+  resolvedAt: tstz('resolved_at'),
+});
+
+export const mentorships = pgTable('mentorships', {
+  menteeId: uuid('mentee_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  mentorId: uuid('mentor_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  createdAt: createdAt(),
+});
+
+export const awakeningRuns = pgTable(
+  'awakening_runs',
+  {
+    weekStart: text('week_start').notNull(),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    lodgeId: uuid('lodge_id').references(() => lodges.id, { onDelete: 'set null' }),
+    level: integer('level').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.weekStart, t.characterId] })],
+);
+
+export const awakeningPayouts = pgTable('awakening_payouts', {
+  weekStart: text('week_start').primaryKey(),
+  paidAt: tstz('paid_at').notNull(),
+  ranks: jsonb('ranks').$type<Record<string, unknown>>().notNull().default({}),
+});
+
+export const awakeningReceipts = pgTable('awakening_receipts', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  amount: integer('amount').notNull().default(0),
+});
 
 export const friendships = pgTable(
   'friendships',

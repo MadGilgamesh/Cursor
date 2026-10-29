@@ -225,6 +225,16 @@ Pięć stacji warsztatu: Kuźnia, Destylarnia, Introligatornia, Preparatornia, O
 
 Portal: Domena 5, Nodens, modyfikator Sąd Pradawnego. Przy Skażeniu poniżej 20 obrażenia gracza ×1,1, powyżej 50 ×0,8. Do Etapu 7 Skażenie z walki wynosi 0, więc sąd daje tylko premię. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 6. Patronat nie wchodzi w ten etap.
 
+## Etap 6 — Loże
+
+Loża ma role (Mistrz, Starszy, Skarbnik, Brat lub Siostra, Nowicjusz). Uprawnienia są w `lodgeAllows`. Darowizna zasila skarbiec i XP loży (2% XP członków + 1 XP za srebro). Poziom rośnie co 10 000 XP — to założenie, GDD nie podaje progu. Umiejętność _Klucznik_ podnosi Pęk członków z 6 do 7.
+
+Zwój Przyzwania Stopnia I–III kosztuje 50 000 i podwaja się co stopień. Zapisy trwają 30 minut. Rozstrzygnięcie to jedna walka `simulateCombat`: siła koła to suma poziomów zapisanych. Wygrana daje tyle Sigili Króla w Żółci, ile stopień Zwoju (po jednym na pierwszych zapisanych), Serca Demoniczne i srebro dzielone po równo. Reszta srebra wraca do skarbca.
+
+Kuter wymaga umiejętności _Flota_ i 20 000 srebra (założenie). _Coś Większego_ (15%, założenie) przy co najmniej trzech zapisanych kończy się walką i połowem, inaczej cięciem sieci. Sny: Spokojny (+20% regeneracji Poczytalności, maks. 12 h), Głębiny (30% Odłamek, 20% koszmar −5 Poczytalności) i Wspólny (wymaga loży, 1 Odłamek). Mentor w Urzędzie od poziomu 15. Spisek otwiera członek loży; rozwiązanie 3/3 daje 2 Sigile.
+
+Portal: Domena 6, Król w Żółci, modyfikator Żółty Znak (Panika ×2; przy Poczytalności poniżej 30% obrażenia ×1,15). Przebudzenie Boga rotuje Domenę co poniedziałek UTC po kolei 1–6 (próg „10% aktywnych” nie ma jeszcze populacji — założenie). Wejście: pokonany awatar i Sigil. Wypłata rankingu (Kwity: miejsce 1 dostaje 3, miejsca 2–10 po 1) idzie dokładnie raz, pod blokadą tygodnia. Test wypłaty sadzi miejsca w bazie: gołe pięści nie zwalają awatara w 25 rundach, a krzywej awatara nie ruszano. Kto nie pokonał awatara budzącego się boga, dostaje +25% materiałów tej Domeny w Śnie. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 7. Patronat nie wchodzi w ten etap.
+
 ## Konwencje
 
 - Interfejs, komentarze, commity i dokumentacja po polsku; identyfikatory w kodzie po angielsku.

@@ -162,7 +162,9 @@ export function simulateCombat(
 
   const playerAttack = (round: number) => {
     const effects = SANITY_EFFECTS[tierNow()];
-    if (!player.panicImmune && rng.rollBp(effects.panicBp)) {
+    const panicBp =
+      modifier === 'yellow-sign' ? Math.min(10_000, effects.panicBp * 2) : effects.panicBp;
+    if (!player.panicImmune && rng.rollBp(panicBp)) {
       push({ round, actor: 'player', kind: 'panic', damage: 0, word: false, frenzy: false });
       return;
     }
@@ -203,7 +205,8 @@ export function simulateCombat(
             ? 1.1
             : 1
         : 1;
-    const damage = Math.max(1, Math.round(raw * court));
+    const yellow = modifier === 'yellow-sign' && sanity * 10 < player.maxSanity * 3 ? 1.15 : 1;
+    const damage = Math.max(1, Math.round(raw * court * yellow));
     enemyLifeLeft = Math.max(0, enemyLifeLeft - damage);
     push({ round, actor: 'player', kind: crit ? 'crit' : 'hit', damage, word, frenzy });
   };
