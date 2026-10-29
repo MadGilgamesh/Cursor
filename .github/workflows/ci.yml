@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  quality:
+    name: Formatowanie, lint, typy, testy jednostkowe, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  integration:
+    name: Testy integracyjne API (PostgreSQL + Redis)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: game
+          POSTGRES_PASSWORD: game
+          POSTGRES_DB: game
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U game -d game"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:integration
+        env:
+          TEST_DATABASE_URL: postgres://game:game@localhost:5432/game_test
+          TEST_REDIS_URL: redis://localhost:6379/1
+
+  e2e:
+    name: Testy E2E (Playwright, widok mobilny)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: game
+          POSTGRES_PASSWORD: game
+          POSTGRES_DB: game
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U game -d game"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgres://game:game@localhost:5432/game
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Instalacja przeglądarek Playwright
+        run: pnpm --filter @game/e2e exec playwright install --with-deps chromium webkit
+      - run: pnpm test:e2e
+      - name: Raport Playwright
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+
+  docker:
+    name: Obrazy Docker (docker compose build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose --profile app build
