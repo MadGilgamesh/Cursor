@@ -1,0 +1,21 @@
+node_modules/
+dist/
+dev-dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Środowisko lokalne
+.env
+.env.*
+!.env.example
+
+# Playwright
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+
+# Edytory i system
+.DS_Store
+.idea/
+*.log
