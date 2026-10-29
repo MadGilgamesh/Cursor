@@ -8,6 +8,7 @@ import { CharacterScreen } from './screens/CharacterScreen';
 import { CityScreen } from './screens/CityScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { MrokScreen } from './screens/MrokScreen';
+import { PortalScreen } from './screens/PortalScreen';
 import { PlaceholderScreen } from './screens/PlaceholderScreen';
 import { Button } from './ui/Button';
 import { Sigil } from './ui/Sigil';
@@ -66,6 +67,7 @@ export function App() {
         <Route index element={<HomeScreen />} />
         <Route path="miasto" element={<CityScreen />} />
         <Route path="mrok" element={<MrokScreen />} />
+        <Route path="portal" element={<PortalScreen />} />
         <Route path="postac" element={<CharacterScreen />} />
         <Route
           path="wspolnota"

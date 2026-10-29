@@ -87,6 +87,28 @@ export function HomeScreen() {
         </section>
       ) : null}
 
+      {dashboard.data ? (
+        <section aria-label={t('home.portalTitle')} className="panel p-4">
+          <h2 className="font-display text-lg font-semibold text-brass-300">
+            {t('home.portalTitle')}
+          </h2>
+          <p data-testid="portal-keys" className="mt-1 text-sm text-bone-200">
+            {t('home.portalKeys', { keys: dashboard.data.portal.totalKeys })}
+          </p>
+          <p className="text-sm text-bone-400">
+            {dashboard.data.portal.totalKeys > 0
+              ? t('home.portalNext', { name: dashboard.data.portal.nextName })
+              : t('home.portalEmpty')}
+          </p>
+          <Link
+            to="/portal"
+            className="mt-3 inline-block font-display font-semibold text-brass-300 underline-offset-4 hover:underline"
+          >
+            {t('home.portalEnter')} →
+          </Link>
+        </section>
+      ) : null}
+
       <section
         aria-label={t('home.characterSection')}
         className="panel flex items-center gap-4 p-4"

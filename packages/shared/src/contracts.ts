@@ -29,6 +29,7 @@ export const ERROR_CODES = {
   incapacitated: 'INCAPACITATED',
   loopFinished: 'LOOP_FINISHED',
   requirement: 'REQUIREMENT_NOT_MET',
+  noDreamKey: 'NO_DREAM_KEY',
 } as const;
 
 /**

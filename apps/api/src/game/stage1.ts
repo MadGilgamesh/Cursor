@@ -75,6 +75,7 @@ import {
   statBlock,
 } from './avatar.js';
 import { materializeAll, saveResources, toResourcesDto } from './resources.js';
+import { grantHuntShard, grantLootKeys } from './portal-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 
 const audit = async (
@@ -222,7 +223,7 @@ async function ensureBoard(db: Executor, characterId: string, circle: number, no
   return values;
 }
 
-async function giveItem(
+export async function giveItem(
   db: Executor,
   characterId: string,
   defId: string,
@@ -321,6 +322,7 @@ async function finishFight(
         idempotencyKey: `hunt:${seed}:silver`,
       });
     }
+    await grantHuntShard(db, character.id, state.statsRow.circle, named, seed, now);
     if (named) {
       const wins = state.statsRow.namedWins + 1;
       const promote =
@@ -666,6 +668,7 @@ export async function claimDaily(
     throw new AppError(409, ERROR_CODES.requirement, 'Nie wszystkie punkty dziennego zadania');
   const xp = dailyTaskExperience(experienceToNextLevel(character.level));
   await awardExperience(db, character, xp, null);
+  await grantLootKeys(db, character.id, 1, now);
   for (let i = 0; i < DAILY_TASK_COFFEE; i++) await giveItem(db, character.id, 'consumable.coffee');
   await db
     .update(dailyStates)

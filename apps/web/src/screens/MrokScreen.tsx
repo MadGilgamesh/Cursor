@@ -1,3 +1,5 @@
+import { Link } from 'react-router';
+
 import { useFight, useHunts, useProfile, useTrain, useTutorial } from '../api/stage1';
 import { errorMessage } from '../i18n';
 
@@ -13,6 +15,9 @@ export function MrokScreen() {
   return (
     <div className="space-y-4">
       <h1 className="font-display text-3xl font-bold text-bone-50">Mrok</h1>
+      <Link to="/portal" className="inline-block text-sm text-brass-300 underline">
+        Brama Srebrnego Klucza
+      </Link>
       {profile.data && !profile.data.tutorialDone ? (
         <section className="panel space-y-2 p-4">
           <h2 className="font-display text-xl text-brass-300">Przebudzenie w kostnicy</h2>

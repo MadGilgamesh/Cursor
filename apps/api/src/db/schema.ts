@@ -371,7 +371,44 @@ export const combatLogs = pgTable(
   (t) => [index('combat_logs_character_idx').on(t.characterId, t.createdAt)],
 );
 
+/** Pęk Kluczy, postęp Portalu, Studnia i Seanse (GDD 5.12, 5.10, 10.8). */
+export const portalStates = pgTable('portal_states', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  regenKeys: integer('regen_keys').notNull().default(0),
+  regenUpdatedAt: tstz('regen_updated_at').notNull(),
+  lootKeys: integer('loot_keys').notNull().default(0),
+  shards: integer('shards').notNull().default(0),
+  meteorShards: integer('meteor_shards').notNull().default(0),
+  engraverDay: text('engraver_day'),
+  engraverCount: integer('engraver_count').notNull().default(0),
+  clearedDomain: integer('cleared_domain').notNull().default(0),
+  clearedStage: integer('cleared_stage').notNull().default(0),
+  clearedSubstage: integer('cleared_substage').notNull().default(0),
+  materials: jsonb('materials').$type<Record<string, number>>().notNull().default({}),
+  sigilShards: integer('sigil_shards').notNull().default(0),
+  /** Sigile bogów: klucz to numer Domeny. */
+  sigils: jsonb('sigils').$type<Record<string, number>>().notNull().default({}),
+  wellFloor: integer('well_floor').notNull().default(0),
+  /** Piętra Strażników, których pierwsze zabicie już nagrodziło kluczami. */
+  wellGuardians: jsonb('well_guardians').$type<number[]>().notNull().default([]),
+  whisperId: text('whisper_id'),
+  whisperUntilFloor: integer('whisper_until_floor').notNull().default(0),
+  candles: integer('candles').notNull().default(3),
+  seanceDry: integer('seance_dry').notNull().default(0),
+  beyondDry: integer('beyond_dry').notNull().default(0),
+  ectoplasm: integer('ectoplasm').notNull().default(0),
+  /** Odłamki i poziom Ech. Poziom 0 = jeszcze nieaktywowane. */
+  echoes: jsonb('echoes')
+    .$type<Record<string, { shards: number; level: number }>>()
+    .notNull()
+    .default({}),
+  activeEchoId: text('active_echo_id'),
+});
+
 export type AccountRow = typeof accounts.$inferSelect;
+export type PortalStateRow = typeof portalStates.$inferSelect;
 export type CharacterRow = typeof characters.$inferSelect;
 export type ResourceStateRow = typeof resourceStates.$inferSelect;
 export type TimedActivityRow = typeof timedActivities.$inferSelect;

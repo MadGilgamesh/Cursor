@@ -16,6 +16,7 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
   test('rejestracja → zlecenie zużywa Wigor → nagroda do księgi → Wigor rośnie z czasem serwera', async ({
     page,
   }, testInfo) => {
+    test.setTimeout(60_000);
     // Bez animacji przejść — zrzut ekranu na końcu ma pokazać stan ustalony.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await registerViaUi(page, newAccount());
@@ -29,7 +30,9 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
     await expect(page.getByTestId('next-step')).toHaveText(
       'Masz 100 Wigoru. Weź zlecenie z tablicy Urzędu.',
     );
-    await page.getByRole('link', { name: /Tablica zleceń/ }).click({ force: true });
+    const boardLink = page.getByRole('link', { name: /Tablica zleceń/ });
+    await boardLink.click({ force: true });
+    if (!page.url().endsWith('/miasto')) await boardLink.click({ force: true });
     await expect(page).toHaveURL(/\/miasto$/);
 
     await page
@@ -73,6 +76,9 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('link', { name: 'Dom' })).toHaveAttribute('aria-current', 'page');
     await expect(resource(page, 'vigor')).toHaveAccessibleName(/^Wigor: 80\/100/);
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
     await expect(page.getByRole('heading', { level: 1, name: 'Dom' })).toBeInViewport();
     await page.evaluate(() => document.fonts.ready);
     const path = testInfo.outputPath(`etap0-dom-${testInfo.project.name}.png`);

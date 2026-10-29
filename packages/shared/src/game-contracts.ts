@@ -53,6 +53,21 @@ export const activitySchema = z.object({
 });
 export type Activity = z.infer<typeof activitySchema>;
 
+/** Skrót Portalu na pulpicie Dom (GDD 11, DoD 5). */
+export const portalHomeSchema = z.object({
+  regenKeys: z.int().min(0),
+  lootKeys: z.int().min(0),
+  shards: z.int().min(0),
+  totalKeys: z.int().min(0),
+  nextDomain: z.int().min(1),
+  nextStage: z.int().min(1),
+  nextSubstage: z.int().min(1),
+  nextName: z.string(),
+  wellFloor: z.int().min(0),
+  candles: z.int().min(0),
+});
+export type PortalHome = z.infer<typeof portalHomeSchema>;
+
 /** Pulpit Dom: wszystko, czego potrzebuje ekran główny, w jednym żądaniu. */
 export const dashboardResponseSchema = z.object({
   serverTime: isoDateTime,
@@ -61,6 +76,7 @@ export const dashboardResponseSchema = z.object({
   wallet: walletSchema,
   /** Aktywne i zakończone, jeszcze nieodebrane aktywności. */
   activities: z.array(activitySchema),
+  portal: portalHomeSchema,
 });
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 

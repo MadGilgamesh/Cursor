@@ -14,7 +14,7 @@
  */
 import { applyBp } from './fixed-point.js';
 
-export const BALANCE_VERSION = 2;
+export const BALANCE_VERSION = 3;
 
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -396,8 +396,8 @@ export const CIRCLES: readonly CircleDef[] = [
 ];
 
 export const STARTING_CIRCLE = 9;
-/** Najwyższy Krąg dostępny w bieżącym etapie (Etap 1: VII). */
-export const TOP_CIRCLE_THIS_STAGE = 7;
+/** Najwyższy Krąg dostępny w bieżącym etapie (Etap 2: IV; niższy numer = trudniejszy). */
+export const TOP_CIRCLE_THIS_STAGE = 4;
 
 export function circleDef(circle: number): CircleDef {
   const found = CIRCLES.find((candidate) => candidate.circle === circle);

@@ -159,9 +159,25 @@ Poza Etapem 0 zostają m.in. Patronat (Etap 9; GDD 1.1: max Wigor 200) i godziny
 
 ## Etap 1 — Pierwsza noc w Soli
 
-Zamknięta pętla w Soli: samouczek w kostnicy, trening w Fechtowni (Piwnica i Sala Kapitańska), Łowy na Kręgach IX–VII, silnik walki z dziennikiem, zlecenia trzech rodzajów z szansą, biegłością i pętlą do 11, ekwipunek ośmiu slotów i trzy klasy, sklep, Kasa, Przytułek po śmierci i progi Poczytalności. Formuły są w pliku balansu (`BALANCE_VERSION` 2). Test akceptacyjny: nowy gracz dochodzi do 5. poziomu, zakłada zestaw Rzeźnika i ustawia zlecenie w pętli.
+Zamknięta pętla w Soli: samouczek w kostnicy, trening w Fechtowni (Piwnica i Sala Kapitańska), Łowy na Kręgach IX–VII, silnik walki z dziennikiem, zlecenia trzech rodzajów z szansą, biegłością i pętlą do 11, ekwipunek ośmiu slotów i trzy klasy, sklep, Kasa, Przytułek po śmierci i progi Poczytalności. Test akceptacyjny: nowy gracz dochodzi do 5. poziomu, zakłada zestaw Rzeźnika i ustawia zlecenie w pętli.
 
 Świadomie odłożone wewnątrz Etapu 1 (opisane przy liczbach jako „założenie”, tam gdzie GDD nie podaje wartości): mikstury i laudanum mają dane i ceny, ale leczenie w Przytułku i Sanatorium jest uproszczone do timera; Kalendarz Pamięci ma kamienie milowe w danych, odbiór dziennego zadania przyznaje XP i Kawę. Pogłębienie zleceń, Podręczniki i Kuźnia to późniejsze etapy.
+
+## Etap 2 — Studnia, Seanse i Portal
+
+Rdzeń Portalu Bogów dla Domen 1–2 (Bokrug oraz Dagon i Matka Hydra): 160 walk, modyfikatory _Zemsta Ib_ i _Ciśnienie_, nagrody i pierwsze przejścia według rozdziału 10.13. Pęk Kluczy regeneruje 1 Klucz Snu na 4 godziny, do 6; klucze z łupu nie mają limitu. Każda walka zużywa klucz w tej samej transakcji co wynik. Porażka zwraca 1 Odłamek (5 Odłamków = 1 klucz) i nie rani ciała — nie ma Przytułku. Aura zabiera prawdziwą Poczytalność.
+
+Klucze i Odłamki dochodzą też ze źródeł Etapów 1–2: dzienne zadanie (1 klucz), zlecenia od 1 godziny (20%, a 8 godzin — pewny Odłamek), nazwani Łowów z Kręgu V i wyżej (10%), pierwsze zabicie Strażnika Studni (2 klucze), Grawer (3 dziennie) i rozkład przeklętego przedmiotu (10%). Kręgi VI–IV są otwarte. Studnia ma piętra 1–50 i Szept co 5 pięter. Seans (3 Świece na start) losuje spośród 30 Ech do rzadkości Widma, z litością z rozdziału 10.8.
+
+Formuły są w `packages/shared/src/portal.ts` (`BALANCE_VERSION` 3). Testy: chi-kwadrat miliona Seansów, regeneracja Pęku na wirtualnym zegarze, odrzucenie pominięcia podetapu, jednorazowość pierwszego przejścia i 100 równoległych żądań z jednym kluczem idempotencji.
+
+Świadomie odłożone, żeby nie udawać systemów z późniejszych etapów:
+
+- Symulacja „Domena 1 w dniu 11” na interpolacji tabeli statystyk z 10.3 wychodzi w dniu 13 (około 18% obok celu). Pełny model treningu i sprzętu z 10.3 nie jest jeszcze w Monte Carlo. Liczby nie zostały dopasowane na siłę.
+- Odłamki Meteorytu do Grawera wypadają przy pierwszym Strażniku Studni. Właściwe źródło to Domena Koloru (Etap 3).
+- Szept „Poczytalność nie spada” działa tylko w walce Studni, nie zamraża regeneracji paska.
+- Sprzęt z Seansu to srebro, nie przedmiot. Wzmacnianie w Kuźni, Stopnie 4–5, Podręczniki, osiągnięcia i tytuły nie wchodzą w ten etap.
+- Gwiazdki, Sigile jako warunek wejścia i Patronat zostają przy swoich etapach (3 i 9). Sigile następnego boga za awatara są tylko zapisane.
 
 ## Konwencje
 
