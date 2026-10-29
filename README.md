@@ -180,7 +180,7 @@ Role: **administrator** (wszystko), **moderator** (gracze, blokada, audyt, ogło
 
 Nadanie i odjęcie srebra albo depozytu w Kasie zapisuje się wyłącznie nowym wpisem księgi walut i wpisem dziennika audytu. Blokada kasuje sesje; API gry odmawia kolejnego logowania.
 
-Treść (bestiariusz, przedmioty, zlecenia, lokacje, teksty, eventy) jest wersjonowaną paczką sprawdzaną schematem Zod. Migracje schematu tylko dokładają kolekcje. Nieznane pola są ignorowane, więc paczka zapisana przed rozszerzeniem schematu nadal się ładuje. Publikacja dokłada rewizję i nie zmienia wyniku akcji, która już trwa — akcja trzyma rewizję startu. Wycofanie przestawia wskaźnik bieżącej publikacji i zostawia historię.
+Treść (bestiariusz, przedmioty, zlecenia, lokacje, teksty, eventy) jest wersjonowaną paczką sprawdzaną schematem Zod. Event może mieć własne misje, walki, historie lore i zadania: nagroda za czynność (Łowy, zlecenie, trening) albo za element tego eventu. Migracje schematu tylko dokładają kolekcje. Nieznane pola są ignorowane, więc paczka zapisana przed rozszerzeniem schematu nadal się ładuje. Publikacja dokłada rewizję i nie zmienia wyniku akcji, która już trwa — akcja trzyma rewizję startu. Wycofanie przestawia wskaźnik bieżącej publikacji i zostawia historię.
 
 Dane statyczne gry są pierwszą publikacją. API przy starcie sprawdza i je, i opublikowaną rewizję; błędna paczka nie pozwoli serwerowi wstać.
 

@@ -14,6 +14,10 @@ export interface EventPreview {
   endsAt: string;
   rewards: GameEvent['rewards'];
   modifiers: GameEvent['modifiers'];
+  missions: GameEvent['missions'];
+  battles: GameEvent['battles'];
+  lore: GameEvent['lore'];
+  tasks: GameEvent['tasks'];
 }
 
 const PHASE_LABELS: Record<EventPhase, string> = {
@@ -45,5 +49,9 @@ export function previewEvent(event: GameEvent, at: Date): EventPreview {
     endsAt: event.endsAt,
     rewards: event.rewards,
     modifiers: event.modifiers,
+    missions: event.missions,
+    battles: event.battles,
+    lore: event.lore,
+    tasks: event.tasks,
   };
 }

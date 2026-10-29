@@ -29,6 +29,19 @@ const event: GameEvent = {
   enabled: true,
   rewards: [{ kind: 'currency', currency: 'silver', amount: 25 }],
   modifiers: [{ id: 'groza', target: 'Groza', operation: 'add', value: 1 }],
+  missions: [],
+  battles: [],
+  lore: [],
+  tasks: [
+    {
+      id: 'event.zadanie.lowy',
+      name: 'Trzy łowy',
+      description: 'Wygraj trzy walki.',
+      activity: 'huntWin',
+      count: 3,
+      rewards: [{ kind: 'currency', currency: 'silver', amount: 40 }],
+    },
+  ],
 };
 
 describe('nawigacja ról', () => {
@@ -67,6 +80,11 @@ describe('edytor eventu', () => {
     expect(preview).toHaveTextContent('Przed startem');
     expect(preview).toHaveTextContent('UTC');
     expect(preview).toHaveTextContent('25 srebra');
+    expect(preview).toHaveTextContent('Trzy łowy');
+    expect(preview).toHaveTextContent('Wygrana na Łowach × 3');
+    expect(screen.getByRole('button', { name: 'Dodaj misję' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Dodaj walkę' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Dodaj historię' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Zapisz w szkicu' })).toBeEnabled();
   });
 });

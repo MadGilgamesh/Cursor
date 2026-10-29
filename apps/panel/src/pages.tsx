@@ -174,6 +174,10 @@ const blankEvent = (): GameEvent => ({
   enabled: true,
   rewards: [{ kind: 'currency', currency: 'silver', amount: 10 }],
   modifiers: [],
+  missions: [],
+  battles: [],
+  lore: [],
+  tasks: [],
 });
 
 export function EventsPage() {
@@ -186,11 +190,11 @@ export function EventsPage() {
     })) ?? [];
   return (
     <section className="space-y-5">
-      <header className="flex items-end justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-4xl text-bone-50">Eventy</h1>
           <p className="text-bone-400">
-            Harmonogram w UTC, nagrody i modyfikatory. Najpierw podgląd, potem publikacja.
+            Misje, walki, historie i zadania z nagrodą. Najpierw podgląd, potem publikacja.
           </p>
         </div>
         <Link to="/eventy/nowy">

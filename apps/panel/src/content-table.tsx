@@ -20,7 +20,7 @@ export function ContentTable({
     return <p className="text-bone-400">W tym dziale nie ma jeszcze wpisów.</p>;
   }
   return (
-    <div className="panel overflow-hidden" data-testid="content-list">
+    <div className="panel overflow-x-auto" data-testid="content-list">
       <table className="w-full text-left text-sm">
         <thead className="bg-abyss-900/80 text-xs tracking-[0.16em] text-bone-400 uppercase">
           <tr>

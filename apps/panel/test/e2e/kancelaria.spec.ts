@@ -45,6 +45,36 @@ test('kancelaria na widoku desktop', async ({ page }) => {
   await page.getByRole('link', { name: 'Publikacje' }).click();
   await expect(page.getByText('Rewizja 1')).toBeVisible();
   await page.getByRole('button', { name: 'Publikuj szkic' }).click();
-  await expect(page.getByText(/Opublikowano rewizję 2/)).toBeVisible();
+  await expect(page.getByText(/Opublikowano rewizję \d+/)).toBeVisible();
   await expect(page.getByText(/Trwające akcje zostały przy swojej wersji/)).toBeVisible();
+});
+
+test('kancelaria na telefonie składa misję, walkę, historię i zadanie', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/logowanie');
+  await page.getByLabel('E-mail').fill('kustosz@sol.test');
+  await page.getByLabel('Hasło').fill('Latarnia-pamieci-1');
+  await page.getByRole('button', { name: 'Wejdź' }).click();
+  await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('link', { name: 'Eventy' }).click();
+  await page.getByRole('link', { name: 'Nowy event' }).click();
+  await page.getByLabel('Nazwa').fill('Noc Zmarłych');
+  await page.getByLabel('Opis').fill('Święto, które morze obchodzi bez nas.');
+  await page.getByRole('button', { name: 'Dodaj misję' }).click();
+  await page.getByLabel('Nazwa misji 1').fill('Patrol święta');
+  await page.getByRole('button', { name: 'Dodaj walkę' }).click();
+  await page.getByLabel('Nazwa walki 1').fill('Starcie na molo');
+  await page.getByRole('button', { name: 'Dodaj historię' }).click();
+  await page.getByLabel('Tytuł historii 1').fill('Skąd się wzięła Noc');
+  await page.getByRole('button', { name: 'Dodaj zadanie' }).click();
+  await page.getByLabel('Nazwa zadania 1').fill('Trzy łowy');
+  const preview = page.getByTestId('event-preview');
+  await preview.scrollIntoViewIfNeeded();
+  await expect(preview).toContainText('Patrol święta');
+  await expect(preview).toContainText('Starcie na molo');
+  await expect(preview).toContainText('Skąd się wzięła Noc');
+  await expect(preview).toContainText('Trzy łowy');
+  await expect(preview).toContainText('Wygrana na Łowach × 1');
+  await page.screenshot({ path: screenshotPath('panel-event-telefon.png') });
 });

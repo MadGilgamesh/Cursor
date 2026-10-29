@@ -125,6 +125,73 @@ export const modifierSchema = z.object({
 });
 export type EventModifier = z.infer<typeof modifierSchema>;
 
+/** Czynności, za które zadanie eventu może dać nagrodę. */
+export const EVENT_ACTIVITY_KINDS = [
+  'huntWin',
+  'missionSuccess',
+  'training',
+  'eventMission',
+  'eventBattle',
+  'eventLore',
+] as const;
+export type EventActivityKind = (typeof EVENT_ACTIVITY_KINDS)[number];
+
+export const EVENT_ACTIVITY_LABELS: Record<EventActivityKind, string> = {
+  huntWin: 'Wygrana na Łowach',
+  missionSuccess: 'Udane zlecenie',
+  training: 'Trening',
+  eventMission: 'Misja eventu',
+  eventBattle: 'Walka eventu',
+  eventLore: 'Przeczytanie historii',
+};
+
+const eventPieceRewards = z.array(rewardSchema).default([]);
+
+export const eventMissionSchema = z.object({
+  id: idSchema,
+  name: z.string().min(1),
+  description: z.string().min(1),
+  successTexts: z.array(z.string().min(1)).min(1),
+  failureTexts: z.array(z.string().min(1)).min(1),
+  rewards: eventPieceRewards,
+});
+export type EventMission = z.infer<typeof eventMissionSchema>;
+
+export const eventBattleSchema = z.object({
+  id: idSchema,
+  name: z.string().min(1),
+  description: z.string().min(1),
+  foe: z.string().min(1),
+  rewards: eventPieceRewards,
+});
+export type EventBattle = z.infer<typeof eventBattleSchema>;
+
+export const eventLoreSchema = z.object({
+  id: idSchema,
+  title: z.string().min(1),
+  body: z.string().min(1),
+});
+export type EventLore = z.infer<typeof eventLoreSchema>;
+
+const eventActivityNeedsSubject = (activity: EventActivityKind) => activity.startsWith('event');
+
+export const eventTaskSchema = z
+  .object({
+    id: idSchema,
+    name: z.string().min(1),
+    description: z.string().min(1),
+    activity: z.enum(EVENT_ACTIVITY_KINDS),
+    /** Misja, walka albo historia tego eventu, gdy czynność jest eventowa. */
+    subjectId: idSchema.optional(),
+    count: z.int().positive(),
+    rewards: z.array(rewardSchema).min(1, 'Zadanie musi mieć nagrodę'),
+  })
+  .refine((task) => !eventActivityNeedsSubject(task.activity) || task.subjectId !== undefined, {
+    message: 'Zadanie eventowe musi wskazać misję, walkę albo historię',
+    path: ['subjectId'],
+  });
+export type EventTask = z.infer<typeof eventTaskSchema>;
+
 export const eventSchema = z
   .object({
     id: idSchema,
@@ -136,6 +203,11 @@ export const eventSchema = z
     enabled: z.boolean(),
     rewards: z.array(rewardSchema),
     modifiers: z.array(modifierSchema),
+    /** Puste, gdy paczka powstała zanim doszły te działy. */
+    missions: z.array(eventMissionSchema).default([]),
+    battles: z.array(eventBattleSchema).default([]),
+    lore: z.array(eventLoreSchema).default([]),
+    tasks: z.array(eventTaskSchema).default([]),
   })
   .refine((event) => Date.parse(event.endsAt) > Date.parse(event.startsAt), {
     message: 'Koniec musi być później niż start',

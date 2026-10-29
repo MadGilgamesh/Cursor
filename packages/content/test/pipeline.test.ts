@@ -214,6 +214,141 @@ describe('podgląd eventu', () => {
   });
 });
 
+describe('zawartość eventu', () => {
+  it('stary event bez misji, walk, historii i zadań zostaje poprawny', () => {
+    const loaded = loadContentPack({
+      format: 3,
+      id: 'zapomniany-brzeg',
+      revision: 1,
+      label: 'Przed rozbudową eventu',
+      collections: {
+        bestiary: [],
+        items: [],
+        missions: [],
+        locations: [],
+        texts: [],
+        events: [
+          {
+            id: 'event.noc',
+            name: 'Noc Zmarłych',
+            description: 'Stary opis.',
+            startsAt: '2027-01-01T00:00:00.000Z',
+            endsAt: '2027-01-02T00:00:00.000Z',
+            timezone: 'UTC',
+            enabled: true,
+            rewards: [],
+            modifiers: [],
+          },
+        ],
+      },
+    });
+    const event = loaded.collections.events[0];
+    expect(event?.missions).toEqual([]);
+    expect(event?.battles).toEqual([]);
+    expect(event?.lore).toEqual([]);
+    expect(event?.tasks).toEqual([]);
+    expect(event?.description).toBe('Stary opis.');
+  });
+
+  it('zadanie za misję eventu trzyma nagrodę i odrzuca nieznaną walkę', () => {
+    const base = {
+      format: 3,
+      id: 'zapomniany-brzeg',
+      revision: 0,
+      label: 'Szkic',
+      collections: {
+        bestiary: [],
+        items: [],
+        missions: [],
+        locations: [],
+        texts: [],
+        events: [
+          {
+            id: 'event.noc',
+            name: 'Noc Zmarłych',
+            description: 'Morze obchodzi ją bez nas.',
+            startsAt: '2027-01-01T00:00:00.000Z',
+            endsAt: '2027-01-02T00:00:00.000Z',
+            timezone: 'UTC',
+            enabled: true,
+            rewards: [],
+            modifiers: [],
+            missions: [
+              {
+                id: 'event.misja.nabrzeze',
+                name: 'Patrol w czasie święta',
+                description: 'Policz łodzie, które wracają same.',
+                successTexts: ['Raport złożony.'],
+                failureTexts: ['Mgła.'],
+              },
+            ],
+            battles: [
+              {
+                id: 'event.walka.topielec',
+                name: 'Starcie na molo',
+                description: 'Coś wstaje z wody.',
+                foe: 'Topielec z płycizny',
+              },
+            ],
+            lore: [
+              {
+                id: 'event.lore.swieto',
+                title: 'Skąd się wzięła Noc',
+                body: 'Rybacy gaszą latarnie i nie wymawiają imion.',
+              },
+            ],
+            tasks: [
+              {
+                id: 'event.zadanie.lowy',
+                name: 'Trzy łowy',
+                description: 'Wygraj trzy walki na Kręgach w czasie eventu.',
+                activity: 'huntWin',
+                count: 3,
+                rewards: [{ kind: 'currency', currency: 'silver', amount: 40 }],
+              },
+              {
+                id: 'event.zadanie.misja',
+                name: 'Odbierz misję święta',
+                description: 'Ukończ patrol.',
+                activity: 'eventMission',
+                subjectId: 'event.misja.nabrzeze',
+                count: 1,
+                rewards: [{ kind: 'currency', currency: 'silver', amount: 15 }],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const loaded = loadContentPack(base);
+    const event = loaded.collections.events[0];
+    expect(event?.tasks[0]?.rewards).toEqual([
+      { kind: 'currency', currency: 'silver', amount: 40 },
+    ]);
+    expect(event?.missions[0]?.rewards).toEqual([]);
+    const eventDraft = base.collections.events[0];
+    const secondTask = eventDraft?.tasks[1];
+    if (!eventDraft || !secondTask) throw new Error('Brak zadania');
+    expect(() =>
+      loadContentPack({
+        ...base,
+        collections: {
+          ...base.collections,
+          events: [
+            {
+              ...eventDraft,
+              tasks: [
+                eventDraft.tasks[0],
+                { ...secondTask, activity: 'eventBattle', subjectId: 'event.walka.nie-ma' },
+              ],
+            },
+          ],
+        },
+      }),
+    ).toThrow(/nieznaną walkę/);
+  });
+});
+
 describe('dane statyczne', () => {
   it('składają się w poprawną paczkę bazową', () => {
     const pack = assertBaselineContent();

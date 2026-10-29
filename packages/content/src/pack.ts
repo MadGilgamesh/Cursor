@@ -99,9 +99,39 @@ function assertEventReferences(collections: ContentCollections): void {
         throw new Error(`Mnożnik ${modifier.id} w evencie ${event.id} musi być dodatni`);
       }
     }
-    for (const reward of event.rewards) {
-      if (reward.kind === 'item' && !items.has(reward.itemId)) {
-        throw new Error(`Event ${event.id} nagradza nieznanym przedmiotem ${reward.itemId}`);
+    const checkRewards = (label: string, rewards: typeof event.rewards) => {
+      for (const reward of rewards) {
+        if (reward.kind === 'item' && !items.has(reward.itemId)) {
+          throw new Error(`${label} nagradza nieznanym przedmiotem ${reward.itemId}`);
+        }
+      }
+    };
+    checkRewards(`Event ${event.id}`, event.rewards);
+    const missions = new Set(event.missions.map((mission) => mission.id));
+    const battles = new Set(event.battles.map((battle) => battle.id));
+    const lore = new Set(event.lore.map((story) => story.id));
+    const tasks = new Set(event.tasks.map((task) => task.id));
+    assertUnique([...missions], `misja eventu ${event.id}`);
+    assertUnique([...battles], `walka eventu ${event.id}`);
+    assertUnique([...lore], `historia eventu ${event.id}`);
+    assertUnique([...tasks], `zadanie eventu ${event.id}`);
+    const shared = new Set<string>();
+    for (const id of [...missions, ...battles, ...lore, ...tasks]) {
+      if (shared.has(id)) throw new Error(`Powtórzony identyfikator w evencie ${event.id}: ${id}`);
+      shared.add(id);
+    }
+    for (const mission of event.missions) checkRewards(`Misja ${mission.id}`, mission.rewards);
+    for (const battle of event.battles) checkRewards(`Walka ${battle.id}`, battle.rewards);
+    for (const task of event.tasks) {
+      checkRewards(`Zadanie ${task.id}`, task.rewards);
+      if (task.activity === 'eventMission' && (!task.subjectId || !missions.has(task.subjectId))) {
+        throw new Error(`Zadanie ${task.id} wskazuje nieznaną misję eventu`);
+      }
+      if (task.activity === 'eventBattle' && (!task.subjectId || !battles.has(task.subjectId))) {
+        throw new Error(`Zadanie ${task.id} wskazuje nieznaną walkę eventu`);
+      }
+      if (task.activity === 'eventLore' && (!task.subjectId || !lore.has(task.subjectId))) {
+        throw new Error(`Zadanie ${task.id} wskazuje nieznaną historię eventu`);
       }
     }
   }
