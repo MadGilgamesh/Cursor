@@ -55,7 +55,9 @@ apps/
   api/          serwer Fastify, schemat bazy (Drizzle), migracje SQL (drizzle/), worker BullMQ
   web/          klient PWA (React, Vite, Tailwind), ikony, konfiguracja nginx
 packages/
-  shared/       kontrakty API (Zod), deterministyczny RNG, arytmetyka stałoprzecinkowa, krzywa XP
+  shared/       kontrakty API (Zod), balans, dane statyczne, deterministyczny RNG, krzywa XP
+tools/
+  balance/      symulacje Monte Carlo balansu (GDD 10.12)
 e2e/            testy Playwright na widoku mobilnym
 docker-compose.yml, turbo.json, eslint.config.js, .github/workflows/ci.yml
 ```
@@ -102,37 +104,58 @@ docker compose --profile app up --build   # → http://localhost:8080
 
 - **Jednostkowe** (`pnpm test`) — nie wymagają infrastruktury.
 - **Integracyjne** (`pnpm test:integration`) — wymagają `docker compose up -d`. Używają osobnej bazy `game_test` (tworzonej automatycznie) i bazy Redis nr 1, więc nie dotykają danych deweloperskich. Adresy można nadpisać zmiennymi `TEST_DATABASE_URL` i `TEST_REDIS_URL`.
-- **E2E** (`pnpm test:e2e`) — wymagają PostgreSQL i Redisa. Za pierwszym razem zainstaluj przeglądarki: `pnpm --filter @game/e2e exec playwright install chromium webkit`. Playwright uruchamia zbudowane API (port 3100, z migracjami) i `vite preview` (port 4173). Test „zrzut ekranu Domu” zapisuje zrzut w `e2e/test-results/`.
+- **E2E** (`pnpm test:e2e`) — wymagają PostgreSQL i Redisa. Za pierwszym razem zainstaluj przeglądarki: `pnpm --filter @game/e2e exec playwright install chromium webkit`. Playwright uruchamia zbudowane API (port 3100, z migracjami), worker kolejki i `vite preview` (port 4173). API działa wtedy z `ENABLE_TEST_CONTROLS=true`: zegar serwera można przesunąć (`POST /api/test/clock/advance`), a rozstrzyganie timerów wywołać ręcznie (`POST /api/test/jobs/activities-sweep`). Konfiguracja odrzuca tę flagę na produkcji. Zegar jest wspólny, więc testy E2E idą po kolei.
+- **Balans** (`pnpm --filter @game/balance simulate`) — symulacja Monte Carlo 600 dni gracza-bota (GDD 10.12) na tych samych funkcjach co serwer; testy pakietu `tools/balance` (część `pnpm test`) zgłaszają alarm przy odchyleniu > 15% od tabel GDD.
 
 ## API (v1)
 
-| Metoda i ścieżka             | Opis                                    |
-| ---------------------------- | --------------------------------------- |
-| `GET /api/health`            | stan bazy i Redisa (200 albo 503)       |
-| `GET /api/v1/time`           | czas serwera                            |
-| `POST /api/v1/auth/register` | konto + postać (jedna na konto) + sesja |
-| `POST /api/v1/auth/login`    | logowanie (limit prób na IP)            |
-| `POST /api/v1/auth/logout`   | unieważnienie sesji                     |
-| `GET /api/v1/me`             | konto i postać zalogowanego gracza      |
+| Metoda i ścieżka                         | Opis                                                     |
+| ---------------------------------------- | -------------------------------------------------------- |
+| `GET /api/health`                        | stan bazy i Redisa (200 albo 503)                        |
+| `GET /api/v1/time`                       | czas serwera                                             |
+| `POST /api/v1/auth/register`             | konto + postać (jedna na konto) + sesja                  |
+| `POST /api/v1/auth/login`                | logowanie (limit prób na IP)                             |
+| `POST /api/v1/auth/logout`               | unieważnienie sesji                                      |
+| `GET /api/v1/me`                         | konto i postać zalogowanego gracza                       |
+| `GET /api/v1/dashboard`                  | pulpit Dom: czas serwera, postać, zasoby, Srebro, timery |
+| `POST /api/v1/activities` ¹              | start zlecenia (koszt Wigoru, ziarno, timer)             |
+| `POST /api/v1/activities/:id/claim` ¹    | odbiór nagrody jednego zlecenia                          |
+| `POST /api/v1/activities/claim-all` ¹    | odbiór wszystkich gotowych nagród                        |
+| `GET /api/v1/push/config`                | czy Web Push działa + klucz publiczny VAPID              |
+| `POST/DELETE /api/v1/push/subscriptions` | subskrypcja powiadomień urządzenia                       |
+
+¹ Wymaga nagłówka `Idempotency-Key` (GDD 9.2). Powtórka z tym samym kluczem zwraca zapisaną odpowiedź z nagłówkiem `idempotent-replayed: true`; ten sam klucz z inną treścią to błąd 422.
 
 Błędy mają postać `{ "error": { "code": "…", "message": "…" } }`; kody są w `ERROR_CODES` w `@game/shared`.
 
 ## Model danych
 
-Zgodnie z GDD (rozdz. 8): `accounts` (konto), `characters` (dokładnie jedna postać na konto, unikalne imię bez względu na wielkość liter) i `sessions`. Zmiany schematu: edytuj `apps/api/src/db/schema.ts`, uruchom `pnpm db:generate` i dołącz wygenerowany plik SQL do commita.
+Zgodnie z GDD (rozdz. 8):
 
-## Dopasowanie do GDD i kolejne kroki
+| Tabela                               | Rola                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `accounts`, `characters`, `sessions` | konto, jedna postać na konto (unikalne imię), sesje                                                           |
+| `resource_states`                    | Życie, Wigor, Znój, Poczytalność z czasem ostatniej zmiany — leniwa regeneracja                               |
+| `wallet_entries`                     | księga walut: każdy wpis ma `delta`, `balance_after` i klucz idempotencji; saldo nie jest nigdzie nadpisywane |
+| `timed_activities`                   | jeden model wszystkich timerów: ziarno wyniku, `balance_version`, status `active → completed → claimed`       |
+| `idempotency_keys`                   | odpowiedzi do powtórek żądań (sprzątane po dobie)                                                             |
+| `audit_log`                          | rejestracja, logowanie, start i odbiór aktywności (z IP i urządzeniem)                                        |
+| `push_subscriptions`                 | urządzenia gracza dla Web Push                                                                                |
 
-Fundament jest już zgodny z GDD w zakresie: modelu konto–postać 1:1, zegara serwera, kolejki timerów z workerem, deterministycznego RNG, krzywej doświadczenia z rozdz. 10.2 (tabela GDD jest wektorem referencyjnym w testach), pasku gracza (Życie, Wigor, Znój, Poczytalność, Srebro, poziom) i dolnej nawigacji (Dom, Miasto, Mrok, Postać, Wspólnota) z Domem jako pulpitem timerów.
+Zmiany schematu: edytuj `apps/api/src/db/schema.ts`, uruchom `pnpm db:generate` i dołącz wygenerowany plik SQL do commita.
 
-Do domknięcia w **Etapie 0** GDD:
+## Etap 0 (GDD 11) — jak działa
 
-1. `ResourceState` z leniwą regeneracją liczoną z czasu serwera (+ test z wirtualnym zegarem).
-2. `WalletEntry` — księga walut z kluczem idempotencji.
-3. `TimedActivity` + scheduler (zadania cykliczne BullMQ) i rozstrzyganie timerów przez worker.
-4. Idempotencja żądań mutujących (`requestId`) i `AuditLog`.
-5. Dane statyczne (przedmioty, wrogowie, zlecenia) jako wersjonowane pliki w repo.
-6. Szkielet Web Push.
+- **Balans** (`packages/shared/src/balance.ts`, `BALANCE_VERSION`): limity i regeneracja zasobów (10.1), czasy i koszty zleceń, nagrody XP (10.2) i Srebra (10.5), krzywa XP z GDD 1.1. Te same funkcje liczą stan na serwerze i podgląd w kliencie.
+- **Leniwa regeneracja**: w bazie jest wartość z chwili ostatniej zmiany; bieżącą wartość liczy `materializeResource` z czasu serwera. Niepełny tik nie przepada, a pełny zasób zaczyna odliczanie dopiero od wydania.
+- **Księga walut**: wpisy postaci serializuje blokada wiersza postaci, więc nie ma podwójnego wydania; nagroda za aktywność ma klucz `activity:<id>:reward`, więc nie wypłaci się dwa razy.
+- **Timery i scheduler**: start zapisuje ziarno (CSPRNG) i `end_at`. Worker co minutę rozstrzyga zakończone timery (`SKIP LOCKED`, więc może działać wiele workerów) i kolejkuje powiadomienia. Codziennie o 00:00 UTC sprząta wygasłe sesje i klucze idempotencji. Pulpit rozstrzyga timery także od razu, gdy gracz wraca do gry.
+- **Dane statyczne** (`packages/shared/src/data`, `STATIC_DATA_VERSION`): walidowane schematem przy starcie serwera — z błędnymi danymi API nie wstanie.
+- **Web Push**: klucze VAPID z `pnpm --filter @game/api vapid:generate` (zmienne `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`). Bez nich push jest wyłączony, a interfejs to pokazuje. Treść jest szyfrowana (aes128gcm) i podpisana; subskrypcje odrzucone przez serwis push (404/410) są usuwane.
+- **Zlecenia próbne**: Etap 0 zawiera trzy zawsze udane „zlecenia próbne” Urzędu jako nośnik timerów, księgi i powiadomień. Pełne Zlecenia (szansa, porażki, pętla 11, biegłość) to Etap 1.
+- **i18n**: teksty interfejsu są w `apps/web/src/i18n/pl.ts`; kolejny język to plik o tej samej strukturze.
+
+Poza Etapem 0 zostają m.in. Patronat (Etap 9; GDD 1.1: max Wigor 200) i godziny ciszy powiadomień.
 
 ## Konwencje
 

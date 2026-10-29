@@ -12,6 +12,9 @@ x-api-env: &api-env
   COOKIE_SECURE: 'false'
   # Przed API stoi nginx z kontenera `web`.
   TRUST_PROXY_HOPS: '1'
+  # Web Push włącza się po ustawieniu kluczy (pnpm --filter @game/api vapid:generate).
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
 
 services:
   postgres:
