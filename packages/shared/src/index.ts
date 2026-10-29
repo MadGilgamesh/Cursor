@@ -1,4 +1,6 @@
 export * from './balance.js';
+export * from './character.js';
+export * from './combat.js';
 export * from './contracts.js';
 export * from './data/index.js';
 export * from './fixed-point.js';

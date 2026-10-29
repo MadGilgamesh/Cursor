@@ -2,6 +2,7 @@ import type { MissionResult } from '@game/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  boolean,
   check,
   index,
   integer,
@@ -146,7 +147,15 @@ export const timedActivities = pgTable(
       .references(() => characters.id, { onDelete: 'cascade' }),
     type: text('type').notNull(),
     defId: text('def_id').notNull(),
-    payload: jsonb('payload').$type<{ level: number; vigorCost: number }>().notNull(),
+    payload: jsonb('payload')
+      .$type<{
+        level: number;
+        vigorCost: number;
+        chanceBp: number;
+        maxLife: number;
+        loop: number;
+      }>()
+      .notNull(),
     status: text('status').$type<'active' | 'completed' | 'claimed'>().notNull(),
     startAt: tstz('start_at').notNull(),
     endAt: tstz('end_at').notNull(),
@@ -227,6 +236,139 @@ export const pushSubscriptions = pgTable(
     uniqueIndex('push_subscriptions_endpoint_unique').on(t.endpoint),
     index('push_subscriptions_account_idx').on(t.accountId),
   ],
+);
+
+/** Statystyki, Krąg i stany postaci (GDD 5.1, 4.3). Wartości statystyk w setnych punktu. */
+export const characterStats = pgTable('character_stats', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  strength: integer('strength').notNull(),
+  defense: integer('defense').notNull(),
+  accuracy: integer('accuracy').notNull(),
+  evasion: integer('evasion').notNull(),
+  /** Najwyższa odblokowana sala Fechtowni (1 = Piwnica). */
+  hall: integer('hall').notNull().default(1),
+  /** Bieżący Krąg Łowów (9 = IX). */
+  circle: integer('circle').notNull().default(9),
+  namedWins: integer('named_wins').notNull().default(0),
+  /** `ok` | `dead` (Przytułek) | `broken` (Sanatorium). */
+  status: text('status').notNull().default('ok'),
+  statusUntil: tstz('status_until'),
+  addictionUntil: tstz('addiction_until'),
+  tutorialDone: boolean('tutorial_done').notNull().default(false),
+  lastSeenAt: tstz('last_seen_at'),
+});
+
+/** Postęp klas (GDD 5.5). Aktywna klasa wynika z założonego zestawu. */
+export const classProgress = pgTable(
+  'class_progress',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    classId: text('class_id').notNull(),
+    level: integer('level').notNull().default(0),
+    experience: integer('experience').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.classId] })],
+);
+
+/** Przedmioty postaci (GDD 8.2 `ItemInstance`). `equippedSlot` = założony. */
+export const itemInstances = pgTable(
+  'item_instances',
+  {
+    id: id(),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    defId: text('def_id').notNull(),
+    quantity: integer('quantity').notNull().default(1),
+    qualityBp: integer('quality_bp').notNull().default(10_000),
+    rarity: text('rarity').notNull().default('common'),
+    enhancement: integer('enhancement').notNull().default(0),
+    equippedSlot: text('equipped_slot'),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('item_instances_character_idx').on(t.characterId),
+    uniqueIndex('item_instances_equipped_slot').on(t.characterId, t.equippedSlot),
+    check('item_instances_quantity_positive', sql`${t.quantity} > 0`),
+  ],
+);
+
+/** Tablica Łowów — odświeżana co 30 min albo za Znój (GDD 5.3). */
+export const huntBoards = pgTable('hunt_boards', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  circle: integer('circle').notNull(),
+  generatedAt: tstz('generated_at').notNull(),
+  targets: jsonb('targets').$type<HuntTargetStored[]>().notNull(),
+});
+
+export interface HuntTargetStored {
+  enemyId: string;
+  floor: number;
+  named: boolean;
+}
+
+/** Biegłość i pętla zlecenia (GDD 5.9). */
+export const missionProgress = pgTable(
+  'mission_progress',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    missionId: text('mission_id').notNull(),
+    successes: integer('successes').notNull().default(0),
+    loops: integer('loops').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.missionId] })],
+);
+
+/** Dzienne zadanie (6 wylosowanych pozycji) i Kalendarz Pamięci. */
+export const dailyStates = pgTable(
+  'daily_states',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    day: text('day').notNull(),
+    tasks: jsonb('tasks').$type<{ kind: string; target: number }[]>().notNull(),
+    progress: jsonb('progress').$type<Record<string, number>>().notNull(),
+    claimed: boolean('claimed').notNull().default(false),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.day] })],
+);
+
+export const calendars = pgTable('calendars', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  streak: integer('streak').notNull().default(0),
+  lastDay: text('last_day'),
+  claimed: jsonb('claimed').$type<number[]>().notNull().default([]),
+});
+
+/** Dziennik walki do powtórki (GDD 8.2 `CombatLog`). */
+export const combatLogs = pgTable(
+  'combat_logs',
+  {
+    id: id(),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    seed: text('seed').notNull(),
+    enemyId: text('enemy_id').notNull(),
+    floor: integer('floor').notNull(),
+    winner: text('winner').notNull(),
+    log: jsonb('log').notNull(),
+    engineVersion: integer('engine_version').notNull(),
+    balanceVersion: integer('balance_version').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('combat_logs_character_idx').on(t.characterId, t.createdAt)],
 );
 
 export type AccountRow = typeof accounts.$inferSelect;

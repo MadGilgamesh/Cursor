@@ -7,6 +7,7 @@ import { AuthScreen } from './screens/AuthScreen';
 import { CharacterScreen } from './screens/CharacterScreen';
 import { CityScreen } from './screens/CityScreen';
 import { HomeScreen } from './screens/HomeScreen';
+import { MrokScreen } from './screens/MrokScreen';
 import { PlaceholderScreen } from './screens/PlaceholderScreen';
 import { Button } from './ui/Button';
 import { Sigil } from './ui/Sigil';
@@ -64,12 +65,7 @@ export function App() {
       <Route element={<AppShell session={session} />}>
         <Route index element={<HomeScreen />} />
         <Route path="miasto" element={<CityScreen />} />
-        <Route
-          path="mrok"
-          element={
-            <PlaceholderScreen title={t('dark.title')} description={t('dark.description')} />
-          }
-        />
+        <Route path="mrok" element={<MrokScreen />} />
         <Route path="postac" element={<CharacterScreen />} />
         <Route
           path="wspolnota"

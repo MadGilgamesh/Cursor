@@ -110,7 +110,7 @@ describe('scheduler i worker (GDD 9.3)', () => {
     const subscription = receiver.subscription();
     await call(ctx, player, 'POST', '/api/v1/push/subscriptions', { body: subscription });
     await call(ctx, player, 'POST', '/api/v1/activities', {
-      body: { missionId: 'trial.wreck-search' },
+      body: { missionId: 'order.quay-patrol' },
     });
     clock.advance(5 * MINUTE_MS);
 

@@ -66,6 +66,7 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
         playerActor(request, account.id),
         character.id,
         input.missionId,
+        input.loop,
       );
       return { statusCode: 201, body };
     });

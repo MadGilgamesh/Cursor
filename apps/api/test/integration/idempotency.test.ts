@@ -21,7 +21,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-const startBody = { missionId: 'trial.wreck-search' };
+const startBody = { missionId: 'order.quay-patrol' };
 
 describe('idempotencja żądań (GDD 9.2)', () => {
   it('wymaga nagłówka Idempotency-Key dla akcji gry', async () => {
@@ -86,7 +86,7 @@ describe('idempotencja żądań (GDD 9.2)', () => {
     const idempotencyKey = randomUUID();
     await call(ctx, player, 'POST', '/api/v1/activities', { body: startBody, idempotencyKey });
     const reused = await call(ctx, player, 'POST', '/api/v1/activities', {
-      body: { missionId: 'trial.amber-ebb' },
+      body: { missionId: 'order.canal-hunt' },
       idempotencyKey,
     });
     expect(reused.statusCode).toBe(422);

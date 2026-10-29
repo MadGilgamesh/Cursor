@@ -18,7 +18,7 @@ const resources = (vigor: number): Resources => ({
 const activity = (status: Activity['status'], endAt: number): Activity => ({
   id: '01a188a0-a755-76ad-aeec-cbf3830cb2f6',
   type: 'mission',
-  defId: 'trial.wreck-search',
+  defId: 'order.quay-patrol',
   status,
   startAt: iso(endAt - 5 * MIN),
   endAt: iso(endAt),

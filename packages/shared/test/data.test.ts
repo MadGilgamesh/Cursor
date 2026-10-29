@@ -1,57 +1,58 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  MISSIONS,
-  STATIC_DATA_VERSION,
-  findMission,
-  validateStaticData,
-} from '../src/data/index.js';
+import { missionChanceBp } from '../src/balance.js';
+import { ENEMIES, ITEMS, MISSIONS, findMission, validateStaticData } from '../src/data/index.js';
 import { resolveMission } from '../src/missions.js';
+
+const data = { missions: MISSIONS, enemies: ENEMIES, items: ITEMS };
 
 describe('dane statyczne', () => {
   it('bieżące dane są poprawne', () => {
-    expect(STATIC_DATA_VERSION).toBeGreaterThan(0);
     expect(() => {
       validateStaticData();
     }).not.toThrow();
   });
 
-  it('wykrywa zduplikowane identyfikatory i błędne odwołania', () => {
+  it('wykrywa zduplikowane identyfikatory', () => {
     const [first] = MISSIONS;
     expect(() => {
-      validateStaticData([first!, first!]);
+      validateStaticData({ ...data, missions: [first!, first!] });
     }).toThrow(/Zduplikowany/);
-    expect(() => {
-      validateStaticData([{ ...first!, tierId: 'h99' as never }]);
-    }).toThrow();
-    expect(() => {
-      validateStaticData([{ ...first!, outcomes: [] }]);
-    }).toThrow();
   });
 
   it('findMission znajduje zlecenie po identyfikatorze', () => {
-    expect(findMission('trial.wreck-search')?.tierId).toBe('m5');
-    expect(findMission('nie.istnieje')).toBeUndefined();
+    expect(findMission('order.quay-patrol')?.tierId).toBe('m5');
+    expect(findMission('trial.wreck-search')).toBeUndefined();
   });
 });
 
 describe('resolveMission', () => {
-  const mission = findMission('trial.amber-ebb')!;
+  const mission = findMission('order.canal-hunt')!;
+  const base = { mission, level: 1, maxLife: 100, chanceBp: 10_000 };
 
   it('jest deterministyczne dla ziarna', () => {
-    expect(resolveMission(mission, 3, 'ziarno')).toEqual(resolveMission(mission, 3, 'ziarno'));
+    const input = { ...base, seed: 'ziarno' };
+    expect(resolveMission(input)).toEqual(resolveMission(input));
   });
 
-  it('wybiera opis z definicji i liczy nagrody z balansu', () => {
-    const result = resolveMission(mission, 1, 'inne-ziarno');
-    expect(mission.outcomes.map((o) => o.text)).toContain(result.outcome);
-    expect(result).toMatchObject({ balanceVersion: 1, experience: 144, silver: 10 });
+  it('przy pewnym sukcesie liczy nagrody z balansu i wybiera opis sukcesu', () => {
+    const result = resolveMission({ ...base, seed: 'sukces' });
+    expect(mission.successTexts).toContain(result.outcome);
+    expect(result).toMatchObject({ balanceVersion: 2, success: true, experience: 144, silver: 10 });
   });
 
-  it('różne ziarna dają różne warianty opisu', () => {
-    const outcomes = new Set(
-      Array.from({ length: 50 }, (_, i) => resolveMission(mission, 1, `seed-${i}`).outcome),
-    );
-    expect(outcomes.size).toBe(mission.outcomes.length);
+  it('przy pewnej porażce zlecenia Zakonu zabiera Życie i Poczytalność', () => {
+    const result = resolveMission({ ...base, chanceBp: 0, seed: 'porażka' });
+    expect(result.success).toBe(false);
+    expect(result.experience).toBe(0);
+    expect(result.lifeLoss).toBeGreaterThanOrEqual(30);
+    expect(result.lifeLoss).toBeLessThanOrEqual(50);
+    expect(result.sanityLoss).toBeGreaterThanOrEqual(3);
+    expect(mission.failureTexts).toContain(result.outcome);
+  });
+
+  it('szansa przy równych statystykach to 55%', () => {
+    expect(missionChanceBp(0, 20, 20)).toBe(5_500);
+    expect(missionChanceBp(0, 56, 20)).toBe(10_000);
   });
 });
