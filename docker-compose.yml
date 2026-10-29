@@ -1,0 +1,99 @@
+# Lokalne środowisko.
+#   docker compose up -d                       → tylko PostgreSQL + Redis (do `pnpm dev`)
+#   docker compose --profile app up --build    → pełny stos: baza, Redis, migracje, API, worker, PWA
+name: zapomniany-brzeg
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgres://game:game@postgres:5432/game
+  REDIS_URL: redis://redis:6379
+  LOG_LEVEL: info
+  # Lokalnie aplikacja działa po HTTP; na produkcji (HTTPS) zostaw domyślne `true`.
+  COOKIE_SECURE: 'false'
+  # Przed API stoi nginx z kontenera `web`.
+  TRUST_PROXY_HOPS: '1'
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: game
+      POSTGRES_PASSWORD: game
+      POSTGRES_DB: game
+    ports:
+      - '5432:5432'
+    volumes:
+      # Od PostgreSQL 18 obraz trzyma dane w podkatalogu wersji — montujemy katalog nadrzędny.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U game -d game']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ['node', 'dist/db/migrate.js']
+    environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment: *api-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/api/health']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ['node', 'dist/worker.js']
+    environment: *api-env
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  web:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - '8080:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
