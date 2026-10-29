@@ -32,7 +32,7 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
     );
     const boardLink = page.getByRole('link', { name: /Tablica zleceń/ });
     await boardLink.click({ force: true });
-    if (!/\/miasto$/.test(page.url())) await boardLink.click({ force: true });
+    if (!page.url().endsWith('/miasto')) await boardLink.click({ force: true });
     await expect(page).toHaveURL(/\/miasto$/);
 
     await page
