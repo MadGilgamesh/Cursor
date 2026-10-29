@@ -9,6 +9,7 @@ import type { FastifyInstance } from 'fastify';
 
 import type { AppDeps } from '../app.js';
 import { playerActor, writeAudit } from '../audit.js';
+import { assertAccountActive } from './ban.js';
 import { insertStartingStats } from '../game/avatar.js';
 import { initialResources, insertResources, resourceContext } from '../game/resources.js';
 import { accounts, characters } from '../db/schema.js';
@@ -90,6 +91,7 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
     if (!row || !(await verifyPassword(row.account.passwordHash, input.password))) {
       throw new AppError(401, ERROR_CODES.invalidCredentials, 'Nieprawidłowy e-mail lub hasło');
     }
+    await assertAccountActive(db, row.account.id);
 
     await db
       .update(accounts)

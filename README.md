@@ -56,9 +56,11 @@ apps/
   web/          klient PWA (React, Vite, Tailwind), ikony, konfiguracja nginx
 packages/
   shared/       kontrakty API (Zod), balans, dane statyczne, deterministyczny RNG, krzywa XP
+  content/      potok treści: paczki, migracje addytywne, publikacja, eventy
 tools/
   balance/      symulacje Monte Carlo balansu (GDD 10.12)
 e2e/            testy Playwright na widoku mobilnym
+apps/panel/     Kancelaria — panel personelu (osobna aplikacja)
 docker-compose.yml, turbo.json, eslint.config.js, .github/workflows/ci.yml
 ```
 
@@ -162,6 +164,25 @@ Poza Etapem 0 zostają m.in. Patronat (Etap 9; GDD 1.1: max Wigor 200) i godziny
 Zamknięta pętla w Soli: samouczek w kostnicy, trening w Fechtowni (Piwnica i Sala Kapitańska), Łowy na Kręgach IX–VII, silnik walki z dziennikiem, zlecenia trzech rodzajów z szansą, biegłością i pętlą do 11, ekwipunek ośmiu slotów i trzy klasy, sklep, Kasa, Przytułek po śmierci i progi Poczytalności. Formuły są w pliku balansu (`BALANCE_VERSION` 2). Test akceptacyjny: nowy gracz dochodzi do 5. poziomu, zakłada zestaw Rzeźnika i ustawia zlecenie w pętli.
 
 Świadomie odłożone wewnątrz Etapu 1 (opisane przy liczbach jako „założenie”, tam gdzie GDD nie podaje wartości): mikstury i laudanum mają dane i ceny, ale leczenie w Przytułku i Sanatorium jest uproszczone do timera; Kalendarz Pamięci ma kamienie milowe w danych, odbiór dziennego zadania przyznaje XP i Kawę. Pogłębienie zleceń, Podręczniki i Kuźnia to późniejsze etapy.
+
+## Kancelaria
+
+Osobna aplikacja (`apps/panel`) i pakiet treści (`packages/content`). Nie zastępuje klienta gry ani jej pętli.
+
+```bash
+pnpm --filter @game/panel dev       # API Kancelarii na :3210
+pnpm --filter @game/panel dev:web   # interfejs na :5174 (proxy /api)
+```
+
+W środowisku deweloperskim, gdy nie podasz `PANEL_STAFF_EMAIL` i `PANEL_STAFF_PASSWORD`, powstaje konto `kustosz@sol.test` / `Latarnia-pamieci-1` (administrator). Na produkcji konto trzeba podać jawnie.
+
+Role: **administrator** (wszystko), **moderator** (gracze, blokada, audyt, ogłoszenia), **projektant treści** (szkic, eventy, publikacja). Konto gracza nie wchodzi do Kancelarii.
+
+Nadanie i odjęcie srebra albo depozytu w Kasie zapisuje się wyłącznie nowym wpisem księgi walut i wpisem dziennika audytu. Blokada kasuje sesje; API gry odmawia kolejnego logowania.
+
+Treść (bestiariusz, przedmioty, zlecenia, lokacje, teksty, eventy) jest wersjonowaną paczką sprawdzaną schematem Zod. Migracje schematu tylko dokładają kolekcje. Nieznane pola są ignorowane, więc paczka zapisana przed rozszerzeniem schematu nadal się ładuje. Publikacja dokłada rewizję i nie zmienia wyniku akcji, która już trwa — akcja trzyma rewizję startu. Wycofanie przestawia wskaźnik bieżącej publikacji i zostawia historię.
+
+Dane statyczne gry są pierwszą publikacją. API przy starcie sprawdza i je, i opublikowaną rewizję; błędna paczka nie pozwoli serwerowi wstać.
 
 ## Konwencje
 

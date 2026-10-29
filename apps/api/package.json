@@ -36,6 +36,7 @@
     "@fastify/cookie": "^11.1.5",
     "@fastify/helmet": "^13.2.0",
     "@fastify/rate-limit": "^11.2.1",
+    "@game/content": "workspace:*",
     "@game/shared": "workspace:*",
     "argon2": "^0.45.1",
     "bullmq": "^6.5.1",

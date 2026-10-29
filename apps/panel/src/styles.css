@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/cormorant-garamond';
+@import '@fontsource-variable/lora';
+
+@theme {
+  --font-display: 'Cormorant Garamond Variable', Georgia, serif;
+  --font-sans: 'Lora Variable', Georgia, serif;
+
+  --color-abyss-950: #07080b;
+  --color-abyss-900: #0d0f14;
+  --color-abyss-800: #151820;
+  --color-abyss-700: #1f2430;
+  --color-abyss-600: #2c3342;
+  --color-bone-50: #f4efe2;
+  --color-bone-200: #d9d0bb;
+  --color-bone-400: #9c947f;
+  --color-bone-600: #6b6556;
+  --color-brass-300: #d8b878;
+  --color-brass-500: #a8844a;
+  --color-brass-700: #6e5530;
+  --color-verdigris-300: #8fdcc0;
+  --color-verdigris-500: #3e9f86;
+  --color-verdigris-700: #1d5a4b;
+  --color-ichor-400: #d9536a;
+  --color-ichor-600: #8b1e2d;
+  --color-life-500: #b3263a;
+  --color-vigor-400: #d4932f;
+  --color-toil-400: #8d8a82;
+  --color-sanity-400: #5b9bd0;
+
+  --shadow-glow: 0 0 24px -4px rgb(62 159 134 / 0.45);
+  --shadow-brass: 0 0 0 1px rgb(168 132 74 / 0.35), 0 8px 24px -12px rgb(0 0 0 / 0.8);
+}
+
+@layer base {
+  html {
+    background: var(--color-abyss-950);
+    color: var(--color-bone-200);
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background:
+      radial-gradient(90% 50% at 0% -10%, rgb(29 90 75 / 0.22), transparent 55%),
+      radial-gradient(70% 40% at 100% 0%, rgb(139 30 45 / 0.12), transparent 50%),
+      var(--color-abyss-950);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-verdigris-300);
+    outline-offset: 2px;
+  }
+}
+
+@utility panel {
+  border-radius: 1rem;
+  border: 1px solid rgb(168 132 74 / 0.22);
+  background: linear-gradient(180deg, rgb(31 36 48 / 0.75), rgb(13 15 20 / 0.9));
+  box-shadow: var(--shadow-brass);
+}

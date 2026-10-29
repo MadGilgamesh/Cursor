@@ -13,6 +13,7 @@ export const ERROR_CODES = {
   validation: 'VALIDATION_ERROR',
   unauthorized: 'UNAUTHORIZED',
   invalidCredentials: 'INVALID_CREDENTIALS',
+  accountBanned: 'ACCOUNT_BANNED',
   emailTaken: 'EMAIL_TAKEN',
   characterNameTaken: 'CHARACTER_NAME_TAKEN',
   rateLimited: 'RATE_LIMITED',
