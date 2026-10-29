@@ -32,6 +32,18 @@ const dashboard: DashboardResponse = {
     sanity: { value: 100, max: 100, updatedAt: iso(0) },
   },
   wallet: { silver: 42 },
+  portal: {
+    regenKeys: 0,
+    lootKeys: 0,
+    shards: 0,
+    totalKeys: 0,
+    nextDomain: 1,
+    nextStage: 1,
+    nextSubstage: 1,
+    nextName: 'Żabie Dzieci Ib',
+    wellFloor: 0,
+    candles: 3,
+  },
   activities: [
     {
       id: '01a188cb-f59f-78dd-8fc3-9645f06cab84',

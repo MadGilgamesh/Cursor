@@ -276,6 +276,30 @@ export const JUNK: readonly JunkDef[] = [
     value: 60,
     circle: 7,
   },
+  {
+    id: 'junk.bell-bolt',
+    kind: 'junk',
+    name: 'Śruba z dzwonu nurka',
+    description: 'Wciąż pachnie oliwą i czymś słodkim.',
+    value: 70,
+    circle: 6,
+  },
+  {
+    id: 'junk.choir-tooth',
+    kind: 'junk',
+    name: 'Ząb z chóru rafy',
+    description: 'Gdy przyłożysz do ucha, słychać kilka głosów.',
+    value: 90,
+    circle: 5,
+  },
+  {
+    id: 'junk.black-mesh',
+    kind: 'junk',
+    name: 'Skrawek czarnej sieci',
+    description: 'Nie da się go przeciąć nożem ze sklepu.',
+    value: 110,
+    circle: 4,
+  },
 ];
 
 export const ITEMS: readonly ItemDef[] = [...GEAR, ...CONSUMABLES, ...JUNK];

@@ -3,6 +3,7 @@
  */
 import {
   BREAKDOWN_EXIT_SANITY_BP,
+  breakdownDurationMs,
   ERROR_CODES,
   MISSION_KIND_STAT,
   STARTING_STAT,
@@ -158,6 +159,26 @@ export async function missionSnapshot(
     maxLife: resourceMax('life', ctx),
     classId: loadout.classId,
   };
+}
+
+/** Załamanie po Aurze Portalu: Sanatorium, bez rany ciała (GDD 4.3, 5.12.1). */
+export async function enterSanatorium(
+  db: Executor,
+  character: CharacterRow,
+  resources: ResourceValues,
+  now: Date,
+): Promise<ResourceValues> {
+  const until = new Date(now.getTime() + breakdownDurationMs(character.level));
+  await db
+    .update(characterStats)
+    .set({ status: 'broken', statusUntil: until })
+    .where(eq(characterStats.characterId, character.id));
+  const next = {
+    ...resources,
+    sanity: { value: 0, updatedAt: now.getTime() },
+  };
+  await saveResources(db, character.id, next);
+  return next;
 }
 
 export async function enterHospital(

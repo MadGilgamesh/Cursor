@@ -44,6 +44,7 @@ import {
   saveResources,
   toResourcesDto,
 } from './resources.js';
+import { grantMissionShards } from './portal-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 
 type Tx = Executor;
@@ -332,6 +333,10 @@ export async function claimActivities(
         .returning();
       if (updated) claimed.push(updated);
       if (result.success) {
+        const mission = findMission(row.defId);
+        if (mission) {
+          await grantMissionShards(tx, characterId, mission.tierId, true, row.resultSeed, now);
+        }
         await tx
           .update(missionProgress)
           .set({ successes: sql`${missionProgress.successes} + 1` })

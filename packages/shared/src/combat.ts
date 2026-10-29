@@ -30,6 +30,7 @@ import {
 import type { StatBlock } from './character.js';
 import type { EnemyDef } from './data/enemies.js';
 import { TUTORIAL_ENEMY_STATS } from './data/enemies.js';
+import type { PortalModifier } from './portal.js';
 import { createRng, type Rng } from './rng.js';
 
 export interface PlayerCombatant {
@@ -54,7 +55,15 @@ export interface EnemyCombatant {
   gaze: boolean;
 }
 
-export const COMBAT_EVENT_KINDS = ['dread', 'hit', 'crit', 'miss', 'panic', 'gaze'] as const;
+export const COMBAT_EVENT_KINDS = [
+  'dread',
+  'hit',
+  'crit',
+  'miss',
+  'panic',
+  'gaze',
+  'heal',
+] as const;
 export type CombatEventKind = (typeof COMBAT_EVENT_KINDS)[number];
 
 export interface CombatEvent {
@@ -97,10 +106,17 @@ function variance(rng: Rng): number {
   return rng.nextInt(DAMAGE_VARIANCE_BP.min, DAMAGE_VARIANCE_BP.max) / BP;
 }
 
+/**
+ * `modifier` to reguła Domeny (GDD 5.12.3). Bez niego walka jest taka jak w Łowach —
+ * te same ziarno i wejścia dają ten sam dziennik.
+ * - `ib-vengeance`: co 4. rundę wróg leczy 5% Życia początkowego.
+ * - `pressure`: Unik gracza −10%, a od 5. rundy dodatkowe −2% za rundę.
+ */
 export function simulateCombat(
   player: PlayerCombatant,
   enemy: EnemyCombatant,
   seed: string,
+  modifier?: PortalModifier,
 ): CombatResult {
   const rng = createRng(seed);
   const penetration = CLASS_PENETRATION[player.classId ?? 'none'];
@@ -172,6 +188,12 @@ export function simulateCombat(
     push({ round, actor: 'player', kind: crit ? 'crit' : 'hit', damage, word, frenzy });
   };
 
+  const playerEvasion = (round: number) => {
+    if (modifier !== 'pressure') return player.stats.evasion;
+    const extra = round >= 5 ? (round - 4) * 0.02 : 0;
+    return player.stats.evasion * Math.max(0, 1 - 0.1 - extra);
+  };
+
   const enemyAttack = (round: number) => {
     if (enemy.gaze && round === GAZE_ROUND) {
       const loss = Math.min(sanity, gazeSanityLoss(enemy.dread));
@@ -179,7 +201,7 @@ export function simulateCombat(
       push({ round, actor: 'enemy', kind: 'gaze', damage: loss, word: false, frenzy: false });
       return;
     }
-    if (!rollChance(rng, hitChance(enemy.stats.accuracy, player.stats.evasion))) {
+    if (!rollChance(rng, hitChance(enemy.stats.accuracy, playerEvasion(round)))) {
       push({ round, actor: 'enemy', kind: 'miss', damage: 0, word: false, frenzy: false });
       return;
     }
@@ -203,6 +225,11 @@ export function simulateCombat(
   let rounds = 0;
   for (let round = 1; round <= COMBAT_MAX_ROUNDS; round++) {
     rounds = round;
+    if (modifier === 'ib-vengeance' && round % 4 === 0 && enemyLifeLeft > 0) {
+      const heal = Math.max(1, Math.round(enemy.life * 0.05));
+      enemyLifeLeft = Math.min(enemy.life, enemyLifeLeft + heal);
+      push({ round, actor: 'enemy', kind: 'heal', damage: heal, word: false, frenzy: false });
+    }
     if (playerFirst) {
       playerAttack(round);
       if (enemyLifeLeft <= 0) break;

@@ -1,4 +1,11 @@
-import { ERROR_CODES, startMissionRequestSchema, type DashboardResponse } from '@game/shared';
+import {
+  ERROR_CODES,
+  dreamKeyCount,
+  nextPortalFight,
+  portalUnitName,
+  startMissionRequestSchema,
+  type DashboardResponse,
+} from '@game/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -19,6 +26,7 @@ import {
   toActivityDto,
 } from './activities.js';
 import { loadResources, materializeAll, resourceContext, toResourcesDto } from './resources.js';
+import { loadPortal, materializePortal, ringOf } from './portal-state.js';
 import { walletOf } from './wallet.js';
 
 async function characterOf(db: Executor, accountId: string) {
@@ -47,12 +55,31 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
     const now = clock.now();
     const ctx = resourceContext(character.level);
     const resources = materializeAll(await loadResources(db, character.id), ctx, now);
+    const portalRow = materializePortal(await loadPortal(db, character.id), now);
+    const ring = ringOf(portalRow);
+    const next = nextPortalFight({
+      domain: portalRow.clearedDomain,
+      stage: portalRow.clearedStage,
+      substage: portalRow.clearedSubstage,
+    });
     return {
       serverTime: now.toISOString(),
       character: toCharacterDto(character),
       resources: toResourcesDto(resources, ctx),
       wallet: await walletOf(db, character.id),
       activities: (await openActivities(db, character.id)).map(toActivityDto),
+      portal: {
+        regenKeys: ring.regenKeys,
+        lootKeys: ring.lootKeys,
+        shards: ring.shards,
+        totalKeys: dreamKeyCount(ring),
+        nextDomain: next.domain,
+        nextStage: next.stage,
+        nextSubstage: next.substage,
+        nextName: portalUnitName(next.domain, next.stage),
+        wellFloor: portalRow.wellFloor,
+        candles: portalRow.candles,
+      },
     };
   });
 

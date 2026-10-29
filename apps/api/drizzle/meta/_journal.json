@@ -22,6 +22,13 @@
       "when": 1793299895247,
       "tag": "0002_etap_1",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793304289704,
+      "tag": "0003_thick_rick_jones",
+      "breakpoints": true
     }
   ]
 }
