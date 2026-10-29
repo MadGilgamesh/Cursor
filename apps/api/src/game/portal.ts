@@ -54,6 +54,7 @@ import {
   spendDreamKey,
   spendResource,
   statUnits,
+  travelInProgress,
   utcDay,
   weaponDamage,
   wellWhisperPending,
@@ -112,6 +113,7 @@ import {
   savePortal,
   withRing,
 } from './portal-state.js';
+import { loadWorld } from './world-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 import { InsufficientFundsError } from './wallet.js';
 
@@ -203,9 +205,11 @@ async function dreamCombatant(
   const resources = await resolveStatus(db, character, now);
   const statsRow = await loadStats(db, character.id);
   const base = statBlock(statsRow);
-  const loadout = computeLoadout(await equippedOf(db, character.id));
-  const effective = effectiveStatsCenti(base, loadout);
+  const equipped = await equippedOf(db, character.id);
   const lore = await loadLore(db, character.id);
+  const journey = await loadWorld(db, character.id);
+  const loadout = computeLoadout(equipped, journey.sealedItems);
+  const effective = effectiveStatsCenti(base, loadout);
   const extras = loreExtras(lore);
   const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
   const current = materializeAll(resources, ctx, now);
@@ -238,6 +242,9 @@ async function dreamCombatant(
       knowledge: lore.knowledge,
       composure: lore.composure,
       panicImmune: panicImmune(lore.scars),
+      pulseBrand: loadout.weapon?.instanceId
+        ? journey.itemBrands[loadout.weapon.instanceId] === 'vein-blood'
+        : false,
     },
   };
 }
@@ -270,6 +277,10 @@ export async function fightPortal(
   const now = clock.now();
   const locked = await lockCharacter(db, character.id);
   await assertCanAct(db, locked, now);
+  const journey = await loadWorld(db, locked.id, true);
+  if (travelInProgress(journey.travelTo, journey.travelEndsAt?.getTime() ?? null, now.getTime())) {
+    throw new AppError(409, ERROR_CODES.activityBusy, 'W podróży Brama milczy');
+  }
   const dream = clearedOf(await loadPortal(db, locked.id));
   const preview = await loadPortal(db, locked.id);
   const access =

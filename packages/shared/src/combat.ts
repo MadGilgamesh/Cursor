@@ -49,6 +49,8 @@ export interface PlayerCombatant {
   composure?: number;
   /** Blizna „Pustka w Oczach” znosi Panikę. */
   panicImmune?: boolean;
+  /** Piętno *Tętno* (Żyła Kamiennej Krwi): 5% szansy, że wróg straci turę. */
+  pulseBrand?: boolean;
 }
 
 export interface EnemyCombatant {
@@ -68,6 +70,8 @@ export const COMBAT_EVENT_KINDS = [
   'gaze',
   'heal',
   'drain',
+  'pulse',
+  'brand',
 ] as const;
 export type CombatEventKind = (typeof COMBAT_EVENT_KINDS)[number];
 
@@ -243,15 +247,28 @@ export function simulateCombat(
       enemyLifeLeft = Math.min(enemy.life, enemyLifeLeft + heal);
       push({ round, actor: 'enemy', kind: 'heal', damage: heal, word: false, frenzy: false });
     }
+    const heart =
+      modifier === 'pulse' &&
+      round % 5 === 0 &&
+      round <= 25 &&
+      (player.composure ?? 0) < 200 &&
+      rng.rollBp(1000);
+    if (heart) {
+      push({ round, actor: 'player', kind: 'pulse', damage: 0, word: false, frenzy: false });
+    }
+    const enemySkips = player.pulseBrand === true && rng.rollBp(500);
+    if (enemySkips) {
+      push({ round, actor: 'enemy', kind: 'brand', damage: 0, word: false, frenzy: false });
+    }
     if (playerFirst) {
-      playerAttack(round);
+      if (!heart) playerAttack(round);
       if (enemyLifeLeft <= 0) break;
-      enemyAttack(round);
+      if (!enemySkips) enemyAttack(round);
       if (playerLife <= 0) break;
     } else {
-      enemyAttack(round);
+      if (!enemySkips) enemyAttack(round);
       if (playerLife <= 0) break;
-      playerAttack(round);
+      if (!heart) playerAttack(round);
       if (enemyLifeLeft <= 0) break;
     }
   }

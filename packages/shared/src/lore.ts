@@ -139,6 +139,15 @@ export const TOMES: readonly TomeDef[] = [
     domain: 3,
     extinct: true,
   },
+  {
+    id: 'tome.pulse',
+    name: 'Rejestr Uderzeń',
+    hours: 4,
+    knowledge: 1,
+    sanityPerQuarter: 3,
+    domain: 4,
+    extinct: false,
+  },
 ];
 
 export function findTome(id: string): TomeDef | undefined {

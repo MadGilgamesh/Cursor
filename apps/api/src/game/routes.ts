@@ -27,6 +27,7 @@ import {
   toActivityDto,
 } from './activities.js';
 import { loreHomeFrom } from './lore.js';
+import { worldOf } from './world.js';
 import { loadLore, loreExtras } from './lore-state.js';
 import { loadResources, materializeAll, resourceContext, toResourcesDto } from './resources.js';
 import { loadPortal, materializePortal, ringOf } from './portal-state.js';
@@ -86,6 +87,7 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
         candles: portalRow.candles,
       },
       lore: loreHomeFrom(lore, portalRow, resources.sanity.value, resourceMax('sanity', ctx), now),
+      world: (await worldOf(db, character, clock)).home,
     };
   });
 

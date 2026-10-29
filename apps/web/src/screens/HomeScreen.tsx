@@ -1,4 +1,4 @@
-import { findMission, type Activity } from '@game/shared';
+import { findMission, WEATHER_NAMES, type Activity, type WeatherId } from '@game/shared';
 import { useEffect } from 'react';
 import { Link } from 'react-router';
 
@@ -94,6 +94,36 @@ export function HomeScreen() {
               {t('home.goToBoard')} →
             </Link>
           ) : null}
+        </section>
+      ) : null}
+
+      {dashboard.data ? (
+        <section aria-label={t('home.worldTitle')} className="panel p-4">
+          <h2 className="font-display text-lg font-semibold text-brass-300">
+            {t('home.worldTitle')}
+          </h2>
+          <p data-testid="home-city" className="mt-1 text-sm text-bone-200">
+            {t('home.worldCity', { city: dashboard.data.world.cityName })}
+          </p>
+          <p className="text-sm text-bone-400">
+            {t('home.worldWeather', {
+              weather:
+                dashboard.data.world.weather in WEATHER_NAMES
+                  ? WEATHER_NAMES[dashboard.data.world.weather as WeatherId]
+                  : dashboard.data.world.weather,
+              tide: dashboard.data.world.tide === 'high' ? 'przypływ' : 'odpływ',
+            })}{' '}
+            {dashboard.data.world.wolfHour ? t('home.worldWolf') : t('home.worldDay')}
+          </p>
+          <p className="text-sm text-bone-400">
+            {t('home.worldThirsty', { count: dashboard.data.world.thirsty })}
+          </p>
+          <Link
+            to="/droga"
+            className="mt-3 inline-block font-display font-semibold text-brass-300 underline-offset-4 hover:underline"
+          >
+            {t('home.worldRoad')} →
+          </Link>
         </section>
       ) : null}
 

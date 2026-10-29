@@ -5,6 +5,7 @@
 import { z } from 'zod';
 
 import { characterSchema } from './contracts.js';
+import { CITIES } from './world.js';
 
 const isoDateTime = z.iso.datetime({ offset: true });
 
@@ -84,6 +85,19 @@ export const loreHomeSchema = z.object({
   stealth: z.int().min(0),
 });
 export type LoreHome = z.infer<typeof loreHomeSchema>;
+
+/** Skrót drogi na pulpicie Dom (GDD 5.16). */
+export const worldHomeSchema = z.object({
+  city: z.enum(CITIES),
+  cityName: z.string(),
+  traveling: z.boolean(),
+  travelTo: z.string().nullable(),
+  weather: z.string(),
+  wolfHour: z.boolean(),
+  tide: z.enum(['low', 'high']),
+  thirsty: z.int().min(0),
+});
+export type WorldHome = z.infer<typeof worldHomeSchema>;
 export type PortalHome = z.infer<typeof portalHomeSchema>;
 
 /** Pulpit Dom: wszystko, czego potrzebuje ekran główny, w jednym żądaniu. */
@@ -96,6 +110,7 @@ export const dashboardResponseSchema = z.object({
   activities: z.array(activitySchema),
   portal: portalHomeSchema,
   lore: loreHomeSchema,
+  world: worldHomeSchema,
 });
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 
