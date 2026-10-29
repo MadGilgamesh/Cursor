@@ -14,6 +14,8 @@ coverage/
 e2e/test-results/
 e2e/playwright-report/
 e2e/blob-report/
+apps/panel/test-results/
+apps/panel/playwright-report/
 
 # Edytory i system
 .DS_Store

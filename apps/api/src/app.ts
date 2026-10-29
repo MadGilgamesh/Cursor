@@ -2,6 +2,12 @@ import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { API_PREFIX, validateStaticData } from '@game/shared';
+
+import {
+  assertPublishedContent,
+  assertStartupContent,
+  ensurePanelSchema,
+} from './content/startup.js';
 import Fastify, { type FastifyInstance, type FastifyPluginCallback } from 'fastify';
 
 import { registerAuth } from './auth/plugin.js';
@@ -32,7 +38,11 @@ export interface AppDeps {
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const { config } = deps;
   // Dane statyczne są częścią kontraktu gry — z błędnymi danymi serwer nie startuje (GDD 8.3).
+  // Ta sama paczka przechodzi przez potok treści; opublikowana rewizja też musi być poprawna.
   validateStaticData();
+  assertStartupContent();
+  await ensurePanelSchema(deps.db);
+  await assertPublishedContent(deps.db);
   const app = Fastify({
     trustProxy: (_address, hop) => hop < config.trustProxyHops,
     bodyLimit: 16 * 1024,
