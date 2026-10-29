@@ -1,10 +1,7 @@
 import { healthResponseSchema, serverTimeResponseSchema } from '@game/shared';
-import { QueueEvents } from 'bullmq';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { ManualClock } from '../../src/clock.js';
-import { createTimersQueue, createTimersWorker, TIMERS_QUEUE } from '../../src/queues/timers.js';
-import { TEST_REDIS_URL } from './env.js';
 import { createTestApp, type TestContext } from './harness.js';
 
 let ctx: TestContext;
@@ -44,26 +41,13 @@ describe('GET /api/v1/time', () => {
   });
 });
 
-describe('kolejka timerów', () => {
-  it('worker przetwarza zadanie z kolejki', async () => {
-    const queue = createTimersQueue(TEST_REDIS_URL);
-    const worker = createTimersWorker(TEST_REDIS_URL);
-    const events = new QueueEvents(TIMERS_QUEUE, {
-      connection: { url: TEST_REDIS_URL },
-      prefix: 'mg:bull',
+describe('sterowanie testowe', () => {
+  it('jest niedostępne, gdy ENABLE_TEST_CONTROLS jest wyłączone', async () => {
+    const response = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/test/clock/advance',
+      payload: { ms: 1000 },
     });
-    try {
-      await events.waitUntilReady();
-      const job = await queue.add('heartbeat', {
-        type: 'system.heartbeat',
-        requestedAt: new Date().toISOString(),
-      });
-      const result = await job.waitUntilFinished(events, 10_000);
-      expect(result.type).toBe('system.heartbeat');
-    } finally {
-      await worker.close();
-      await events.close();
-      await queue.close();
-    }
+    expect(response.statusCode).toBe(404);
   });
 });

@@ -8,25 +8,14 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { AppDeps } from '../app.js';
+import { playerActor, writeAudit } from '../audit.js';
+import { initialResources, insertResources, resourceContext } from '../game/resources.js';
 import { accounts, characters } from '../db/schema.js';
-import { AppError } from '../errors.js';
+import { AppError, uniqueViolationConstraint } from '../errors.js';
 import { toSessionResponse } from '../serializers.js';
 import { burnPasswordCheck, hashPassword, verifyPassword } from './password.js';
 import { clearSessionCookie, setSessionCookie } from './plugin.js';
 import { createSession, deleteSession, SESSION_COOKIE } from './session.js';
-
-const UNIQUE_VIOLATION = '23505';
-
-/** Wyszukuje nazwę naruszonego ograniczenia UNIQUE (błąd może być opakowany przez Drizzle). */
-function uniqueViolationConstraint(error: unknown): string | undefined {
-  let current: unknown = error;
-  for (let depth = 0; depth < 5 && current instanceof Error; depth++) {
-    const candidate = current as Error & { code?: string; constraint_name?: string };
-    if (candidate.code === UNIQUE_VIOLATION) return candidate.constraint_name ?? '';
-    current = current.cause;
-  }
-  return undefined;
-}
 
 export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps): void {
   const rateLimited = {
@@ -55,6 +44,17 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
           })
           .returning();
         if (!character) throw new Error('INSERT nie zwrócił postaci');
+        const now = clock.now();
+        await insertResources(
+          tx,
+          character.id,
+          initialResources(resourceContext(character.level), now),
+        );
+        await writeAudit(tx, playerActor(request, account.id), {
+          action: 'account.register',
+          characterId: character.id,
+          after: { characterName: character.name },
+        });
         const session = await createSession(tx, clock, account.id, config.sessionTtlMs);
         return { account, character, session };
       })
@@ -94,6 +94,10 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
       .set({ lastLoginAt: clock.now() })
       .where(eq(accounts.id, row.account.id));
     const session = await createSession(db, clock, row.account.id, config.sessionTtlMs);
+    await writeAudit(db, playerActor(request, row.account.id), {
+      action: 'account.login',
+      characterId: row.character.id,
+    });
     setSessionCookie(reply, config, session.token, session.expiresAt);
     return reply.send(toSessionResponse(row.account, row.character));
   });

@@ -1,4 +1,5 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import type { PgDatabase } from 'drizzle-orm/pg-core';
+import { drizzle, type PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 import * as schema from './schema.js';
@@ -14,3 +15,6 @@ export function createDatabase(url: string, options: { max?: number } = {}) {
   const db = drizzle(client, { schema });
   return { db, client, close: () => client.end({ timeout: 5 }) };
 }
+
+/** Połączenie albo transakcja — funkcje domenowe działają na obu (transakcje zagnieżdżają się jako savepointy). */
+export type Executor = PgDatabase<PostgresJsQueryResultHKT, typeof schema>;
