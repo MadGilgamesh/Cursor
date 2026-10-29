@@ -59,6 +59,16 @@ const dashboard: DashboardResponse = {
     insight: 0,
     stealth: 0,
   },
+  world: {
+    city: 'salt',
+    cityName: 'Sól',
+    traveling: false,
+    travelTo: null,
+    weather: 'clear',
+    wolfHour: false,
+    tide: 'low',
+    thirsty: 0,
+  },
   activities: [
     {
       id: '01a188cb-f59f-78dd-8fc3-9645f06cab84',

@@ -26,7 +26,12 @@ export interface EquippedItem {
   qualityBp: number;
   rarity: ItemRarity;
   enhancement: number;
+  /** Egzemplarz z plecaka. Pieczętowanie dotyczy konkretnej sztuki, nie wzoru. */
+  instanceId?: string;
 }
+
+/** Pieczętowanie Krwią: +8% statystyk przedmiotu (GDD 5.6). */
+export const SEAL_STAT_FACTOR = 1.08;
 
 export interface Loadout {
   /** Premie sprzętu w punktach bazowych dla każdej statystyki. */
@@ -57,17 +62,27 @@ export function detectClass(equipped: readonly EquippedItem[]): ClassId | null {
   return 'vagrant';
 }
 
-export function computeLoadout(equipped: readonly EquippedItem[]): Loadout {
+export function computeLoadout(
+  equipped: readonly EquippedItem[],
+  sealedIds: readonly string[] = [],
+): Loadout {
+  const sealed = new Set(sealedIds);
   const bonusBp = emptyStats();
   let lifeBonus = 0;
   for (const item of equipped) {
     const def = findGear(item.itemId);
     if (!def) continue;
+    const marked = item.instanceId !== undefined && sealed.has(item.instanceId);
+    const scale = marked ? SEAL_STAT_FACTOR : 1;
     for (const stat of COMBAT_STATS) {
       const base = def.baseBonusBp[stat];
-      if (base) bonusBp[stat] += gearBonusBp(base, def.tier, item.qualityBp, item.rarity);
+      if (base) {
+        bonusBp[stat] += Math.round(
+          gearBonusBp(base, def.tier, item.qualityBp, item.rarity) * scale,
+        );
+      }
     }
-    lifeBonus += gearLife(def.baseLife, def.tier, item.qualityBp);
+    lifeBonus += Math.round(gearLife(def.baseLife, def.tier, item.qualityBp) * scale);
   }
   return {
     bonusBp,

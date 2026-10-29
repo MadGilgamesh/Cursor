@@ -127,7 +127,7 @@ describe('cykl zlecenia', () => {
       .from(timedActivities)
       .where(eq(timedActivities.id, activity.id));
     expect(row?.resultSeed).toMatch(/^[\w-]{22}$/);
-    expect(row?.balanceVersion).toBe(4);
+    expect(row?.balanceVersion).toBe(5);
   });
 
   it('pozwala na jedno nieodebrane zlecenie naraz', async () => {

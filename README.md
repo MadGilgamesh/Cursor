@@ -197,7 +197,23 @@ Symulacja (interpolacja tabeli 10.3, próg wejścia przy statystyce ≥ 1,0405×
 - ★1 Bokruga przy 8,9 klucza dziennie (aktywny F2P z 10.13) kończy się w dniu 22. „Osiągalne ok. dnia 18” jest obok o około 22%. Odblokowanie ★1 jest w dniu 13, razem ze snem Domeny 1. Krzywej nie dociągamy.
 - Domena 1 nadal kończy się w dniu 13 wobec celu dnia 11 (luka z Etapu 2).
 
-Świadomie odłożone: Spisek, mutacja dzielnicy i Zegar Koniunkcji przy przegranej Sprawie, Rytuał Pieczęci z 20% na drugi Sigil (Etap 7), Patronat, Domena 4 (Ghaal-Tureth) i cztery miasta.
+Świadomie odłożone w Etapie 3: Spisek, mutacja dzielnicy i Zegar Koniunkcji przy przegranej Sprawie, Rytuał Pieczęci z 20% na drugi Sigil (Etap 7), Patronat. Domena 4 i cztery miasta weszły w Etapie 4.
+
+## Etap 4 — Cztery miasta
+
+Ilmar, Mgławiec i Kres dochodzą do Soli. Doba gry trwa 4 godziny, a ostatnia godzina to Godzina Wilka. Pogoda i pływ zmieniają się co 2 godziny; pogoda jest deterministyczna ze znacznika czasu (`pogoda:` + numer slotu). Podróż zużywa czas z tabeli poniżej, wydłuża ją mgła (×1,1) i sztorm (×1,25). W Godzinie Wilka zasadzka ma 10% szansy, Skrytość obniża ją o 0,5 punktu procentowego za punkt, nie niżej niż 1%. Rodzaj zasadzki (walka, myto, ładunek) jest losowany przy wyjściu i rozliczany raz, przy wjeździe. Walka zabiera 10 Życia, ale zostawia co najmniej 1. Myto zabiera 2 Poczytalności. Ładunek zrzuca ostatnią rybę z kosza. Eskorta nie wchodzi w ten etap.
+
+Czasy bazowe, w obie strony takie same, są założeniem wewnątrz widełek 20–90 minut z GDD: Sól–Ilmar 40, Sól–Mgławiec 50, Sól–Kres 70, Ilmar–Kres 60, Kres–Mgławiec 80, Ilmar–Mgławiec 90. Wierzchowce wynajmuje się tylko w Mgławcu, na 1–7 dni, a nowy wynajem zastępuje stary: Ślepy Kuc −15% / 40 srebra za dzień / +2 miejsca, Nocny Ogar −30% / 90 / +4, Bezlicy −50% / 200 / +6 / −1 Poczytalności / poziom 30. Premia Ogaru do skrytości nocą nie zmienia jeszcze szansy zasadzki.
+
+Pieczętowanie Krwią jest w Ilmarze: 20% maksimum Życia, 3 razy na dobę UTC, raz na przedmiot, +8% statystyk tego przedmiotu. Srebro `15·poziom` to założenie. Oczyszczenie w Kresie: 50 srebra zdejmuje 10 Skażenia (założenie). Sanatorium Wysokie: 30 minut, +20 Poczytalności, srebro `round(30·poziom^1,1)`. Reputacja miasta rośnie o 1 przy usłudze, zbiorze i rozmowie z mieszkańcem. Mieszkańcy Ilmaru, Mgławca i Kresu żyją w stanie świata; Sól zostaje przy notatniku z Etapu 3. Słuchaczka Nera jest w Kresie.
+
+Połów: 1 Znój i 1 haczyk (start: 5), kosz do 10 ryb. Serwer wysyła ziarno, chwilę brania i okno, bez środków stref. Idealny hol — reakcja dokładnie w chwili brania i napięcie w środku każdej strefy — jest flagowany i nadal łapie rybę. Tolerancja to ±150 ms. Hol z przyszłości (późniejszy niż czas serwera + 150 ms) jest odrzucany. Osobliwość ma 8% ze ziarna. Legenda tygodnia (poniedziałek UTC, raz na łowisko): złowiona, nie osobliwość, waga ≥ 3500 g. To założenie w miejscu Regat. Dziennik trzyma 20 ostatnich holów.
+
+Ogród od poziomu 8, cztery grządki. Woda w połowie fazy. Bez wody roślina usycha dokładnie w chwili `zasadzenie + faza/2 + 2·faza`. Piołun ma fazę 1 h, więc usycha po 2,5 h. Sadzenie daje 5 PD, podlewanie 3. Ziarno z meteorytu wymaga Popiołu Koloru i nie jest w sklepie Zielarki (srebro 0). Startowe nasiona: 2 piołuny.
+
+Portal: Domena 4, Ghaal-Tureth, modyfikator Tętno Skały. W rundach 5, 10, 15, 20 i 25 jest 10% szansy, że postać traci turę, gdy Opanowanie jest poniżej 200. Piętno Żyły Kamiennej Krwi (`vein-blood`) działa tylko w walce snu: 5% szansy, że wróg traci turę. Inne piętna zapisują się na przedmiocie okultystycznym lub przeklętym. Pieczęć +8% liczy się w `computeLoadout`, gdy podano identyfikatory zapieczętowanych sztuk. Gwiazdki zostają przy Domenach 1–3. Wejście do Portalu jest na Drodze w każdym mieście. Podróż blokuje zlecenia i walkę w Portalu. `BALANCE_VERSION` 5.
+
+Symulacja dnia 99 dla Domeny 4 nie jest warunkiem akceptacji tego etapu i nie została dociągnięta. Patronat (maks. Wigor 200) zostaje w Etapie 9.
 
 ## Konwencje
 

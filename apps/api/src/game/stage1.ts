@@ -76,6 +76,7 @@ import {
 } from './avatar.js';
 import { materializeAll, saveResources, toResourcesDto } from './resources.js';
 import { grantHuntShard, grantLootKeys, touchCalendar } from './portal-state.js';
+import { loadWorld } from './world-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 
 const audit = async (
@@ -92,7 +93,8 @@ async function view(db: Executor, character: CharacterRow, now: Date) {
   const resources = await resolveStatus(db, character, now);
   const statsRow = await loadStats(db, character.id);
   const base = statBlock(statsRow);
-  const loadout = computeLoadout(await equippedOf(db, character.id));
+  const journey = await loadWorld(db, character.id);
+  const loadout = computeLoadout(await equippedOf(db, character.id), journey.sealedItems);
   const effective = effectiveStatsCenti(base, loadout);
   const ctx = resourceContextFor(character.level, loadout);
   const current = materializeAll(resources, ctx, now);

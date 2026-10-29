@@ -22,6 +22,7 @@ import {
   resourceMax,
   resolveMission,
   spendResource,
+  travelInProgress,
   type Activity,
   type ClaimResponse,
   type MissionResult,
@@ -49,6 +50,7 @@ import {
   missionSnapshot,
 } from './avatar.js';
 import { loadLore, loreExtras } from './lore-state.js';
+import { loadWorld } from './world-state.js';
 import {
   loadResources,
   materializeAll,
@@ -129,6 +131,12 @@ export async function startMission(
       const now = clock.now();
       const character = await lockCharacter(tx, characterId);
       await assertCanAct(tx, character, now);
+      const journey = await loadWorld(tx, characterId, true);
+      if (
+        travelInProgress(journey.travelTo, journey.travelEndsAt?.getTime() ?? null, now.getTime())
+      ) {
+        throw new AppError(409, ERROR_CODES.activityBusy, 'W podróży nie bierzesz zleceń');
+      }
       const lore = await loadLore(tx, characterId);
       const extras = loreExtras(lore);
       const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);

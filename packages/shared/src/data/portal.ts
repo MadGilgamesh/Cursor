@@ -1,5 +1,5 @@
 /**
- * Domeny 1–3 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
+ * Domeny 1–4 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
  * Echa bogów (boss Etapu 5 i herold Etapu 9) są poza pulą Seansu.
  */
 import type { EchoRarity, PortalModifier } from '../portal.js';
@@ -78,6 +78,27 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Płonąca Studnia',
       'Rój Kolorów',
       'Kolor',
+    ],
+  },
+  {
+    domain: 4,
+    god: 'Ghaal-Tureth',
+    place: 'Komora Serca pod Górami',
+    modifier: 'pulse',
+    modifierName: 'Tętno Skały',
+    materialId: 'vein-blood',
+    materialName: 'Żyła Kamiennej Krwi',
+    units: [
+      'Słuchacze Tętna',
+      'Zasypani',
+      'Żyłowce',
+      'Geodowe Oczy',
+      'Skamieliny Przebudzone',
+      'Kapłani Żyły',
+      'Kościste Kolosy',
+      'Strażnik Komory',
+      'Pierwszy Skurcz',
+      'Ghaal-Tureth, Serce pod Górami',
     ],
   },
 ];
@@ -193,6 +214,20 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     rarity: 'phantom',
     aspect: 'evasion',
     godDomain: 3,
+  },
+  {
+    id: 'echo.god.ghaal.wraith',
+    name: 'Brygadzista Hollis, który usłyszał tętno',
+    rarity: 'wraith',
+    aspect: 'defense',
+    godDomain: 4,
+  },
+  {
+    id: 'echo.god.ghaal.phantom',
+    name: 'Marethe, Kapłanka Żyły',
+    rarity: 'phantom',
+    aspect: 'strength',
+    godDomain: 4,
   },
 ];
 

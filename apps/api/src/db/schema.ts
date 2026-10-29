@@ -457,7 +457,59 @@ export const loreStates = pgTable('lore_states', {
   unrestUntil: tstz('unrest_until'),
 });
 
+export interface PlotRow {
+  cropId: string | null;
+  plantedAt: number | null;
+  wateredAt: number | null;
+}
+
+export interface FishCatch {
+  species: string;
+  weight: number;
+  oddity: boolean;
+  fishery: string;
+  at: string;
+}
+
+export interface CityResidentRow {
+  city: string;
+  id: string;
+  familiarity: number;
+  gone: boolean;
+}
+
+/** Miasto, podróż, ogród i połów (GDD 5.16, 5.19, 5.20). */
+export const worldStates = pgTable('world_states', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  city: text('city').notNull().default('salt'),
+  travelTo: text('travel_to'),
+  travelEndsAt: tstz('travel_ends_at'),
+  travelAmbush: text('travel_ambush'),
+  mountId: text('mount_id'),
+  mountUntil: tstz('mount_until'),
+  contamination: integer('contamination').notNull().default(0),
+  sealDay: text('seal_day'),
+  sealCount: integer('seal_count').notNull().default(0),
+  sealedItems: jsonb('sealed_items').$type<string[]>().notNull().default([]),
+  itemBrands: jsonb('item_brands').$type<Record<string, string>>().notNull().default({}),
+  plots: jsonb('plots').$type<PlotRow[]>().notNull().default([]),
+  seeds: jsonb('seeds').$type<Record<string, number>>().notNull().default({}),
+  pantry: jsonb('pantry').$type<Record<string, number>>().notNull().default({}),
+  castSeed: text('cast_seed'),
+  castAt: tstz('cast_at'),
+  hooks: integer('hooks').notNull().default(5),
+  basket: jsonb('basket').$type<FishCatch[]>().notNull().default([]),
+  journal: jsonb('journal').$type<FishCatch[]>().notNull().default([]),
+  legends: jsonb('legends').$type<string[]>().notNull().default([]),
+  residents: jsonb('residents').$type<CityResidentRow[]>().notNull().default([]),
+  cityReputation: jsonb('city_reputation').$type<Record<string, number>>().notNull().default({}),
+  clinicEndsAt: tstz('clinic_ends_at'),
+});
+
 export type LoreStateRow = typeof loreStates.$inferSelect;
+export type WorldStateRow = typeof worldStates.$inferSelect;
 
 export type AccountRow = typeof accounts.$inferSelect;
 export type PortalStateRow = typeof portalStates.$inferSelect;

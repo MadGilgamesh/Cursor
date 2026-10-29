@@ -31,6 +31,7 @@ import { characterStats, itemInstances, type CharacterRow } from '../db/schema.j
 import { AppError } from '../errors.js';
 import { maybeMindScar } from './lore-state.js';
 import { loadResources, materializeAll, saveResources, type ResourceValues } from './resources.js';
+import { loadWorld } from './world-state.js';
 
 export const startingStats = (): StatBlock => ({
   strength: STARTING_STAT * STAT_SCALE,
@@ -82,6 +83,7 @@ export async function equippedOf(db: Executor, characterId: string): Promise<Equ
       qualityBp: row.qualityBp,
       rarity: row.rarity as ItemRarity,
       enhancement: row.enhancement,
+      instanceId: row.id,
     }));
 }
 
@@ -93,7 +95,8 @@ export async function resolveStatus(
 ): Promise<ResourceValues> {
   const stats = await loadStats(db, character.id, true);
   const equipped = await equippedOf(db, character.id);
-  const loadout = computeLoadout(equipped);
+  const journey = await loadWorld(db, character.id);
+  const loadout = computeLoadout(equipped, journey.sealedItems);
   const ctx = resourceContextFor(character.level, loadout);
   let resources = materializeAll(
     await loadResources(db, character.id, { forUpdate: true }),
@@ -151,7 +154,8 @@ export async function missionSnapshot(
   mastery: number,
 ) {
   const stats = statBlock(await loadStats(db, character.id));
-  const loadout = computeLoadout(await equippedOf(db, character.id));
+  const journey = await loadWorld(db, character.id);
+  const loadout = computeLoadout(await equippedOf(db, character.id), journey.sealedItems);
   const effective = effectiveStatsCenti(stats, loadout);
   const stat: CombatStat = MISSION_KIND_STAT[mission.kind];
   const ctx = resourceContextFor(character.level, loadout);
