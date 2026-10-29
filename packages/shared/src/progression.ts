@@ -9,9 +9,6 @@
  * (w przeciwieństwie do `Math.pow`, którego dokładność zależy od implementacji).
  */
 
-/** Wersja balansu — zapisywana razem z wynikami, by hotfix nie zmieniał historii (GDD 9.2). */
-export const BALANCE_VERSION = 1;
-
 export const CHARACTER_START_LEVEL = 1;
 export const CHARACTER_MAX_LEVEL = 80;
 
@@ -48,4 +45,29 @@ export function cumulativeExperience(level: number): number {
   let total = 0;
   for (let l = CHARACTER_START_LEVEL; l <= level; l++) total += experienceToNextLevel(l);
   return total;
+}
+
+export interface ExperienceState {
+  level: number;
+  /** XP zebrane na bieżącym poziomie (0 na poziomie maksymalnym). */
+  experience: number;
+}
+
+/** Dodaje doświadczenie i rozlicza awanse; nadmiar na poziomie maksymalnym przepada. */
+export function grantExperience(
+  state: ExperienceState,
+  amount: number,
+): ExperienceState & { levelsGained: number } {
+  assertLevel(state.level);
+  if (!Number.isSafeInteger(amount) || amount < 0) {
+    throw new RangeError(`Niepoprawna ilość doświadczenia: ${amount}`);
+  }
+  let { level } = state;
+  let experience = state.experience + amount;
+  while (level < CHARACTER_MAX_LEVEL && experience >= experienceToNextLevel(level)) {
+    experience -= experienceToNextLevel(level);
+    level++;
+  }
+  if (level === CHARACTER_MAX_LEVEL) experience = 0;
+  return { level, experience, levelsGained: level - state.level };
 }

@@ -6,6 +6,7 @@
  * losowań lub formuł — a więc niezgodność z zapisanymi powtórkami i stanem gry.
  * Zmiana tych wartości wymaga świadomej decyzji (nowy `BALANCE_VERSION`).
  */
+import { MINUTE_MS, materializeResource, missionExperience, missionSilver } from './balance.js';
 import { applyBp } from './fixed-point.js';
 import { cumulativeExperience, experienceToNextLevel } from './progression.js';
 import { createRng } from './rng.js';
@@ -18,7 +19,15 @@ export interface GoldenVectors {
   readonly experienceFromPreviousLevel: readonly number[];
   /** Łączne XP do osiągnięcia poziomu — suma progów stosowanych przez grę. */
   readonly totalExperienceToReach: readonly number[];
+  /** XP i srebro za zlecenia W = 5/10/20/35/50 na poziomie 10. */
+  readonly missionExperienceL10: readonly number[];
+  readonly missionSilverL10: readonly number[];
+  /** Wigor od 0 po 0, 9, 10, 95, 200 i 500 minutach. */
+  readonly vigorRegen: readonly number[];
 }
+
+const MISSION_COSTS = [5, 10, 20, 35, 50] as const;
+const VIGOR_SAMPLE_MINUTES = [0, 9, 10, 95, 200, 500] as const;
 
 export const GOLDEN_SEED = 'zapomniany-brzeg';
 
@@ -40,6 +49,9 @@ export const GOLDEN_VECTORS: GoldenVectors = {
   totalExperienceToReach: [
     833, 14995, 101368, 288317, 1146499, 2982138, 6223800, 11328576, 18777512, 29072463,
   ],
+  missionExperienceL10: [144, 288, 576, 1008, 1440],
+  missionSilverL10: [44, 89, 178, 311, 445],
+  vigorRegen: [0, 0, 5, 45, 100, 100],
 };
 
 /** Wylicza wektory bieżącą implementacją — porównywane z `GOLDEN_VECTORS`. */
@@ -52,5 +64,11 @@ export function computeGoldenVectors(): GoldenVectors {
     applyBp: [applyBp(1000, 1500), applyBp(999, 3333), applyBp(-7, 5000), applyBp(12_345, 10_000)],
     experienceFromPreviousLevel: GOLDEN_LEVELS.map((level) => experienceToNextLevel(level - 1)),
     totalExperienceToReach: GOLDEN_LEVELS.map((level) => cumulativeExperience(level - 1)),
+    missionExperienceL10: MISSION_COSTS.map((cost) => missionExperience(cost, 10)),
+    missionSilverL10: MISSION_COSTS.map((cost) => missionSilver(cost, 10)),
+    vigorRegen: VIGOR_SAMPLE_MINUTES.map(
+      (minutes) =>
+        materializeResource('vigor', { value: 0, updatedAt: 0 }, minutes * MINUTE_MS, 100).value,
+    ),
   };
 }
