@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-const LIST_SHOT =
-  '/cursor/stores/bc-01a18887-7149-751a-8774-112d30a173f0/media/panel-lista-tresci.png';
-const EVENT_SHOT =
-  '/cursor/stores/bc-01a18887-7149-751a-8774-112d30a173f0/media/panel-edytor-eventu.png';
+import { screenshotPath } from '../shots.js';
+
+const LIST_SHOT = screenshotPath('panel-lista-tresci.png');
+const EVENT_SHOT = screenshotPath('panel-edytor-eventu.png');
 
 test('kancelaria na widoku desktop', async ({ page }) => {
   await page.goto('/logowanie');
