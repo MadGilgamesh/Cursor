@@ -1,7 +1,7 @@
 /**
- * Progresja postaci — krzywa doświadczenia z GDD (rozdz. 10.2):
+ * Progresja postaci — krzywa doświadczenia z GDD 1.1 (rozdz. 10.2):
  *
- *   XP_do_następnego(L) = round((40·L^2,25 + 60) · f(L)),
+ *   XP_do_następnego(L) = round((63·L^2,25 + 60) · f(L)),
  *   f(L) = 0,3 dla L ≤ 5, 0,55 dla L 6–9, 1 od L 10.
  *
  * L^2,25 liczymy jako L²·√√L: mnożenie i pierwiastek kwadratowy są w IEEE 754
@@ -36,10 +36,13 @@ export function experienceToNextLevel(level: number): number {
   assertLevel(level);
   if (level === CHARACTER_MAX_LEVEL) return 0;
   const powered = level * level * Math.sqrt(Math.sqrt(level));
-  return Math.round((40 * powered + 60) * earlyGameFactor(level));
+  return Math.round((63 * powered + 60) * earlyGameFactor(level));
 }
 
-/** Łączne doświadczenie potrzebne do ukończenia poziomów 1…`level` (kolumna „XP łącznie” w GDD). */
+/**
+ * Łączne doświadczenie potrzebne do ukończenia poziomów 1…`level`, czyli do osiągnięcia
+ * poziomu `level + 1`. Sumujemy zaokrąglone progi, które gra faktycznie stosuje.
+ */
 export function cumulativeExperience(level: number): number {
   assertLevel(level);
   let total = 0;

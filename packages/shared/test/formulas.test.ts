@@ -30,18 +30,34 @@ describe('clampInt', () => {
   });
 });
 
-describe('krzywa doświadczenia (GDD 10.2)', () => {
-  it.each([
-    [1, 30, 30],
-    [3, 160, 265],
-    [5, 467, 1022],
-    [8, 2401, 6482],
-    [10, 7173, 16775],
-    [79, 744314, 18460322],
-  ])('poziom %i: %i do następnego, %i łącznie', (level, next, total) => {
-    expect(experienceToNextLevel(level)).toBe(next);
-    expect(cumulativeExperience(level)).toBe(total);
+describe('krzywa doświadczenia (GDD 1.1, 10.2)', () => {
+  // [poziom L, XP z L−1 do L, XP łącznie do L] — wprost z tabeli GDD.
+  const GDD_TABLE = [
+    [5, 446, 832],
+    [10, 4_894, 14_994],
+    [15, 23_945, 101_366],
+    [20, 47_543, 288_316],
+    [30, 123_012, 1_146_496],
+    [40, 239_522, 2_982_135],
+    [50, 400_264, 6_223_797],
+    [60, 607_856, 11_328_572],
+    [70, 864_532, 18_777_508],
+    [80, 1_172_259, 29_072_459],
+  ] as const;
+
+  it.each(GDD_TABLE)('poziom %i: próg %i jak w tabeli GDD', (level, fromPrevious) => {
+    expect(experienceToNextLevel(level - 1)).toBe(fromPrevious);
   });
+
+  it.each(GDD_TABLE)(
+    'poziom %i: suma progów gry zgadza się z kolumną „łącznie” z dokładnością do zaokrągleń',
+    (level, _fromPrevious, total) => {
+      // Każdy z L−1 progów jest zaokrąglany osobno, więc różnica nie przekracza (L−1)/2.
+      expect(Math.abs(cumulativeExperience(level - 1) - total)).toBeLessThanOrEqual(
+        (level - 1) / 2,
+      );
+    },
+  );
 
   it('rośnie monotonicznie aż do poziomu maksymalnego', () => {
     for (let level = 1; level < CHARACTER_MAX_LEVEL - 1; level++) {
