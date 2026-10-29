@@ -12,7 +12,7 @@ import { asc, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { ManualClock } from '../../src/clock.js';
-import { auditLog, timedActivities, walletEntries } from '../../src/db/schema.js';
+import { auditLog, characterStats, timedActivities, walletEntries } from '../../src/db/schema.js';
 import { call, createTestApp, registerPlayer, virtualClock, type TestContext } from './harness.js';
 
 let ctx: TestContext;
@@ -29,7 +29,14 @@ afterAll(async () => {
 
 type Player = Awaited<ReturnType<typeof registerPlayer>>;
 
-const start = (player: Player, missionId = 'trial.wreck-search', idempotencyKey?: string) =>
+/** Podnosi statystyki, żeby szansa zlecenia godzinnego była pewna (test nagród, nie rzutu). */
+const mastered = (player: Player) =>
+  ctx.db
+    .update(characterStats)
+    .set({ strength: 80_000, defense: 80_000, accuracy: 80_000, evasion: 80_000 })
+    .where(eq(characterStats.characterId, player.characterId));
+
+const start = (player: Player, missionId = 'order.quay-patrol', idempotencyKey?: string) =>
   call(ctx, player, 'POST', '/api/v1/activities', {
     body: { missionId },
     ...(idempotencyKey ? { idempotencyKey } : {}),
@@ -41,13 +48,14 @@ const claim = (player: Player, activityId: string) =>
 describe('cykl zlecenia', () => {
   it('start → trwa → rozstrzygnięcie → odbiór nagrody z księgą i audytem', async () => {
     const player = await registerPlayer(ctx);
+    await mastered(player);
     const started = startActivityResponseSchema.parse(
-      (await start(player, 'trial.amber-ebb')).json(),
+      (await start(player, 'order.canal-hunt')).json(),
     );
     expect(started.activity).toMatchObject({
       status: 'active',
       result: null,
-      defId: 'trial.amber-ebb',
+      defId: 'order.canal-hunt',
     });
     expect(Date.parse(started.activity.endAt) - Date.parse(started.activity.startAt)).toBe(
       60 * MINUTE_MS,
@@ -111,7 +119,7 @@ describe('cykl zlecenia', () => {
 
   it('wynik zależy od ziarna zapisanego przy starcie, a ziarno nie wycieka do klienta', async () => {
     const player = await registerPlayer(ctx);
-    const response = await start(player, 'trial.kelp-harvest');
+    const response = await start(player, 'gather.kelp-harvest');
     expect(response.body).not.toContain('seed');
     const { activity } = startActivityResponseSchema.parse(response.json());
     const [row] = await ctx.db
@@ -119,13 +127,13 @@ describe('cykl zlecenia', () => {
       .from(timedActivities)
       .where(eq(timedActivities.id, activity.id));
     expect(row?.resultSeed).toMatch(/^[\w-]{22}$/);
-    expect(row?.balanceVersion).toBe(1);
+    expect(row?.balanceVersion).toBe(2);
   });
 
   it('pozwala na jedno nieodebrane zlecenie naraz', async () => {
     const player = await registerPlayer(ctx);
     expect((await start(player)).statusCode).toBe(201);
-    const second = await start(player, 'trial.kelp-harvest');
+    const second = await start(player, 'gather.kelp-harvest');
     expect(second.statusCode).toBe(409);
     expect(second.json<ApiError>().error.code).toBe(ERROR_CODES.activityBusy);
   });
@@ -173,8 +181,9 @@ describe('współbieżność (GDD 9.2: brak double-spend)', () => {
 
   it('równoległe odbiory: nagroda wypłacona dokładnie raz', async () => {
     const player = await registerPlayer(ctx);
+    await mastered(player);
     const { activity } = startActivityResponseSchema.parse(
-      (await start(player, 'trial.amber-ebb')).json(),
+      (await start(player, 'order.canal-hunt')).json(),
     );
     clock.advance(60 * MINUTE_MS);
 

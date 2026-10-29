@@ -1,7 +1,9 @@
 import { MISSIONS, missionExperience, missionSilver, missionTier } from '@game/shared';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { newIdempotencyKey, useDashboard, useServerNow, useStartMission } from '../api/game';
+import { useBuy } from '../api/stage1';
 import { resourceViews } from '../game/state';
 import { errorMessage, formatDuration, t } from '../i18n';
 import { useCurrentPlayer } from '../layout/current-player';
@@ -13,12 +15,14 @@ export function CityScreen() {
   const dashboard = useDashboard();
   const now = useServerNow(dashboard.data?.clockOffsetMs ?? 0);
   const start = useStartMission();
+  const buy = useBuy();
   const navigate = useNavigate();
   const level = dashboard.data?.character.level ?? session.character.level;
   const vigor = dashboard.data
     ? resourceViews(dashboard.data.resources, now).find((view) => view.kind === 'vigor')
     : undefined;
   const busy = (dashboard.data?.activities.length ?? 0) > 0;
+  const [loop, setLoop] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -29,6 +33,22 @@ export function CityScreen() {
         <p className="mt-1 text-sm text-bone-400 italic">{t('city.subtitle')}</p>
       </div>
 
+      <section aria-label="Sklep" className="panel space-y-2 p-4">
+        <h2 className="font-display text-xl text-brass-300">Kram przy targu</h2>
+        {['head', 'torso', 'legs', 'hands', 'feet'].map((slot) => (
+          <button
+            key={slot}
+            type="button"
+            className="block text-left text-sm text-bone-200 underline"
+            onClick={() => {
+              buy.mutate({ itemId: `gear.butcher.${slot}.1` });
+            }}
+          >
+            Kup część Rzeźnika ({slot})
+          </button>
+        ))}
+      </section>
+
       <section aria-labelledby="board-title" className="space-y-3">
         <div>
           <h2 id="board-title" className="font-display text-xl font-semibold text-brass-300">
@@ -37,6 +57,16 @@ export function CityScreen() {
           <p className="text-xs text-bone-600">{t('city.boardHint')}</p>
         </div>
         {busy ? <p className="text-sm text-bone-400">{t('city.busy')}</p> : null}
+        <label className="flex items-center gap-2 text-sm text-bone-200">
+          <input
+            type="checkbox"
+            checked={loop}
+            onChange={(event) => {
+              setLoop(event.target.checked);
+            }}
+          />
+          W pętli (do 11 razy)
+        </label>
         <ul className="space-y-3">
           {MISSIONS.map((mission) => {
             const tier = missionTier(mission.tierId);
@@ -60,7 +90,7 @@ export function CityScreen() {
                   aria-label={`${t('city.start')}: ${mission.name}`}
                   onClick={() => {
                     start.mutate(
-                      { missionId: mission.id, idempotencyKey: newIdempotencyKey() },
+                      { missionId: mission.id, loop, idempotencyKey: newIdempotencyKey() },
                       { onSuccess: () => void navigate('/') },
                     );
                   }}

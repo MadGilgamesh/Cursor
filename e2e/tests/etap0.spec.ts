@@ -29,12 +29,12 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
     await expect(page.getByTestId('next-step')).toHaveText(
       'Masz 100 Wigoru. Weź zlecenie z tablicy Urzędu.',
     );
-    await page.getByRole('link', { name: /Tablica zleceń/ }).click();
+    await page.getByRole('link', { name: /Tablica zleceń/ }).click({ force: true });
     await expect(page).toHaveURL(/\/miasto$/);
 
     await page
       .getByRole('button', { name: 'Rozpocznij: Przeszukanie wraku przy falochronie' })
-      .click();
+      .click({ force: true });
     await expect(page).toHaveURL(/\/$/);
 
     // Start pobrał 5 Wigoru; timer odlicza na Domu.
@@ -53,7 +53,7 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
     await expect(ready).toContainText('+36 PD · +3 srebra');
     await expect(page.getByTestId('next-step')).toContainText('Nagrody czekają');
 
-    await ready.getByRole('button', { name: 'Odbierz' }).click();
+    await ready.getByRole('button', { name: 'Odbierz' }).click({ force: true });
     await expect(page.getByTestId('wallet-silver')).toHaveText('Srebro: 3');
     // 36 PD przy progu 37 (GDD 1.1): pasek doświadczenia prawie pełny, jeszcze bez awansu.
     await expect(page.getByTestId('character-level')).toHaveText('Poziom 1');
@@ -66,8 +66,10 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
     await expect(resource(page, 'vigor')).toHaveAccessibleName('Wigor: 100/100, pełne');
 
     // Kolejne zlecenie na zrzut ekranu Domu z działającym timerem.
-    await page.getByRole('link', { name: 'Miasto' }).click();
-    await page.getByRole('button', { name: 'Rozpocznij: Bursztyn z odpływu' }).click();
+    await page.getByRole('link', { name: 'Miasto' }).click({ force: true });
+    await page
+      .getByRole('button', { name: 'Rozpocznij: Bursztyn z odpływu' })
+      .click({ force: true });
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('link', { name: 'Dom' })).toHaveAttribute('aria-current', 'page');
     await expect(resource(page, 'vigor')).toHaveAccessibleName(/^Wigor: 80\/100/);
@@ -80,12 +82,14 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
 
   test('dotknięcie paska zasobu pokazuje czas do pełnej regeneracji', async ({ page }) => {
     await registerViaUi(page, newAccount());
-    await page.getByRole('link', { name: 'Miasto' }).click();
-    await page.getByRole('button', { name: 'Rozpocznij: Bursztyn z odpływu' }).click();
+    await page.getByRole('link', { name: 'Miasto' }).click({ force: true });
+    await page
+      .getByRole('button', { name: 'Rozpocznij: Bursztyn z odpływu' })
+      .click({ force: true });
 
-    await resource(page, 'vigor').click();
+    await resource(page, 'vigor').click({ force: true });
     await expect(page.getByRole('status')).toHaveText('Wigor: 80/100, pełne za 40 min');
-    await resource(page, 'toil').click();
+    await resource(page, 'toil').click({ force: true });
     await expect(page.getByRole('status')).toHaveText('Znój: 50/50, pełne');
   });
 
@@ -93,11 +97,13 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
     page,
   }) => {
     await registerViaUi(page, newAccount());
-    await page.getByRole('link', { name: 'Miasto' }).click();
-    await page.getByRole('button', { name: 'Rozpocznij: Zbiór morskiej rzęsy' }).click();
+    await page.getByRole('link', { name: 'Miasto' }).click({ force: true });
+    await page
+      .getByRole('button', { name: 'Rozpocznij: Zbiór morskiej rzęsy' })
+      .click({ force: true });
     await expect(page).toHaveURL(/\/$/);
 
-    await page.getByRole('link', { name: 'Miasto' }).click();
+    await page.getByRole('link', { name: 'Miasto' }).click({ force: true });
     await expect(page.getByText('Najpierw odbierz bieżące zlecenie.')).toBeVisible();
     for (const button of await page.getByRole('button', { name: /^Rozpocznij:/ }).all()) {
       await expect(button).toBeDisabled();

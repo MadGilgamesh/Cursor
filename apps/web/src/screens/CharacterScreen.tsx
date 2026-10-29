@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 
 import { useLogout } from '../api/auth';
 import { useDashboard } from '../api/game';
+import { useEquip, useInventory, useProfile } from '../api/stage1';
 import { locale, t } from '../i18n';
 import { useCurrentPlayer } from '../layout/current-player';
 import { PushSettings } from '../push/PushSettings';
@@ -14,6 +15,9 @@ export function CharacterScreen() {
   const character = dashboard.data?.character ?? session.character;
   const logout = useLogout();
   const navigate = useNavigate();
+  const profile = useProfile();
+  const inventory = useInventory();
+  const equip = useEquip();
 
   return (
     <div className="space-y-4">
@@ -33,6 +37,37 @@ export function CharacterScreen() {
         <p className="mt-3 text-sm text-bone-600 italic">{t('character.statsSoon')}</p>
       </section>
 
+      {profile.data ? (
+        <section className="panel p-4 text-sm text-bone-200" aria-label="Statystyki">
+          <p>
+            Siła {profile.data.stats.strength} · Hart {profile.data.stats.defense} · Celność{' '}
+            {profile.data.stats.accuracy} · Unik {profile.data.stats.evasion}
+          </p>
+          <p data-testid="active-class">
+            Klasa: {profile.data.classId ?? 'brak'} (poziom {profile.data.classLevel})
+          </p>
+        </section>
+      ) : null}
+      <section aria-label="Ekwipunek" className="space-y-2">
+        {inventory.data?.items.map((item) => (
+          <div key={item.id} className="panel flex items-center justify-between p-3 text-sm">
+            <span>{item.name}</span>
+            {item.equippedSlot ? (
+              <span className="text-brass-300">założone</span>
+            ) : item.defId.startsWith('gear.') ? (
+              <button
+                type="button"
+                className="text-brass-300"
+                onClick={() => {
+                  equip.mutate({ itemId: item.id });
+                }}
+              >
+                Załóż
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </section>
       <PushSettings />
 
       <section className="panel space-y-1 p-4">

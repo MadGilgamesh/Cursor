@@ -36,11 +36,18 @@ const dashboard: DashboardResponse = {
     {
       id: '01a188cb-f59f-78dd-8fc3-9645f06cab84',
       type: 'mission',
-      defId: 'trial.wreck-search',
+      defId: 'order.quay-patrol',
       status: 'completed',
       startAt: iso(-6 * 60_000),
       endAt: iso(-60_000),
-      result: { experience: 36, silver: 3, outcome: 'Wrak milczy.' },
+      result: {
+        experience: 36,
+        silver: 3,
+        outcome: 'Wrak milczy.',
+        success: true,
+        lifeLoss: 0,
+        sanityLoss: 0,
+      },
     },
   ],
 };

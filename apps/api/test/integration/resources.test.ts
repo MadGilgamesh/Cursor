@@ -39,7 +39,7 @@ describe('Etap 0 — test akceptacyjny (GDD 11)', () => {
 
     // Zlecenie godzinne kosztuje 20 Wigoru (GDD 10.1).
     const started = await call(ctx, player, 'POST', '/api/v1/activities', {
-      body: { missionId: 'trial.amber-ebb' },
+      body: { missionId: 'order.canal-hunt' },
     });
     expect(started.statusCode).toBe(201);
     expect((await dashboard(player)).resources.vigor.value).toBe(80);
@@ -70,7 +70,7 @@ describe('Etap 0 — test akceptacyjny (GDD 11)', () => {
       .where(eq(resourceStates.characterId, player.characterId));
 
     const rejected = await call(ctx, player, 'POST', '/api/v1/activities', {
-      body: { missionId: 'trial.wreck-search' },
+      body: { missionId: 'order.quay-patrol' },
     });
     expect(rejected.statusCode).toBe(409);
     expect(rejected.json<ApiError>().error.code).toBe(ERROR_CODES.insufficientResources);
@@ -78,7 +78,7 @@ describe('Etap 0 — test akceptacyjny (GDD 11)', () => {
     // Po 10 minutach tik regeneracji wystarcza na zlecenie za 5 Wigoru.
     clock.advance(10 * MINUTE_MS);
     const accepted = await call(ctx, player, 'POST', '/api/v1/activities', {
-      body: { missionId: 'trial.wreck-search' },
+      body: { missionId: 'order.quay-patrol' },
     });
     expect(accepted.statusCode).toBe(201);
     expect((await dashboard(player)).resources.vigor.value).toBe(4);

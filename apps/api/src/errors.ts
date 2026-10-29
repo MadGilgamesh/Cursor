@@ -1,4 +1,5 @@
 import { ERROR_CODES, type ErrorCode } from '@game/shared';
+import { InsufficientFundsError } from './game/wallet.js';
 import type { FastifyError, FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 
@@ -35,6 +36,11 @@ export function registerErrorHandling(app: FastifyInstance): void {
   });
 
   app.setErrorHandler((error: FastifyError | AppError | ZodError, request, reply) => {
+    if (error instanceof InsufficientFundsError) {
+      return reply.status(409).send({
+        error: { code: ERROR_CODES.insufficientResources, message: 'Za mało srebra' },
+      });
+    }
     if (error instanceof AppError) {
       return reply
         .status(error.statusCode)

@@ -71,10 +71,10 @@ function useGameAction<TInput>(
 export const newIdempotencyKey = () => crypto.randomUUID();
 
 export const useStartMission = () =>
-  useGameAction<{ missionId: string }>(({ missionId, idempotencyKey }) =>
+  useGameAction<{ missionId: string; loop?: boolean }>(({ missionId, loop, idempotencyKey }) =>
     apiRequest(`${API_PREFIX}/activities`, {
       method: 'POST',
-      body: { missionId },
+      body: { missionId, loop: loop ?? false },
       schema: startActivityResponseSchema,
       idempotencyKey,
     }),

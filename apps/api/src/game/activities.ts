@@ -7,25 +7,36 @@ import { randomBytes } from 'node:crypto';
 import {
   BALANCE_VERSION,
   ERROR_CODES,
+  MISSION_MAX_LOOPS,
+  computeLoadout,
   findMission,
+  adjustResource,
+  grantClassExperience,
   grantExperience,
   missionTier,
-  resolveMission,
   resourceMax,
+  resolveMission,
   spendResource,
   type Activity,
   type ClaimResponse,
   type MissionResult,
   type StartActivityResponse,
 } from '@game/shared';
-import { and, asc, eq, inArray, lte } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
 
 import { writeAudit, type AuditActor } from '../audit.js';
 import type { Clock } from '../clock.js';
 import type { Executor } from '../db/client.js';
-import { characters, timedActivities, type TimedActivityRow } from '../db/schema.js';
+import {
+  characters,
+  classProgress,
+  missionProgress,
+  timedActivities,
+  type TimedActivityRow,
+} from '../db/schema.js';
 import { AppError, uniqueViolationConstraint } from '../errors.js';
 import { toCharacterDto } from '../serializers.js';
+import { assertCanAct, enterHospital, equippedOf, missionSnapshot } from './avatar.js';
 import {
   loadResources,
   materializeAll,
@@ -54,7 +65,14 @@ export function toActivityDto(row: TimedActivityRow): Activity {
     startAt: row.startAt.toISOString(),
     endAt: row.endAt.toISOString(),
     result: result
-      ? { experience: result.experience, silver: result.silver, outcome: result.outcome }
+      ? {
+          experience: result.experience,
+          silver: result.silver,
+          outcome: result.outcome,
+          success: result.success,
+          lifeLoss: result.lifeLoss,
+          sanityLoss: result.sanityLoss,
+        }
       : null,
   };
 }
@@ -73,7 +91,13 @@ export async function lockCharacter(tx: Tx, characterId: string) {
 function computeResult(row: TimedActivityRow): MissionResult {
   const mission = findMission(row.defId);
   if (!mission) throw new Error(`Brak definicji zlecenia ${row.defId} w danych statycznych`);
-  return resolveMission(mission, row.payload.level, row.resultSeed);
+  return resolveMission({
+    mission,
+    level: row.payload.level,
+    seed: row.resultSeed,
+    chanceBp: row.payload.chanceBp,
+    maxLife: row.payload.maxLife,
+  });
 }
 
 export async function startMission(
@@ -81,6 +105,7 @@ export async function startMission(
   who: AuditActor,
   characterId: string,
   missionId: string,
+  loop = false,
 ): Promise<StartActivityResponse> {
   const mission = findMission(missionId);
   if (!mission) throw new AppError(404, ERROR_CODES.notFound, 'Nie ma takiego zlecenia');
@@ -90,7 +115,29 @@ export async function startMission(
     return await db.transaction(async (tx) => {
       const now = clock.now();
       const character = await lockCharacter(tx, characterId);
+      await assertCanAct(tx, character, now);
       const ctx = resourceContext(character.level);
+      const [known] = await tx
+        .select()
+        .from(missionProgress)
+        .where(
+          and(
+            eq(missionProgress.characterId, characterId),
+            eq(missionProgress.missionId, mission.id),
+          ),
+        )
+        .limit(1);
+      const nextLoop = loop ? (known?.loops ?? 0) + 1 : 1;
+      if (loop && (known?.loops ?? 0) >= MISSION_MAX_LOOPS) {
+        throw new AppError(409, ERROR_CODES.loopFinished, 'Pętla tego zlecenia dobiegła końca');
+      }
+      const snapshot = await missionSnapshot(
+        tx,
+        character,
+        mission,
+        tier.requiredStat,
+        known?.successes ?? 0,
+      );
 
       const [open] = await tx
         .select({ id: timedActivities.id })
@@ -128,7 +175,13 @@ export async function startMission(
           characterId,
           type: 'mission',
           defId: mission.id,
-          payload: { level: character.level, vigorCost: tier.vigorCost },
+          payload: {
+            level: character.level,
+            vigorCost: tier.vigorCost,
+            chanceBp: snapshot.chanceBp,
+            maxLife: snapshot.maxLife,
+            loop: nextLoop,
+          },
           status: 'active',
           startAt: now,
           endAt: new Date(now.getTime() + tier.durationMs),
@@ -138,6 +191,18 @@ export async function startMission(
         .returning();
       if (!activity) throw new Error('INSERT nie zwrócił aktywności');
 
+      await tx
+        .insert(missionProgress)
+        .values({
+          characterId,
+          missionId: mission.id,
+          successes: known?.successes ?? 0,
+          loops: nextLoop,
+        })
+        .onConflictDoUpdate({
+          target: [missionProgress.characterId, missionProgress.missionId],
+          set: { loops: nextLoop },
+        });
       await writeAudit(tx, who, {
         action: 'activity.start',
         characterId,
@@ -266,6 +331,17 @@ export async function claimActivities(
         .where(eq(timedActivities.id, row.id))
         .returning();
       if (updated) claimed.push(updated);
+      if (result.success) {
+        await tx
+          .update(missionProgress)
+          .set({ successes: sql`${missionProgress.successes} + 1` })
+          .where(
+            and(
+              eq(missionProgress.characterId, characterId),
+              eq(missionProgress.missionId, row.defId),
+            ),
+          );
+      }
     }
 
     const progress = grantExperience(before, totalExperience);
@@ -278,7 +354,49 @@ export async function claimActivities(
 
     const wallet = await walletOf(tx, characterId);
     const ctx = resourceContext(updatedCharacter.level);
-    const resources = materializeAll(await loadResources(tx, characterId), ctx, now);
+    let resources = materializeAll(await loadResources(tx, characterId), ctx, now);
+    for (const row of claimed) {
+      const result = row.result;
+      if (!result || result.success) continue;
+      const maxLife = resourceMax('life', ctx);
+      const maxSanity = resourceMax('sanity', ctx);
+      resources = {
+        ...resources,
+        life: adjustResource('life', resources.life, now.getTime(), maxLife, -result.lifeLoss),
+        sanity: adjustResource(
+          'sanity',
+          resources.sanity,
+          now.getTime(),
+          maxSanity,
+          -result.sanityLoss,
+        ),
+      };
+      if (resources.life.value <= 0) {
+        resources = await enterHospital(tx, updatedCharacter, resources, now, 0);
+      }
+    }
+    await saveResources(tx, characterId, resources);
+    const activeClass = computeLoadout(await equippedOf(tx, characterId)).classId;
+    if (totalExperience > 0 && activeClass) {
+      const [klass] = await tx
+        .select()
+        .from(classProgress)
+        .where(
+          and(eq(classProgress.characterId, characterId), eq(classProgress.classId, activeClass)),
+        )
+        .limit(1);
+      const next = grantClassExperience(
+        { level: klass?.level ?? 0, experience: klass?.experience ?? 0 },
+        totalExperience,
+      );
+      await tx
+        .insert(classProgress)
+        .values({ characterId, classId: activeClass, ...next })
+        .onConflictDoUpdate({
+          target: [classProgress.characterId, classProgress.classId],
+          set: next,
+        });
+    }
 
     if (claimed.length > 0) {
       await writeAudit(tx, who, {

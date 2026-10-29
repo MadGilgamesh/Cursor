@@ -44,6 +44,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,
     locale: 'pl-PL',
+    // Animacje (mgła, znak) w WebKit potrafią uniemożliwić kliknięcie — element nigdy nie jest „stabilny”.
+    reducedMotion: 'reduce',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
