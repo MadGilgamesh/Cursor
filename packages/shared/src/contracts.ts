@@ -26,6 +26,9 @@ export const ERROR_CODES = {
   idempotencyKeyReused: 'IDEMPOTENCY_KEY_REUSED',
   idempotencyInProgress: 'IDEMPOTENCY_IN_PROGRESS',
   pushUnavailable: 'PUSH_UNAVAILABLE',
+  incapacitated: 'INCAPACITATED',
+  loopFinished: 'LOOP_FINISHED',
+  requirement: 'REQUIREMENT_NOT_MET',
 } as const;
 
 /**

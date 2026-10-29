@@ -36,6 +36,9 @@ export const activityResultSchema = z.object({
   experience: z.int().min(0),
   silver: z.int().min(0),
   outcome: z.string(),
+  success: z.boolean(),
+  lifeLoss: z.int().min(0),
+  sanityLoss: z.int().min(0),
 });
 
 export const activitySchema = z.object({
@@ -63,6 +66,8 @@ export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 
 export const startMissionRequestSchema = z.object({
   missionId: z.string().min(1).max(100),
+  /** Kontynuacja pętli (do 11). Bez tego pola zlecenie startuje od nowa. */
+  loop: z.boolean().default(false),
 });
 export type StartMissionRequest = z.infer<typeof startMissionRequestSchema>;
 
