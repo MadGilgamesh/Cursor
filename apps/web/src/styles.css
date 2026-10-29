@@ -1,0 +1,110 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/cormorant-garamond';
+@import '@fontsource-variable/lora';
+
+/*
+ * Paleta wg GDD 3.1: czerń atramentu, kość, sepia/mosiądz; akcenty zieleni
+ * grynszpanu (Mit, Skażenie), krwistej czerwieni (Życie) i zimnego błękitu (Poczytalność).
+ */
+@theme {
+  --font-display: 'Cormorant Garamond Variable', Georgia, serif;
+  --font-sans: 'Lora Variable', Georgia, serif;
+
+  --color-abyss-950: #07080b;
+  --color-abyss-900: #0d0f14;
+  --color-abyss-800: #151820;
+  --color-abyss-700: #1f2430;
+  --color-abyss-600: #2c3342;
+  --color-bone-50: #f4efe2;
+  --color-bone-200: #d9d0bb;
+  --color-bone-400: #9c947f;
+  --color-bone-600: #6b6556;
+  --color-brass-300: #d8b878;
+  --color-brass-500: #a8844a;
+  --color-brass-700: #6e5530;
+  --color-verdigris-300: #8fdcc0;
+  --color-verdigris-500: #3e9f86;
+  --color-verdigris-700: #1d5a4b;
+  --color-ichor-400: #d9536a;
+  --color-ichor-600: #8b1e2d;
+
+  /* Zasoby postaci (GDD 3.3). */
+  --color-life-500: #b3263a;
+  --color-vigor-400: #d4932f;
+  --color-toil-400: #8d8a82;
+  --color-sanity-400: #5b9bd0;
+
+  --shadow-glow: 0 0 24px -4px rgb(62 159 134 / 0.45);
+  --shadow-brass: 0 0 0 1px rgb(168 132 74 / 0.35), 0 8px 24px -12px rgb(0 0 0 / 0.8);
+
+  --animate-drift: drift 28s ease-in-out infinite alternate;
+  --animate-pulse-slow: pulse-slow 6s ease-in-out infinite;
+
+  @keyframes drift {
+    from {
+      transform: translate3d(-6%, 0, 0) scale(1.05);
+    }
+    to {
+      transform: translate3d(6%, -3%, 0) scale(1.15);
+    }
+  }
+
+  @keyframes pulse-slow {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-abyss-950);
+    color: var(--color-bone-200);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    background:
+      radial-gradient(120% 60% at 50% -10%, rgb(29 90 75 / 0.22), transparent 60%),
+      radial-gradient(90% 50% at 50% 110%, rgb(139 30 45 / 0.16), transparent 60%),
+      var(--color-abyss-950);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-verdigris-300);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+}
+
+@utility panel {
+  border-radius: 1rem;
+  border: 1px solid rgb(168 132 74 / 0.22);
+  background: linear-gradient(180deg, rgb(31 36 48 / 0.75), rgb(13 15 20 / 0.85));
+  box-shadow: var(--shadow-brass);
+  backdrop-filter: blur(6px);
+}
