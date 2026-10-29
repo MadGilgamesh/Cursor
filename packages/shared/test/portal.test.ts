@@ -138,10 +138,12 @@ describe('Pęk Kluczy', () => {
     const cleared = { domain: 3, stage: 10, substage: 8 };
     expect(portalAccess({ domain: 4, stage: 1, substage: 1 }, cleared)).toBe('first');
     expect(portalAccess({ domain: 5, stage: 1, substage: 1 }, cleared)).toBe('skip');
-    expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, cleared)).toBe('locked');
+    expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, cleared)).toBe('skip');
+    expect(portalAccess({ domain: 7, stage: 1, substage: 1 }, cleared)).toBe('locked');
     const domainFour = { domain: 4, stage: 10, substage: 8 };
     expect(portalAccess({ domain: 5, stage: 1, substage: 1 }, domainFour)).toBe('first');
-    expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, domainFour)).toBe('locked');
+    expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, domainFour)).toBe('skip');
+    expect(portalAccess({ domain: 7, stage: 1, substage: 1 }, domainFour)).toBe('locked');
     expect(portalAccess({ domain: 1, stage: 1, substage: 1 }, cleared)).toBe('repeat');
   });
 });
@@ -240,7 +242,7 @@ describe('Seanse (GDD 10.8)', () => {
     expect(found?.rarity).toBe('beyond');
   });
 
-  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–5', () => {
+  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–6', () => {
     expect(SEANCE_ECHOES).toHaveLength(30);
     expect(SEANCE_ECHOES.every((echo) => echo.rarity !== 'beyond')).toBe(true);
     expect(ECHOES.filter((echo) => echo.godDomain === 1)).toHaveLength(2);
@@ -252,6 +254,10 @@ describe('Seanse (GDD 10.8)', () => {
     expect(ECHOES.filter((echo) => echo.godDomain === 5)).toHaveLength(2);
     expect(portalDomain(5)?.modifier).toBe('judgment');
     expect(portalDomain(5)?.god).toBe('Nodens');
+    expect(ECHOES.filter((echo) => echo.godDomain === 6)).toHaveLength(2);
+    expect(portalDomain(6)?.modifier).toBe('yellow-sign');
+    expect(portalDomain(6)?.god).toBe('Król w Żółci');
+    expect(portalDomain(6)?.units).toHaveLength(10);
   });
 });
 

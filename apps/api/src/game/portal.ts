@@ -6,6 +6,7 @@ import { randomBytes } from 'node:crypto';
 
 import {
   ERROR_CODES,
+  awakeningMaterialBonus,
   WELL_GUARDIAN_KEYS,
   WELL_GUARDIAN_METEORS,
   WELL_MAX_FLOOR_THIS_STAGE,
@@ -196,7 +197,7 @@ export async function portalOf(db: Executor, character: CharacterRow, clock: Clo
   return portalView(await loadPortal(db, character.id), clock.now());
 }
 
-async function dreamCombatant(
+export async function dreamCombatant(
   db: Executor,
   character: CharacterRow,
   row: PortalStateRow,
@@ -323,9 +324,13 @@ export async function fightPortal(
   if (shardsGained > 0) row = withRing(row, addKeyShards(ringOf(row), shardsGained), now);
 
   const materials = { ...row.materials };
-  if (payout.materials > 0) {
+  const materialBonus = awakeningMaterialBonus(now.getTime(), coord.domain, row.clearedDomain)
+    ? 1.25
+    : 1;
+  const materialAmount = Math.round(payout.materials * materialBonus);
+  if (materialAmount > 0) {
     const materialId = portalDomain(coord.domain)?.materialId ?? 'unknown';
-    materials[materialId] = (materials[materialId] ?? 0) + payout.materials;
+    materials[materialId] = (materials[materialId] ?? 0) + materialAmount;
   }
   const sigils = { ...row.sigils };
   if (won && (await recordPortalKill(db, locked.id, coord.domain, coord.stage))) {

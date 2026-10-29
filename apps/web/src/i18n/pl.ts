@@ -96,6 +96,9 @@ export const pl = {
     portMail: 'Listy nieodebrane: {count}',
     portStock: 'Skład',
     portStockEmpty: 'Skład jest pusty.',
+    lodgeTitle: 'Wspólnota',
+    lodgeHint: 'Sala Lóż, Przyzwania i Przebudzenie Boga.',
+    lodgeEnter: 'Sala Lóż',
     madnessOn: 'Efekty obłędu włączone',
     madnessOff: 'Efekty obłędu wyłączone',
     claim: 'Odbierz',
@@ -136,7 +139,13 @@ export const pl = {
   },
   community: {
     title: 'Wspólnota',
-    description: 'Loże, poczta i giełda ożyją, gdy na Brzegu zbierze się więcej Przebudzonych.',
+    hall: 'Sala Lóż',
+    empty: 'Sala jest pusta. Załóż lożę albo czekaj na werbunek.',
+    awakening: 'Przebudzenie Boga',
+    awakeningHint: 'W tym tygodniu budzi się: {name}.',
+    dreams: 'Sny',
+    dreamsHint:
+      'Spokojny sen, Sen o Głębinach albo Sen Wspólny — wynik liczy serwer po przebudzeniu.',
   },
   soon: 'Wkrótce',
   character: {

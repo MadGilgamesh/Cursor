@@ -8,7 +8,7 @@
 import { HOUR_MS, pow125 } from './balance.js';
 import { createRng, type Rng } from './rng.js';
 
-export const PORTAL_DOMAINS_THIS_STAGE = 5;
+export const PORTAL_DOMAINS_THIS_STAGE = 6;
 /** ★1–★5 są w tym etapie tylko dla Domen 1–3. Domena 4 ma na razie sam Sen. */
 export const PORTAL_STAR_DOMAINS_THIS_STAGE = 3;
 export const PORTAL_STARS_MAX = 5;
@@ -82,7 +82,8 @@ export const HUNT_SHARD_CIRCLE = 5;
 export const HUNT_SHARD_CHANCE_BP = 1_000;
 
 export type PortalRole = 'minion' | 'boss' | 'avatar';
-export type PortalModifier = 'ib-vengeance' | 'pressure' | 'drain' | 'pulse' | 'judgment';
+export type PortalModifier =
+  'ib-vengeance' | 'pressure' | 'drain' | 'pulse' | 'judgment' | 'yellow-sign';
 
 export interface PortalCoord {
   domain: number;
@@ -168,6 +169,7 @@ export function portalModifier(domain: number): PortalModifier | null {
   if (domain === 3) return 'drain';
   if (domain === 4) return 'pulse';
   if (domain === 5) return 'judgment';
+  if (domain === 6) return 'yellow-sign';
   return null;
 }
 
@@ -256,12 +258,12 @@ export interface KeyRing {
 }
 
 /** Leniwa regeneracja Pęku — ten sam schemat co Wigor (GDD 9.1, 5.12.5). */
-export function materializeKeyRing(ring: KeyRing, now: number): KeyRing {
+export function materializeKeyRing(ring: KeyRing, now: number, cap = KEY_RING_CAP): KeyRing {
   if (now <= ring.regenUpdatedAt) return ring;
-  if (ring.regenKeys >= KEY_RING_CAP) return { ...ring, regenUpdatedAt: now };
+  if (ring.regenKeys >= cap) return { ...ring, regenUpdatedAt: now };
   const ticks = Math.floor((now - ring.regenUpdatedAt) / KEY_REGEN_INTERVAL_MS);
-  const regenKeys = Math.min(KEY_RING_CAP, ring.regenKeys + ticks);
-  if (regenKeys >= KEY_RING_CAP) return { ...ring, regenKeys, regenUpdatedAt: now };
+  const regenKeys = Math.min(cap, ring.regenKeys + ticks);
+  if (regenKeys >= cap) return { ...ring, regenKeys, regenUpdatedAt: now };
   return {
     ...ring,
     regenKeys,

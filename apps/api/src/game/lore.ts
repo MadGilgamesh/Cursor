@@ -210,6 +210,36 @@ async function failOpenCase(
   return next;
 }
 
+/** Spisek loży: to samo śledztwo, ziarno z przedrostkiem, nagroda 2 Sigile (GDD 5.12.5). */
+export async function openConspiracy(
+  db: Executor,
+  who: AuditActor,
+  character: CharacterRow,
+  clock: Clock,
+) {
+  const now = clock.now();
+  const { locked, lore, resources, ctx } = await ready(db, character, now);
+  if (lore.caseStatus === 'open') {
+    throw new AppError(409, ERROR_CODES.activityBusy, 'Masz już otwartą Sprawę');
+  }
+  const seed = `conspiracy:${randomBytes(16).toString('base64url')}`;
+  const blueprint = generateCase(seed);
+  const next: LoreStateRow = {
+    ...lore,
+    caseSeed: seed,
+    caseFound: [],
+    caseStatus: 'open',
+    caseDeadline: new Date(now.getTime() + blueprint.deadlineHours * HOUR_MS),
+    documentClueId: null,
+    documentEndsAt: null,
+  };
+  await saveLore(db, next);
+  await audit(db, who, locked.id, 'case.conspiracy', { god: blueprint.god });
+  return {
+    case: caseBody(next, percent(resources.sanity.value, resourceMax('sanity', ctx))),
+  };
+}
+
 export async function openCase(
   db: Executor,
   who: AuditActor,
@@ -441,6 +471,13 @@ export async function deduceCase(
       nextPortal = { ...nextPortal, sigilShards: exchanged.shards, sigils: exchanged.sigils };
     }
     if (reward.ichor > 0) nextPortal = { ...nextPortal, ichor: nextPortal.ichor + reward.ichor };
+    if (reward.sigils > 0) {
+      const key = String(blueprint.god);
+      nextPortal = {
+        ...nextPortal,
+        sigils: { ...nextPortal.sigils, [key]: (nextPortal.sigils[key] ?? 0) + reward.sigils },
+      };
+    }
     await savePortal(db, nextPortal);
   } else {
     lore = bumpReputation(lore, 'order', CASE_REWARDS.partial.reputation);

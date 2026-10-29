@@ -8,6 +8,7 @@ export * from './market.js';
 export * from './garden.js';
 export * from './investigation.js';
 export * from './world.js';
+export * from './lodge.js';
 export * from './lore.js';
 export * from './portal.js';
 export * from './fixed-point.js';

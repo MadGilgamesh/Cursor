@@ -1,5 +1,5 @@
 /**
- * Domeny 1–4 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
+ * Domeny 1–6 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
  * Echa bogów (boss Etapu 5 i herold Etapu 9) są poza pulą Seansu.
  */
 import type { EchoRarity, PortalModifier } from '../portal.js';
@@ -120,6 +120,27 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Rydwan Otchłani',
       'Wielki Bezlicy',
       'Nodens Siwobrody',
+    ],
+  },
+  {
+    domain: 6,
+    god: 'Król w Żółci',
+    place: 'Carcosa nad Jeziorem Hali',
+    modifier: 'yellow-sign',
+    modifierName: 'Żółty Znak',
+    materialId: 'yellow-shred',
+    materialName: 'Strzęp Żółtego Płaszcza',
+    units: [
+      'Zamaskowani Widzowie',
+      'Aktorzy Pierwszego Aktu',
+      'Fantomy Prawdy',
+      'Blade Maski',
+      'Nosiciele Żółtego Znaku',
+      'Mieszkańcy Carcosy',
+      'Dzieci Czarnych Gwiazd',
+      'Cassilda i Camilla',
+      'Nieznajomy w Masce',
+      'Król w Żółci',
     ],
   },
 ];
@@ -263,6 +284,20 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     rarity: 'phantom',
     aspect: 'defense',
     godDomain: 5,
+  },
+  {
+    id: 'echo.god.hastur.wraith',
+    name: 'Cassilda i Camilla',
+    rarity: 'wraith',
+    aspect: 'evasion',
+    godDomain: 6,
+  },
+  {
+    id: 'echo.god.hastur.phantom',
+    name: 'Nieznajomy w Masce',
+    rarity: 'phantom',
+    aspect: 'accuracy',
+    godDomain: 6,
   },
 ];
 

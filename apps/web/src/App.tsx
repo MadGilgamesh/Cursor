@@ -6,13 +6,13 @@ import { AppShell } from './layout/AppShell';
 import { AuthScreen } from './screens/AuthScreen';
 import { CharacterScreen } from './screens/CharacterScreen';
 import { CityScreen } from './screens/CityScreen';
+import { CommunityScreen } from './screens/CommunityScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LoreScreen } from './screens/LoreScreen';
 import { MrokScreen } from './screens/MrokScreen';
 import { PortScreen } from './screens/PortScreen';
 import { PortalScreen } from './screens/PortalScreen';
 import { RoadScreen } from './screens/RoadScreen';
-import { PlaceholderScreen } from './screens/PlaceholderScreen';
 import { Button } from './ui/Button';
 import { Sigil } from './ui/Sigil';
 
@@ -75,15 +75,7 @@ export function App() {
         <Route path="portal" element={<PortalScreen />} />
         <Route path="wiedza" element={<LoreScreen />} />
         <Route path="postac" element={<CharacterScreen />} />
-        <Route
-          path="wspolnota"
-          element={
-            <PlaceholderScreen
-              title={t('community.title')}
-              description={t('community.description')}
-            />
-          }
-        />
+        <Route path="wspolnota" element={<CommunityScreen />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

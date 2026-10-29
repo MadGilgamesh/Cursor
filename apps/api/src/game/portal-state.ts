@@ -4,7 +4,6 @@
  */
 import {
   HUNT_SHARD_CHANCE_BP,
-  KEY_RING_CAP,
   KEY_REGEN_INTERVAL_MS,
   STARTING_CANDLES,
   addKeyShards,
@@ -69,12 +68,12 @@ export function withRing(row: PortalStateRow, ring: KeyRing, now: Date): PortalS
     lootKeys: ring.lootKeys,
     shards: ring.shards,
     // Kotwica pełnego Pęku idzie do `now`, jak przy zasobach.
-    ...(ring.regenKeys >= KEY_RING_CAP ? { regenUpdatedAt: now } : {}),
+    ...(ring.regenKeys >= row.keyCap ? { regenUpdatedAt: now } : {}),
   };
 }
 
 function materialized(row: PortalStateRow, now: Date): PortalStateRow {
-  return withRing(row, materializeKeyRing(ringOf(row), now.getTime()), now);
+  return withRing(row, materializeKeyRing(ringOf(row), now.getTime(), row.keyCap), now);
 }
 
 export async function grantKeyShards(
@@ -138,9 +137,9 @@ export async function savePortal(db: Executor, row: PortalStateRow): Promise<voi
 }
 
 export function keyRegenFullAt(row: PortalStateRow, now: Date): string | null {
-  const ring = materializeKeyRing(ringOf(row), now.getTime());
-  if (ring.regenKeys >= KEY_RING_CAP) return null;
-  const missing = KEY_RING_CAP - ring.regenKeys;
+  const ring = materializeKeyRing(ringOf(row), now.getTime(), row.keyCap);
+  if (ring.regenKeys >= row.keyCap) return null;
+  const missing = row.keyCap - ring.regenKeys;
   return new Date(ring.regenUpdatedAt + missing * KEY_REGEN_INTERVAL_MS).toISOString();
 }
 

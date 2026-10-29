@@ -23,7 +23,7 @@ export default async function setup(): Promise<void> {
 
   const db = postgres(TEST_DATABASE_URL, { max: 1, onnotice: () => undefined });
   try {
-    await db`truncate table accounts, sessions, characters, resource_states, wallet_entries, timed_activities, idempotency_keys, audit_log, push_subscriptions cascade`;
+    await db`truncate table accounts, sessions, characters, resource_states, wallet_entries, timed_activities, idempotency_keys, audit_log, push_subscriptions, awakening_payouts, lodges cascade`;
   } finally {
     await db.end();
   }

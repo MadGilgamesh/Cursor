@@ -50,6 +50,13 @@
       "when": 1793310304604,
       "tag": "0006_etap_5",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793311918255,
+      "tag": "0007_etap_6",
+      "breakpoints": true
     }
   ]
 }
