@@ -51,6 +51,8 @@ export interface PlayerCombatant {
   panicImmune?: boolean;
   /** Piętno *Tętno* (Żyła Kamiennej Krwi): 5% szansy, że wróg straci turę. */
   pulseBrand?: boolean;
+  /** Skażenie. Sąd Nodensa patrzy na nie tylko przy modyfikatorze judgment. */
+  contamination?: number;
 }
 
 export interface EnemyCombatant {
@@ -193,7 +195,15 @@ export function simulateCombat(
       variance(rng) *
       (crit ? CRIT_MULTIPLIER : 1) *
       wordMultiplier;
-    const damage = Math.max(1, Math.round(raw));
+    const court =
+      modifier === 'judgment'
+        ? (player.contamination ?? 0) > 50
+          ? 0.8
+          : (player.contamination ?? 0) < 20
+            ? 1.1
+            : 1
+        : 1;
+    const damage = Math.max(1, Math.round(raw * court));
     enemyLifeLeft = Math.max(0, enemyLifeLeft - damage);
     push({ round, actor: 'player', kind: crit ? 'crit' : 'hit', damage, word, frenzy });
   };

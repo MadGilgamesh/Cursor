@@ -4,6 +4,7 @@ export * from './combat.js';
 export * from './contracts.js';
 export * from './data/index.js';
 export * from './fishing.js';
+export * from './market.js';
 export * from './garden.js';
 export * from './investigation.js';
 export * from './world.js';

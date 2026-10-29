@@ -148,6 +148,15 @@ export const TOMES: readonly TomeDef[] = [
     domain: 4,
     extinct: false,
   },
+  {
+    id: 'tome.nodens',
+    name: 'Szlak nad Otchłanią',
+    hours: 4,
+    knowledge: 1,
+    sanityPerQuarter: 3,
+    domain: 5,
+    extinct: false,
+  },
 ];
 
 export function findTome(id: string): TomeDef | undefined {

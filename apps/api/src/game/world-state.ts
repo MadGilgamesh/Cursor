@@ -65,6 +65,7 @@ export async function saveWorld(db: Executor, row: WorldStateRow): Promise<void>
       residents: row.residents,
       cityReputation: row.cityReputation,
       clinicEndsAt: row.clinicEndsAt,
+      crate: row.crate,
     })
     .where(eq(worldStates.characterId, row.characterId));
 }

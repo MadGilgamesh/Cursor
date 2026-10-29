@@ -9,6 +9,7 @@ import { CityScreen } from './screens/CityScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LoreScreen } from './screens/LoreScreen';
 import { MrokScreen } from './screens/MrokScreen';
+import { PortScreen } from './screens/PortScreen';
 import { PortalScreen } from './screens/PortalScreen';
 import { RoadScreen } from './screens/RoadScreen';
 import { PlaceholderScreen } from './screens/PlaceholderScreen';
@@ -68,6 +69,7 @@ export function App() {
       <Route element={<AppShell session={session} />}>
         <Route index element={<HomeScreen />} />
         <Route path="droga" element={<RoadScreen />} />
+        <Route path="port" element={<PortScreen />} />
         <Route path="miasto" element={<CityScreen />} />
         <Route path="mrok" element={<MrokScreen />} />
         <Route path="portal" element={<PortalScreen />} />

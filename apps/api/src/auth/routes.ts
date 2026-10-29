@@ -11,6 +11,7 @@ import type { AppDeps } from '../app.js';
 import { playerActor, writeAudit } from '../audit.js';
 import { insertStartingStats } from '../game/avatar.js';
 import { insertLoreState } from '../game/lore-state.js';
+import { insertMarketState, insertWorkshopState } from '../game/port-state.js';
 import { insertWorldState } from '../game/world-state.js';
 import { insertPortalState } from '../game/portal-state.js';
 import { initialResources, insertResources, resourceContext } from '../game/resources.js';
@@ -58,6 +59,8 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
         await insertPortalState(tx, character.id, now);
         await insertLoreState(tx, character.id);
         await insertWorldState(tx, character.id);
+        await insertMarketState(tx, character.id);
+        await insertWorkshopState(tx, character.id);
         await writeAudit(tx, playerActor(request, account.id), {
           action: 'account.register',
           characterId: character.id,

@@ -242,6 +242,7 @@ async function dreamCombatant(
       knowledge: lore.knowledge,
       composure: lore.composure,
       panicImmune: panicImmune(lore.scars),
+      contamination: journey.contamination,
       pulseBrand: loadout.weapon?.instanceId
         ? journey.itemBrands[loadout.weapon.instanceId] === 'vein-blood'
         : false,

@@ -101,6 +101,27 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Ghaal-Tureth, Serce pod Górami',
     ],
   },
+  {
+    domain: 5,
+    god: 'Nodens',
+    place: 'Muszlowy Szlak nad Otchłanią',
+    modifier: 'judgment',
+    modifierName: 'Sąd Pradawnego',
+    materialId: 'shell-light',
+    materialName: 'Światło Muszli',
+    units: [
+      'Młode Bezlice',
+      'Bezlice',
+      'Trytoni',
+      'Muszlowi Jeźdźcy',
+      'Stada Bezlicych',
+      'Trytoni Wojenni',
+      'Konchowi Heroldzi',
+      'Rydwan Otchłani',
+      'Wielki Bezlicy',
+      'Nodens Siwobrody',
+    ],
+  },
 ];
 
 export function portalDomain(domain: number): PortalDomainDef | undefined {
@@ -228,6 +249,20 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     rarity: 'phantom',
     aspect: 'strength',
     godDomain: 4,
+  },
+  {
+    id: 'echo.god.nodens.wraith',
+    name: 'Wielki Bezlicy',
+    rarity: 'wraith',
+    aspect: 'evasion',
+    godDomain: 5,
+  },
+  {
+    id: 'echo.god.nodens.phantom',
+    name: 'Nodens Siwobrody',
+    rarity: 'phantom',
+    aspect: 'defense',
+    godDomain: 5,
   },
 ];
 

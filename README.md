@@ -215,6 +215,16 @@ Portal: Domena 4, Ghaal-Tureth, modyfikator Tętno Skały. W rundach 5, 10, 15, 
 
 Symulacja dnia 99 dla Domeny 4 nie jest warunkiem akceptacji tego etapu i nie została dociągnięta. Patronat (maks. Wigor 200) zostaje w Etapie 9.
 
+## Etap 5 — Port i rynek
+
+Giełda Portowa przyjmuje towary stakowalne: plony, ryby, materiały Domen, kopie ksiąg, filety i przetwory. Klucze Snu i Sigile nie mają identyfikatora towaru i są odrzucane. Zlecenie limit zostaje w księdze, zlecenie market zjada najlepsze ceny i nie zostawia reszty. Cena transakcji to cena zlecenia leżącego. Prowizja sprzedającego to 3% (`floor`), opłata wystawienia 1% od nominału (przy market — od tego, co faktycznie zeszło). Kupno limit blokuje srebro, sprzedaż blokuje towar. Zlecenie gaśnie po 7 dniach i zwraca resztę. Księga jednego towaru jest blokowana na czas dopasowania.
+
+Licytacja i handel bezpośredni biorą ten sam przedmiot pod blokadę wiersza. Oferty licytacji nie da się wycofać. Handel i poczta z załącznikiem wymagają poziomu 10 (Patronatu jeszcze nie ma, więc nie ma drugiej furtki). Odbiór listu jest jawnym żądaniem.
+
+Pięć stacji warsztatu: Kuźnia, Destylarnia, Introligatornia, Preparatornia, Odlewnia Świec. Koszt poziomu to założenie `100 · nowy poziom`. Odlewnia od poziomu 5 daje Świecę Progu: 1 Odłamek Klucza na 24 h. Introligatornia kopiuje tom, który postać już przeczytała. Kuchnia filetuje rybę z kosza. Skrzynia przemytnika ma 2 miejsca plus miejsca wierzchowca; Kupiec płaci według miasta. Napad w drodze zdejmuje jedną sztukę ze skrzyni. Czat ma kanały Ogólny, Handel i Pomoc; trzy zgłoszenia chowają wiadomość.
+
+Portal: Domena 5, Nodens, modyfikator Sąd Pradawnego. Przy Skażeniu poniżej 20 obrażenia gracza ×1,1, powyżej 50 ×0,8. Do Etapu 7 Skażenie z walki wynosi 0, więc sąd daje tylko premię. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 6. Patronat nie wchodzi w ten etap.
+
 ## Konwencje
 
 - Interfejs, komentarze, commity i dokumentacja po polsku; identyfikatory w kodzie po angielsku.
