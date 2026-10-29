@@ -1,7 +1,7 @@
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import { API_PREFIX } from '@game/shared';
+import { API_PREFIX, validateStaticData } from '@game/shared';
 import Fastify, { type FastifyInstance, type FastifyPluginCallback } from 'fastify';
 
 import { registerAuth } from './auth/plugin.js';
@@ -11,8 +11,12 @@ import type { Clock } from './clock.js';
 import type { AppConfig } from './config.js';
 import type { Database } from './db/client.js';
 import { registerErrorHandling } from './errors.js';
+import { gameRoutes } from './game/routes.js';
 import { healthRoutes } from './health/routes.js';
+import type { JobsQueue } from './jobs/queue.js';
+import { pushRoutes } from './push/routes.js';
 import type { Redis } from './redis.js';
+import { testControlRoutes } from './testing/routes.js';
 import { timeRoutes } from './time/routes.js';
 
 export interface AppDeps {
@@ -20,10 +24,14 @@ export interface AppDeps {
   db: Database;
   redis: Redis;
   clock: Clock;
+  /** Kolejka zadań — API tylko dokłada zadania; przetwarza je osobny proces workera. */
+  jobs: JobsQueue;
 }
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const { config } = deps;
+  // Dane statyczne są częścią kontraktu gry — z błędnymi danymi serwer nie startuje (GDD 8.3).
+  validateStaticData();
   const app = Fastify({
     trustProxy: (_address, hop) => hop < config.trustProxyHops,
     bodyLimit: 16 * 1024,
@@ -44,7 +52,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(rateLimit, {
     global: false,
     redis: deps.redis,
-    nameSpace: 'mg:rate-limit:',
+    nameSpace: 'zb:rate-limit:',
   });
 
   // Każdy moduł tras to osobny kontekst Fastify, więc jego hooki (np. requireAuth) nie wyciekają.
@@ -59,6 +67,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(routes(timeRoutes), { prefix: API_PREFIX });
   await app.register(routes(authRoutes), { prefix: `${API_PREFIX}/auth` });
   await app.register(routes(characterRoutes), { prefix: API_PREFIX });
+  await app.register(routes(gameRoutes), { prefix: API_PREFIX });
+  await app.register(routes(pushRoutes), { prefix: API_PREFIX });
+  if (config.enableTestControls) {
+    await app.register(routes(testControlRoutes), { prefix: '/api/test' });
+  }
 
   return app;
 }

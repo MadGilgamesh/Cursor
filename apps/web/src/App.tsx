@@ -1,9 +1,11 @@
 import { Navigate, Route, Routes } from 'react-router';
 
 import { useSession } from './api/auth';
+import { errorMessage, t } from './i18n';
 import { AppShell } from './layout/AppShell';
 import { AuthScreen } from './screens/AuthScreen';
 import { CharacterScreen } from './screens/CharacterScreen';
+import { CityScreen } from './screens/CityScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { PlaceholderScreen } from './screens/PlaceholderScreen';
 import { Button } from './ui/Button';
@@ -21,12 +23,12 @@ function Splash({ error, onRetry }: { error?: string; onRetry?: () => void }) {
             </p>
             {onRetry ? (
               <Button variant="ghost" className="mt-4" onClick={onRetry}>
-                Spróbuj ponownie
+                {t('app.retry')}
               </Button>
             ) : null}
           </>
         ) : (
-          <p className="mt-4 text-sm text-bone-400 italic">Mgła się rozstępuje…</p>
+          <p className="mt-4 text-sm text-bone-400 italic">{t('app.loading')}</p>
         )}
       </div>
     </div>
@@ -39,7 +41,10 @@ export function App() {
   if (sessionQuery.isPending) return <Splash />;
   if (sessionQuery.isError) {
     return (
-      <Splash error={sessionQuery.error.message} onRetry={() => void sessionQuery.refetch()} />
+      <Splash
+        error={errorMessage(sessionQuery.error)}
+        onRetry={() => void sessionQuery.refetch()}
+      />
     );
   }
 
@@ -58,22 +63,11 @@ export function App() {
     <Routes>
       <Route element={<AppShell session={session} />}>
         <Route index element={<HomeScreen />} />
-        <Route
-          path="miasto"
-          element={
-            <PlaceholderScreen
-              title="Miasto"
-              description="Sól nocą: Kasa, Kuźnia Szarego Młota i Przytułek św. Agaty wciąż zamknięte na cztery spusty."
-            />
-          }
-        />
+        <Route path="miasto" element={<CityScreen />} />
         <Route
           path="mrok"
           element={
-            <PlaceholderScreen
-              title="Mrok"
-              description="Łowy, Studnia Bez Dna i wyprawy czekają, aż coś wypełznie z morza."
-            />
+            <PlaceholderScreen title={t('dark.title')} description={t('dark.description')} />
           }
         />
         <Route path="postac" element={<CharacterScreen />} />
@@ -81,8 +75,8 @@ export function App() {
           path="wspolnota"
           element={
             <PlaceholderScreen
-              title="Wspólnota"
-              description="Loże, poczta i giełda ożyją, gdy na Brzegu zbierze się więcej Przebudzonych."
+              title={t('community.title')}
+              description={t('community.description')}
             />
           }
         />

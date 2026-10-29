@@ -9,5 +9,5 @@
     "declarationMap": false,
     "types": ["node"]
   },
-  "include": ["tests", "playwright.config.ts"]
+  "include": ["tests", "playwright.config.ts", "../apps/api/test/integration/http-ece.d.ts"]
 }

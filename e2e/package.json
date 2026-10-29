@@ -13,6 +13,8 @@
     "@game/api": "workspace:*",
     "@game/web": "workspace:*",
     "@playwright/test": "^1.64.1",
-    "@types/node": "^24.19.2"
+    "@types/node": "^24.19.2",
+    "@types/web-push": "^3.6.4",
+    "web-push": "^3.6.7"
   }
 }

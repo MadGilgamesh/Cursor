@@ -1,5 +1,7 @@
 import { experienceToNextLevel, type Character } from '@game/shared';
 
+import { t } from '../i18n';
+
 /** Pasek doświadczenia liczony współdzieloną krzywą z GDD (ta sama formuła co na serwerze). */
 export function XpBar({ character }: { character: Character }) {
   const required = experienceToNextLevel(character.level);
@@ -8,7 +10,7 @@ export function XpBar({ character }: { character: Character }) {
     <div>
       <div
         role="progressbar"
-        aria-label="Doświadczenie"
+        aria-label={t('resources.experience')}
         aria-valuemin={0}
         aria-valuemax={required}
         aria-valuenow={character.experience}
@@ -17,7 +19,9 @@ export function XpBar({ character }: { character: Character }) {
         <div className="h-full bg-verdigris-500" style={{ width: `${percent}%` }} />
       </div>
       <p className="mt-1 text-right text-[0.65rem] text-bone-600">
-        {required > 0 ? `${character.experience} / ${required} PD` : 'Poziom maksymalny'}
+        {required > 0
+          ? t('resources.experienceValue', { value: character.experience, max: required })
+          : t('resources.maxLevel')}
       </p>
     </div>
   );
