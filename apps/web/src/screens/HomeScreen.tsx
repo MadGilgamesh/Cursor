@@ -124,6 +124,12 @@ export function HomeScreen() {
           >
             {t('home.worldRoad')} →
           </Link>
+          <Link
+            to="/port"
+            className="mt-3 ml-4 inline-block font-display font-semibold text-brass-300 underline-offset-4 hover:underline"
+          >
+            {t('home.portEnter')} →
+          </Link>
         </section>
       ) : null}
 

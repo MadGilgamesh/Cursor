@@ -289,6 +289,8 @@ export const itemInstances = pgTable(
     rarity: text('rarity').notNull().default('common'),
     enhancement: integer('enhancement').notNull().default(0),
     equippedSlot: text('equipped_slot'),
+    /** `auction` albo `trade`, gdy sztuka jest zablokowana. */
+    hold: text('hold'),
     createdAt: createdAt(),
   },
   (t) => [
@@ -506,7 +508,168 @@ export const worldStates = pgTable('world_states', {
   residents: jsonb('residents').$type<CityResidentRow[]>().notNull().default([]),
   cityReputation: jsonb('city_reputation').$type<Record<string, number>>().notNull().default({}),
   clinicEndsAt: tstz('clinic_ends_at'),
+  crate: jsonb('crate').$type<{ goodId: string; qty: number }[]>().notNull().default([]),
 });
+
+/** Towary giełdy trzymane poza ogrodem i koszem. */
+export const marketStates = pgTable('market_states', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  goods: jsonb('goods').$type<Record<string, number>>().notNull().default({}),
+});
+
+/** Wiersz blokady księgi jednego towaru. */
+export const marketBooks = pgTable('market_books', {
+  goodId: text('good_id').primaryKey(),
+});
+
+export const marketOrders = pgTable(
+  'market_orders',
+  {
+    id: id(),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    goodId: text('good_id').notNull(),
+    side: text('side').notNull(),
+    orderType: text('order_type').notNull(),
+    price: integer('price'),
+    quantity: integer('quantity').notNull(),
+    remaining: integer('remaining').notNull(),
+    escrowSilver: integer('escrow_silver').notNull().default(0),
+    status: text('status').notNull().default('open'),
+    expiresAt: tstz('expires_at').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('market_orders_book_idx').on(t.goodId, t.status)],
+);
+
+export const marketFills = pgTable('market_fills', {
+  id: id(),
+  goodId: text('good_id').notNull(),
+  buyOrderId: uuid('buy_order_id').notNull(),
+  sellOrderId: uuid('sell_order_id').notNull(),
+  buyerId: uuid('buyer_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  sellerId: uuid('seller_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  price: integer('price').notNull(),
+  quantity: integer('quantity').notNull(),
+  createdAt: createdAt(),
+});
+
+export const auctions = pgTable('auctions', {
+  id: id(),
+  sellerId: uuid('seller_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  itemId: uuid('item_id')
+    .notNull()
+    .references(() => itemInstances.id, { onDelete: 'cascade' }),
+  minBid: integer('min_bid').notNull(),
+  buyNow: integer('buy_now'),
+  currentBid: integer('current_bid').notNull().default(0),
+  bidderId: uuid('bidder_id').references(() => characters.id, { onDelete: 'set null' }),
+  status: text('status').notNull().default('open'),
+  createdAt: createdAt(),
+});
+
+export const directTrades = pgTable('direct_trades', {
+  id: id(),
+  makerId: uuid('maker_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  takerId: uuid('taker_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  itemId: uuid('item_id').references(() => itemInstances.id, { onDelete: 'set null' }),
+  silver: integer('silver').notNull().default(0),
+  status: text('status').notNull().default('open'),
+  createdAt: createdAt(),
+});
+
+export const mails = pgTable('mails', {
+  id: id(),
+  fromId: uuid('from_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  toId: uuid('to_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  body: text('body').notNull(),
+  silver: integer('silver').notNull().default(0),
+  goodId: text('good_id'),
+  goodQty: integer('good_qty').notNull().default(0),
+  claimed: boolean('claimed').notNull().default(false),
+  createdAt: createdAt(),
+});
+
+export const workshopStates = pgTable('workshop_states', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  levels: jsonb('levels').$type<Record<string, number>>().notNull().default({}),
+  jobs: jsonb('jobs')
+    .$type<{ station: string; goodId: string; endsAt: string }[]>()
+    .notNull()
+    .default([]),
+  candleAt: tstz('candle_at'),
+});
+
+export const chatMessages = pgTable('chat_messages', {
+  id: id(),
+  channel: text('channel').notNull(),
+  characterId: uuid('character_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  body: text('body').notNull(),
+  hidden: boolean('hidden').notNull().default(false),
+  createdAt: createdAt(),
+});
+
+export const chatBlocks = pgTable(
+  'chat_blocks',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    blockedId: uuid('blocked_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.blockedId] })],
+);
+
+export const chatReports = pgTable(
+  'chat_reports',
+  {
+    id: id(),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => chatMessages.id, { onDelete: 'cascade' }),
+    reporterId: uuid('reporter_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('chat_reports_once').on(t.messageId, t.reporterId)],
+);
+
+export const friendships = pgTable(
+  'friendships',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    friendId: uuid('friend_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.friendId] })],
+);
 
 export type LoreStateRow = typeof loreStates.$inferSelect;
 export type WorldStateRow = typeof worldStates.$inferSelect;

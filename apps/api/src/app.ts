@@ -14,6 +14,7 @@ import { registerErrorHandling } from './errors.js';
 import { gameRoutes } from './game/routes.js';
 import { loreRoutes } from './game/lore-routes.js';
 import { worldRoutes } from './game/world-routes.js';
+import { portRoutes } from './game/port-routes.js';
 import { portalRoutes } from './game/portal-routes.js';
 import { stage1Routes } from './game/stage1-routes.js';
 import { healthRoutes } from './health/routes.js';
@@ -76,6 +77,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(routes(portalRoutes), { prefix: API_PREFIX });
   await app.register(routes(loreRoutes), { prefix: API_PREFIX });
   await app.register(routes(worldRoutes), { prefix: API_PREFIX });
+  await app.register(routes(portRoutes), { prefix: API_PREFIX });
   await app.register(routes(pushRoutes), { prefix: API_PREFIX });
   if (config.enableTestControls) {
     await app.register(routes(testControlRoutes), { prefix: '/api/test' });

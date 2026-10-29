@@ -167,6 +167,7 @@ async function resolveArrival(
   );
   const ambush = row.travelAmbush as AmbushKind | null;
   let basket = row.basket;
+  let crate = row.crate;
   if (ambush === 'fight') {
     const loss = Math.min(10, Math.max(0, resources.life.value - 1));
     if (loss > 0) {
@@ -193,6 +194,13 @@ async function resolveArrival(
     };
   }
   if (ambush === 'cargo' && basket.length > 0) basket = basket.slice(0, -1);
+  if (ambush === 'fight' && crate.length > 0) {
+    const last = crate[crate.length - 1];
+    crate =
+      last && last.qty > 1
+        ? [...crate.slice(0, -1), { ...last, qty: last.qty - 1 }]
+        : crate.slice(0, -1);
+  }
   if (resources.sanity.value <= 0) await enterSanatorium(db, character, resources, now);
   else await saveResources(db, character.id, resources);
   const next: WorldStateRow = {
@@ -202,6 +210,7 @@ async function resolveArrival(
     travelEndsAt: null,
     travelAmbush: null,
     basket,
+    crate,
   };
   await saveWorld(db, next);
   return next;

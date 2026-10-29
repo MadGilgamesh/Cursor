@@ -8,7 +8,7 @@
 import { HOUR_MS, pow125 } from './balance.js';
 import { createRng, type Rng } from './rng.js';
 
-export const PORTAL_DOMAINS_THIS_STAGE = 4;
+export const PORTAL_DOMAINS_THIS_STAGE = 5;
 /** ★1–★5 są w tym etapie tylko dla Domen 1–3. Domena 4 ma na razie sam Sen. */
 export const PORTAL_STAR_DOMAINS_THIS_STAGE = 3;
 export const PORTAL_STARS_MAX = 5;
@@ -82,7 +82,7 @@ export const HUNT_SHARD_CIRCLE = 5;
 export const HUNT_SHARD_CHANCE_BP = 1_000;
 
 export type PortalRole = 'minion' | 'boss' | 'avatar';
-export type PortalModifier = 'ib-vengeance' | 'pressure' | 'drain' | 'pulse';
+export type PortalModifier = 'ib-vengeance' | 'pressure' | 'drain' | 'pulse' | 'judgment';
 
 export interface PortalCoord {
   domain: number;
@@ -167,6 +167,7 @@ export function portalModifier(domain: number): PortalModifier | null {
   if (domain === 2) return 'pressure';
   if (domain === 3) return 'drain';
   if (domain === 4) return 'pulse';
+  if (domain === 5) return 'judgment';
   return null;
 }
 
