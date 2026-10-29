@@ -46,6 +46,8 @@ export default defineConfig({
         ],
         // API nigdy nie jest cache'owane przez service workera — stan gry zna tylko serwer.
         navigateFallbackDenylist: [/^\/api\//],
+        // Obsługa zdarzeń `push` i `notificationclick` (GDD 3.3).
+        importScripts: ['push-handler.js'],
       },
     }),
   ],

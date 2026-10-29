@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router';
 
+import { t } from '../i18n';
 import { NAV_ITEMS } from './nav-items';
 
 export function BottomNav() {
   return (
     <nav
-      aria-label="Nawigacja główna"
+      aria-label={t('nav.label')}
       className="pb-safe fixed inset-x-0 bottom-0 z-20 border-t border-brass-700/50 bg-abyss-950"
     >
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end px-1 pt-1.5">
@@ -16,7 +17,7 @@ export function BottomNav() {
               end={to === '/'}
               className={({ isActive }) =>
                 [
-                  'group flex min-h-14 w-full flex-col items-center justify-end gap-1 rounded-lg pb-1 text-xs tracking-wide uppercase transition-colors',
+                  'group flex min-h-14 w-full flex-col items-center justify-end gap-1 rounded-lg pb-1 text-xs tracking-wide uppercase',
                   isActive ? 'text-brass-300' : 'text-bone-600 active:text-bone-400',
                 ].join(' ')
               }

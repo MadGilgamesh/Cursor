@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from 'react';
 
+import { t } from '../i18n';
 import { CharacterIcon, CityIcon, CommunityIcon, DarkIcon, HomeIcon } from '../ui/icons';
 
 export interface NavItem {
@@ -12,9 +13,9 @@ export interface NavItem {
 
 /** Dolna nawigacja wg GDD 3.3. */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { to: '/', label: 'Dom', Icon: HomeIcon },
-  { to: '/miasto', label: 'Miasto', Icon: CityIcon },
-  { to: '/mrok', label: 'Mrok', Icon: DarkIcon, featured: true },
-  { to: '/postac', label: 'Postać', Icon: CharacterIcon },
-  { to: '/wspolnota', label: 'Wspólnota', Icon: CommunityIcon },
+  { to: '/', label: t('nav.home'), Icon: HomeIcon },
+  { to: '/miasto', label: t('nav.city'), Icon: CityIcon },
+  { to: '/mrok', label: t('nav.dark'), Icon: DarkIcon, featured: true },
+  { to: '/postac', label: t('nav.character'), Icon: CharacterIcon },
+  { to: '/wspolnota', label: t('nav.community'), Icon: CommunityIcon },
 ];

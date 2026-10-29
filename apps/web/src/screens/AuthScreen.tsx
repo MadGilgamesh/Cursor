@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { z } from 'zod';
 
 import { useLogin, useRegister } from '../api/auth';
-import { GAME_TAGLINE, GAME_TITLE } from '../content/game';
+import { errorMessage, t } from '../i18n';
 import { Button } from '../ui/Button';
 import { Fog } from '../ui/Fog';
 import { Sigil } from '../ui/Sigil';
@@ -16,19 +16,19 @@ type FieldErrors = Partial<Record<Field, string | undefined>>;
 
 const copy = {
   login: {
-    heading: 'Powrót na Brzeg',
-    submit: 'Wejdź',
-    pending: 'Otwieranie bram…',
-    switchText: 'Pierwszy raz na Brzegu?',
-    switchLink: 'Przebudź się',
+    heading: t('auth.loginHeading'),
+    submit: t('auth.loginSubmit'),
+    pending: t('auth.loginPending'),
+    switchText: t('auth.loginSwitchText'),
+    switchLink: t('auth.loginSwitchLink'),
     switchTo: '/rejestracja',
   },
   register: {
-    heading: 'Przebudzenie',
-    submit: 'Przebudź się',
-    pending: 'Dusza wraca do ciała…',
-    switchText: 'Masz już konto?',
-    switchLink: 'Zaloguj się',
+    heading: t('auth.registerHeading'),
+    submit: t('auth.registerSubmit'),
+    pending: t('auth.registerPending'),
+    switchText: t('auth.registerSwitchText'),
+    switchLink: t('auth.registerSwitchLink'),
     switchTo: '/logowanie',
   },
 } as const;
@@ -85,9 +85,9 @@ export function AuthScreen({ mode }: { mode: Mode }) {
       <div className="mb-8 text-center">
         <Sigil className="mx-auto mb-5 size-36 animate-pulse-slow" />
         <h1 className="font-display text-4xl font-bold tracking-[0.08em] text-bone-50">
-          {GAME_TITLE}
+          {t('app.title')}
         </h1>
-        <p className="mt-2 text-sm text-bone-400 italic">{GAME_TAGLINE}</p>
+        <p className="mt-2 text-sm text-bone-400 italic">{t('app.tagline')}</p>
       </div>
 
       <form
@@ -99,7 +99,7 @@ export function AuthScreen({ mode }: { mode: Mode }) {
           {text.heading}
         </h2>
         <TextField
-          label="E-mail"
+          label={t('auth.email')}
           name="email"
           type="email"
           autoComplete="email"
@@ -108,7 +108,7 @@ export function AuthScreen({ mode }: { mode: Mode }) {
         />
         {mode === 'register' ? (
           <TextField
-            label="Imię postaci"
+            label={t('auth.characterName')}
             name="characterName"
             autoComplete="username"
             autoCapitalize="off"
@@ -116,7 +116,7 @@ export function AuthScreen({ mode }: { mode: Mode }) {
           />
         ) : null}
         <TextField
-          label="Hasło"
+          label={t('auth.password')}
           name="password"
           type="password"
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -127,7 +127,7 @@ export function AuthScreen({ mode }: { mode: Mode }) {
             role="alert"
             className="rounded-lg border border-ichor-600/60 bg-ichor-600/15 px-3 py-2 text-sm text-ichor-400"
           >
-            {mutation.error.message}
+            {errorMessage(mutation.error)}
           </p>
         ) : null}
         <Button type="submit" disabled={mutation.isPending}>
