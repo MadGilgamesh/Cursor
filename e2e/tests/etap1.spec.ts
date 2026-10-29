@@ -9,7 +9,9 @@ test('Etap 1: poziom 5, klasa Rzeźnik i zlecenie w pętli', async ({ page }) =>
   await page.getByRole('button', { name: 'Wstań ze stołu' }).click({ force: true });
   await expect(page.getByTestId('fight-result')).toContainText('Zwycięstwo');
   const trained = page.waitForResponse(
-    (response) => response.url().includes('/training') && (response.request().postData() ?? '').includes('evasion'),
+    (response) =>
+      response.url().includes('/training') &&
+      (response.request().postData() ?? '').includes('evasion'),
   );
   await page.getByRole('button', { name: 'Trenuj ciało (80 Wigoru)' }).click({ force: true });
   await trained;
@@ -17,7 +19,9 @@ test('Etap 1: poziom 5, klasa Rzeźnik i zlecenie w pętli', async ({ page }) =>
   for (let i = 0; i < 30; i++) {
     const level = await page.getByTestId('character-level').textContent();
     if (level && Number(level.replace(/\D/g, '')) >= 5) break;
-    const fought = page.waitForResponse((response) => response.url().includes('/hunts/fight'), { timeout: 8_000 });
+    const fought = page.waitForResponse((response) => response.url().includes('/hunts/fight'), {
+      timeout: 8_000,
+    });
     await page.getByRole('button', { name: 'Walcz' }).first().click({ force: true });
     const response = await fought.catch(() => null);
     if (!response || response.status() === 409) {
