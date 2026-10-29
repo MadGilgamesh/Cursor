@@ -42,6 +42,16 @@ export function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextEnd, refetch]);
 
+  const madness = dashboard.data?.lore;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!madness?.madnessUi || madness.sanityTier === 'calm' || madness.sanityTier === 'broken') {
+      delete root.dataset.madness;
+      return;
+    }
+    root.dataset.madness = madness.sanityTier;
+  }, [madness]);
+
   const vigor = dashboard.data
     ? resourceViews(dashboard.data.resources, now).find((view) => view.kind === 'vigor')
     : undefined;
@@ -105,6 +115,50 @@ export function HomeScreen() {
             className="mt-3 inline-block font-display font-semibold text-brass-300 underline-offset-4 hover:underline"
           >
             {t('home.portalEnter')} →
+          </Link>
+        </section>
+      ) : null}
+
+      {dashboard.data ? (
+        <section aria-label={t('home.loreTitle')} className="panel p-4">
+          <h2 className="font-display text-lg font-semibold text-brass-300">
+            {t('home.loreTitle')}
+          </h2>
+          <p data-testid="lore-knowledge" className="mt-1 text-sm text-bone-200">
+            {t('home.loreKnowledge', { knowledge: dashboard.data.lore.knowledge })}
+          </p>
+          <p className="text-sm text-bone-400">
+            {dashboard.data.lore.caseOpen ? t('home.loreCase') : t('home.loreCaseEmpty')}
+          </p>
+          <p className="text-sm text-bone-400">
+            {t('home.loreReforge', { left: dashboard.data.lore.reforgeLeft })}
+          </p>
+          <p className="text-sm text-bone-400">
+            {t('home.loreSigils', { count: dashboard.data.lore.colourSigils })}
+          </p>
+          <p className="text-sm text-bone-400">
+            {t('home.loreChapel', {
+              composure: dashboard.data.lore.composure,
+              insight: dashboard.data.lore.insight,
+              stealth: dashboard.data.lore.stealth,
+            })}
+          </p>
+          <p className="text-sm text-bone-400">
+            {t('home.loreScars', {
+              count: dashboard.data.lore.scars.length,
+              residents: dashboard.data.lore.residents,
+            })}
+          </p>
+          <p className="text-sm text-bone-400">
+            {dashboard.data.lore.readingEndsAt || dashboard.data.lore.collegeEndsAt
+              ? t('home.loreBusy')
+              : t('home.loreShelf')}
+          </p>
+          <Link
+            to="/wiedza"
+            className="mt-3 inline-block font-display font-semibold text-brass-300 underline-offset-4 hover:underline"
+          >
+            {t('home.loreEnter')} →
           </Link>
         </section>
       ) : null}

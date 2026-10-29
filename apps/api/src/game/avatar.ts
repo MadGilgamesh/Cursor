@@ -29,6 +29,7 @@ import { eq } from 'drizzle-orm';
 import type { Executor } from '../db/client.js';
 import { characterStats, itemInstances, type CharacterRow } from '../db/schema.js';
 import { AppError } from '../errors.js';
+import { maybeMindScar } from './lore-state.js';
 import { loadResources, materializeAll, saveResources, type ResourceValues } from './resources.js';
 
 export const startingStats = (): StatBlock => ({
@@ -178,6 +179,7 @@ export async function enterSanatorium(
     sanity: { value: 0, updatedAt: now.getTime() },
   };
   await saveResources(db, character.id, next);
+  await maybeMindScar(db, character.id, `${character.id}:scar:${now.toISOString()}`);
   return next;
 }
 

@@ -29,9 +29,15 @@ import {
   godEchoForClear,
   isWellGuardian,
   nextPortalFight,
+  edgeLootMultiplier,
+  emptyStarTrack,
+  panicImmune,
   portalAccess,
   portalAuraDread,
   portalDomain,
+  portalSigilRequired,
+  portalStarAccess,
+  sanityTier,
   portalEnemyDamage,
   portalEnemyLife,
   portalEnemyStat,
@@ -58,7 +64,12 @@ import {
   ECHO_MAX_LEVEL,
   PORTAL_DOMAINS_THIS_STAGE,
   PORTAL_WIN_SHARD_CHANCE_BP,
+  REFORGE_DAILY_CAP,
+  REFORGE_KEYS,
+  SIGIL_SHARDS_PER_SIGIL,
   UNARMED_DAMAGE,
+  reforgeIchorCost,
+  unlockedPortalGods,
   addKeyShards,
   addLootKeys,
   findGear,
@@ -89,6 +100,7 @@ import {
   statBlock,
 } from './avatar.js';
 import { lockCharacter } from './activities.js';
+import { loreExtras, loadLore, recordPortalKill } from './lore-state.js';
 import { materializeAll, resourceContext, saveResources } from './resources.js';
 import { giveItem } from './stage1.js';
 import {
@@ -151,8 +163,18 @@ export function portalView(row: PortalStateRow, now: Date) {
       whisperPending: wellWhisperPending(row.wellFloor, row.whisperUntilFloor),
       whisper: row.whisperId,
     },
-    candles: row.candles,
-    ectoplasm: row.ectoplasm,
+    candles: current.candles,
+    altar: {
+      reforgeLeft: Math.max(
+        0,
+        REFORGE_DAILY_CAP -
+          (current.reforgeDay === utcDay(now.getTime()) ? current.reforgeCount : 0),
+      ),
+      ichor: current.ichor,
+      bokrugSigils: current.sigils['1'] ?? 0,
+      colourSigils: current.sigils['3'] ?? 0,
+    },
+    ectoplasm: current.ectoplasm,
     activeEchoId: row.activeEchoId,
     echoes: Object.entries(row.echoes).map(([id, progress]) => {
       const def = findEcho(id);
@@ -183,7 +205,9 @@ async function dreamCombatant(
   const base = statBlock(statsRow);
   const loadout = computeLoadout(await equippedOf(db, character.id));
   const effective = effectiveStatsCenti(base, loadout);
-  const ctx = resourceContext(character.level);
+  const lore = await loadLore(db, character.id);
+  const extras = loreExtras(lore);
+  const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
   const current = materializeAll(resources, ctx, now);
   const echo = row.activeEchoId ? findEcho(row.activeEchoId) : undefined;
   const echoLevel = echo ? (row.echoes[echo.id]?.level ?? 0) : 0;
@@ -211,22 +235,28 @@ async function dreamCombatant(
         weapon && gear
           ? weaponDamage(gear.tier, weapon.qualityBp, weapon.enhancement, 0)
           : UNARMED_DAMAGE,
-      knowledge: 0,
+      knowledge: lore.knowledge,
+      composure: lore.composure,
+      panicImmune: panicImmune(lore.scars),
     },
   };
 }
 
-function portalEnemy(coord: PortalCoord) {
+function portalEnemy(coord: PortalCoord, stars = 0) {
   const floor = portalEquivalentFloor(portalFightIndex(coord));
   const role = coord.substage === 8 ? (coord.stage === 10 ? 'avatar' : 'boss') : 'minion';
-  const stat = portalEnemyStat(floor, role);
+  const stat = portalEnemyStat(floor, role, stars);
   return {
     stats: { strength: stat, defense: stat, accuracy: stat, evasion: stat },
-    life: portalEnemyLife(floor, role),
-    damage: portalEnemyDamage(floor, role),
+    life: portalEnemyLife(floor, role, stars),
+    damage: portalEnemyDamage(floor, role, stars),
     dread: portalAuraDread(coord.domain),
     gaze: false,
   };
+}
+
+function starTrackOf(row: PortalStateRow, domain: number) {
+  return row.starTracks[String(domain)] ?? emptyStarTrack();
 }
 
 export async function fightPortal(
@@ -235,11 +265,17 @@ export async function fightPortal(
   character: CharacterRow,
   clock: Clock,
   coord: PortalCoord,
+  stars = 0,
 ) {
   const now = clock.now();
   const locked = await lockCharacter(db, character.id);
   await assertCanAct(db, locked, now);
-  const access = portalAccess(coord, clearedOf(await loadPortal(db, locked.id)));
+  const dream = clearedOf(await loadPortal(db, locked.id));
+  const preview = await loadPortal(db, locked.id);
+  const access =
+    stars > 0
+      ? portalStarAccess(coord, stars, dream, starTrackOf(preview, coord.domain))
+      : portalAccess(coord, dream);
   if (access === 'locked') {
     throw new AppError(409, ERROR_CODES.requirement, 'Ta Domena jeszcze się nie otwiera');
   }
@@ -247,20 +283,31 @@ export async function fightPortal(
     throw new AppError(409, ERROR_CODES.requirement, 'Nie da się pominąć podetapu');
   }
   let row = materializePortal(await loadPortal(db, locked.id, true), now);
-  const spent = spendDreamKey(ringOf(row));
-  if (!spent) throw new AppError(409, ERROR_CODES.noDreamKey, 'Nie masz Klucza Snu');
-  row = withRing(row, spent, now);
+  const needsSigil = portalSigilRequired(coord, stars);
+  if (needsSigil) {
+    const key = String(coord.domain);
+    const have = row.sigils[key] ?? 0;
+    if (have < 1) throw new AppError(409, ERROR_CODES.noSigil, 'Potrzeba Sigilu tego boga');
+    row = { ...row, sigils: { ...row.sigils, [key]: have - 1 } };
+  } else {
+    const spent = spendDreamKey(ringOf(row));
+    if (!spent) throw new AppError(409, ERROR_CODES.noDreamKey, 'Nie masz Klucza Snu');
+    row = withRing(row, spent, now);
+  }
 
   const body = await dreamCombatant(db, locked, row, now);
   const seed = randomBytes(16).toString('base64url');
   const modifier = portalModifier(coord.domain) ?? undefined;
-  const result = simulateCombat(body.player, portalEnemy(coord), seed, modifier);
+  const result = simulateCombat(body.player, portalEnemy(coord, stars), seed, modifier);
   const won = result.winner === 'player';
   const firstClear = access === 'first' && won;
-  const payout = portalPayout(coord, firstClear, won);
+  const payout = portalPayout(coord, firstClear, won, stars);
+  const silver = Math.round(
+    payout.silver * edgeLootMultiplier(sanityTier(body.player.sanity, body.player.maxSanity)),
+  );
   const rng = createRng(seed);
 
-  const shardsGained = won ? (rng.rollBp(PORTAL_WIN_SHARD_CHANCE_BP) ? 1 : 0) : 1;
+  const shardsGained = needsSigil ? 0 : won ? (rng.rollBp(PORTAL_WIN_SHARD_CHANCE_BP) ? 1 : 0) : 1;
   if (shardsGained > 0) row = withRing(row, addKeyShards(ringOf(row), shardsGained), now);
 
   const materials = { ...row.materials };
@@ -269,6 +316,10 @@ export async function fightPortal(
     materials[materialId] = (materials[materialId] ?? 0) + payout.materials;
   }
   const sigils = { ...row.sigils };
+  if (won && (await recordPortalKill(db, locked.id, coord.domain, coord.stage))) {
+    const key = String(coord.domain);
+    sigils[key] = (sigils[key] ?? 0) + 1;
+  }
   if (payout.nextGodSigils > 0) {
     const key = String(coord.domain + 1);
     sigils[key] = (sigils[key] ?? 0) + payout.nextGodSigils;
@@ -281,12 +332,25 @@ export async function fightPortal(
       echoes[godEcho.id] = { ...prev, shards: prev.shards + 1 };
     }
   }
-  if (firstClear) {
+  if (firstClear && stars === 0) {
     row = {
       ...row,
       clearedDomain: coord.domain,
       clearedStage: coord.stage,
       clearedSubstage: coord.substage,
+    };
+  }
+  if (firstClear && stars > 0) {
+    const finished = coord.stage === 10 && coord.substage === 8;
+    const previous = starTrackOf(row, coord.domain);
+    row = {
+      ...row,
+      starTracks: {
+        ...row.starTracks,
+        [String(coord.domain)]: finished
+          ? { cleared: stars, stage: 0, substage: 0 }
+          : { cleared: previous.cleared, stage: coord.stage, substage: coord.substage },
+      },
     };
   }
   row = {
@@ -295,6 +359,7 @@ export async function fightPortal(
     sigils,
     sigilShards: row.sigilShards + payout.sigilShards,
     echoes,
+    meteorShards: row.meteorShards + (won && coord.domain === 3 ? 1 : 0),
   };
   await savePortal(db, row);
 
@@ -303,11 +368,11 @@ export async function fightPortal(
     .update(characters)
     .set({ level: progress.level, experience: progress.experience })
     .where(eq(characters.id, locked.id));
-  if (payout.silver > 0) {
+  if (silver > 0) {
     await postLedgerEntry(db, {
       characterId: locked.id,
       currency: 'silver',
-      delta: payout.silver,
+      delta: silver,
       reason: 'portal.reward',
       refId: seed,
       idempotencyKey: `portal:${seed}:silver`,
@@ -355,13 +420,91 @@ export async function fightPortal(
     result: { winner: result.winner, rounds: result.rounds, sanityEnd: result.sanityEnd },
     firstClear,
     experience: payout.experience,
-    silver: payout.silver,
+    silver,
     materials: payout.materials,
     shardsGained,
     keys: portalView(row, now).keys,
     life: resources.life.value,
     status: resources.sanity.value <= 0 ? 'broken' : 'ok',
   };
+}
+
+export async function reforgeSigil(
+  db: Executor,
+  who: AuditActor,
+  character: CharacterRow,
+  clock: Clock,
+  domain: number,
+) {
+  const now = clock.now();
+  const locked = await lockCharacter(db, character.id);
+  await assertCanAct(db, locked, now);
+  const lore = await loadLore(db, locked.id, true);
+  let row = materializePortal(await loadPortal(db, locked.id, true), now);
+  if (!unlockedPortalGods(clearedOf(row)).includes(domain)) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Ten bóg nie jest jeszcze odblokowany');
+  }
+  const day = utcDay(now.getTime());
+  const used = row.reforgeDay === day ? row.reforgeCount : 0;
+  if (used >= REFORGE_DAILY_CAP) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Ołtarz przyjmuje tylko pięć Przekuć na dobę');
+  }
+  const ichor = reforgeIchorCost(lore.knowledge);
+  if (row.ichor < ichor) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Potrzeba Ichoru albo Wiedzy 20');
+  }
+  let ring = ringOf(row);
+  for (let index = 0; index < REFORGE_KEYS; index += 1) {
+    const spent = spendDreamKey(ring);
+    if (!spent) throw new AppError(409, ERROR_CODES.noDreamKey, 'Przekucie bierze 3 Klucze Snu');
+    ring = spent;
+  }
+  row = withRing(row, ring, now);
+  const key = String(domain);
+  row = {
+    ...row,
+    ichor: row.ichor - ichor,
+    reforgeDay: day,
+    reforgeCount: used + 1,
+    sigils: { ...row.sigils, [key]: (row.sigils[key] ?? 0) + 1 },
+  };
+  await savePortal(db, row);
+  await audit(db, who, locked.id, 'portal.reforge', { domain, ichor });
+  return {
+    domain,
+    sigils: row.sigils[key] ?? 0,
+    reforgeLeft: REFORGE_DAILY_CAP - used - 1,
+    keys: portalView(row, now).keys,
+  };
+}
+
+/** 10 Odprysków → 1 Sigil na Ołtarzu Bramy (do Etapu 7, GDD 5.12.5). */
+export async function exchangeSigilShards(
+  db: Executor,
+  who: AuditActor,
+  character: CharacterRow,
+  clock: Clock,
+  domain: number,
+) {
+  const now = clock.now();
+  const locked = await lockCharacter(db, character.id);
+  await assertCanAct(db, locked, now);
+  const row = await loadPortal(db, locked.id, true);
+  if (!unlockedPortalGods(clearedOf(row)).includes(domain)) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Ten bóg nie jest jeszcze odblokowany');
+  }
+  if (row.sigilShards < SIGIL_SHARDS_PER_SIGIL) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Potrzeba 10 Odprysków Sigilu');
+  }
+  const key = String(domain);
+  const next = {
+    ...row,
+    sigilShards: row.sigilShards - SIGIL_SHARDS_PER_SIGIL,
+    sigils: { ...row.sigils, [key]: (row.sigils[key] ?? 0) + 1 },
+  };
+  await savePortal(db, next);
+  await audit(db, who, locked.id, 'portal.exchange', { domain });
+  return { domain, sigils: next.sigils[key] ?? 0, shards: next.sigilShards };
 }
 
 export async function engraveKey(

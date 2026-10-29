@@ -89,10 +89,15 @@ export function effectiveStatsCenti(baseCenti: StatBlock, loadout: Loadout): Sta
 /** Setne części → punkty (do wzorów walki i szansy zleceń). */
 export const statUnits = (centi: number) => centi / STAT_SCALE;
 
-export function resourceContextFor(level: number, loadout: Loadout | null): ResourceContext {
+export function resourceContextFor(
+  level: number,
+  loadout: Loadout | null,
+  extras?: { knowledge?: number; sanityPenalty?: number },
+): ResourceContext {
   return {
     level,
-    knowledge: 0,
+    knowledge: extras?.knowledge ?? 0,
+    sanityPenalty: extras?.sanityPenalty ?? 0,
     lifeBonus: loadout?.lifeBonus ?? 0,
     toilBonusBp: loadout?.classId === 'vagrant' ? CLASS_UNIQUES.vagrantToilBp : 0,
   };

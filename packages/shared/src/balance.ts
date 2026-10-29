@@ -14,7 +14,7 @@
  */
 import { applyBp } from './fixed-point.js';
 
-export const BALANCE_VERSION = 3;
+export const BALANCE_VERSION = 4;
 
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -51,8 +51,10 @@ export const RESOURCE_RULES = {
 
 export interface ResourceContext {
   level: number;
-  /** Wiedza Zakazana 0–80 (GDD 6.2); do czasu Etapu 3 zawsze 0. */
+  /** Wiedza Zakazana 0–80 (GDD 6.2). */
   knowledge: number;
+  /** Trwała kara do maksimum Poczytalności (Blizna „Głos w Ścianach”: 5). */
+  sanityPenalty?: number;
   /** Życie ze sprzętu (GDD 10.1: „+ Σ sprzęt”). */
   lifeBonus?: number;
   /** Premia do limitu Znoju w punktach bazowych (Włóczęga: +10%). */
@@ -74,9 +76,11 @@ export function resourceMax(kind: ResourceKind, ctx: ResourceContext): number {
         RESOURCE_RULES.toil.baseMax + applyBp(RESOURCE_RULES.toil.baseMax, ctx.toilBonusBp ?? 0)
       );
     case 'sanity':
-      return (
+      return Math.max(
+        1,
         RESOURCE_RULES.sanity.baseMax -
-        applyBp(ctx.knowledge, RESOURCE_RULES.sanity.knowledgePenaltyBp)
+          applyBp(ctx.knowledge, RESOURCE_RULES.sanity.knowledgePenaltyBp) -
+          (ctx.sanityPenalty ?? 0),
       );
   }
 }
@@ -630,19 +634,20 @@ export const gazeSanityLoss = (dread: number, composure = 0) =>
 /** Założenie Etapu 1: Spojrzenie pada w 3. rundzie (zamiast zwykłego ataku). */
 export const GAZE_ROUND = 3;
 
-export const SANITY_TIERS = ['calm', 'uneasy', 'shaken', 'broken'] as const;
+export const SANITY_TIERS = ['calm', 'uneasy', 'shaken', 'edge', 'broken'] as const;
 export type SanityTier = (typeof SANITY_TIERS)[number];
 
 /**
  * Progi Poczytalności (GDD 6.1) w procentach maksimum: Spokój 100–61, Niepokój 60–31,
- * Rozchwianie 30–1 (Krawędź 10–1 dochodzi później — w Etapie 1 działa jak Rozchwianie), 0 = Załamanie.
+ * Rozchwianie 30–11, Krawędź 10–1, 0 = Załamanie.
  */
 export function sanityTier(value: number, max: number): SanityTier {
-  if (value <= 0) return 'broken';
+  if (value <= 0 || max <= 0) return 'broken';
   const percent = Math.floor((100 * value) / max);
   if (percent > 60) return 'calm';
   if (percent > 30) return 'uneasy';
-  return 'shaken';
+  if (percent > 10) return 'shaken';
+  return 'edge';
 }
 
 /** Efekty mechaniczne progów (GDD 6.1). */
@@ -653,7 +658,8 @@ export const SANITY_EFFECTS: Record<
   calm: { accuracyPenaltyBp: 0, critBonusBp: 0, panicBp: 0 },
   uneasy: { accuracyPenaltyBp: 300, critBonusBp: 0, panicBp: 0 },
   shaken: { accuracyPenaltyBp: 800, critBonusBp: 1_000, panicBp: 500 },
-  broken: { accuracyPenaltyBp: 800, critBonusBp: 1_000, panicBp: 500 },
+  edge: { accuracyPenaltyBp: 0, critBonusBp: 2_000, panicBp: 1_000 },
+  broken: { accuracyPenaltyBp: 0, critBonusBp: 2_000, panicBp: 1_000 },
 };
 
 /** Załamanie: Sanatorium 30–120 min (GDD 4.3). Założenie Etapu 1: `30 + 2·L` min. */

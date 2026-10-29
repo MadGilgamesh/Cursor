@@ -33,8 +33,14 @@ export function effectiveStatOnDay(day: number): number {
 /** Szansa z 10.13: gracz wchodzi, gdy p ≥ 0,6, czyli statystyka ≥ ~1,0405× wroga. */
 const ENTRY_RATIO = 1.0405;
 
-function canEnter(stat: number, fightIndex: number): boolean {
-  return stat >= portalEnemyStat(portalEquivalentFloor(fightIndex)) * ENTRY_RATIO;
+function canEnter(stat: number, fightIndex: number, stars = 0): boolean {
+  return stat >= portalEnemyStat(portalEquivalentFloor(fightIndex), 'minion', stars) * ENTRY_RATIO;
+}
+
+function spendDay(keysPerDay: number, bank: number): { today: number; bank: number } {
+  const accrued = bank + keysPerDay;
+  const today = Math.floor(accrued + 1e-9);
+  return { today, bank: accrued - today };
 }
 
 /**
@@ -55,4 +61,52 @@ export function domainFinishDay(domain: number, keysPerDay = 7): number {
     if (cleared >= last) return day;
   }
   return 600;
+}
+
+/**
+ * Dzień kariery, w którym Sen danej Domeny jest skończony (walki 1…80·k od dnia 1).
+ * Dla Domeny 1 pokrywa się z `domainFinishDay`.
+ */
+export function dreamCareerDay(domain: number, keysPerDay = 7): number {
+  const last = 80 * domain;
+  let cleared = 0;
+  let bank = 0;
+  for (let day = 1; day <= 800; day += 1) {
+    const stat = effectiveStatOnDay(day);
+    const spent = spendDay(keysPerDay, bank);
+    bank = spent.bank;
+    let today = spent.today;
+    while (today > 0 && cleared < last && canEnter(stat, cleared + 1)) {
+      cleared += 1;
+      today -= 1;
+    }
+    if (cleared >= last) return day;
+  }
+  return 800;
+}
+
+/**
+ * Dzień, w którym ★1 Bokruga (te same 80 walk, statystyki ×1,5) jest skończona.
+ * Klucze z dnia ukończenia Snu, których nie wydano, idą od razu w gwiazdkę.
+ */
+export function bokrugStarOneDay(keysPerDay = 7): number {
+  let dream = 0;
+  let star = 0;
+  let bank = 0;
+  for (let day = 1; day <= 800; day += 1) {
+    const stat = effectiveStatOnDay(day);
+    const spent = spendDay(keysPerDay, bank);
+    bank = spent.bank;
+    let today = spent.today;
+    while (today > 0 && dream < 80 && canEnter(stat, dream + 1)) {
+      dream += 1;
+      today -= 1;
+    }
+    while (today > 0 && dream >= 80 && star < 80 && canEnter(stat, star + 1, 1)) {
+      star += 1;
+      today -= 1;
+    }
+    if (star >= 80) return day;
+  }
+  return 800;
 }

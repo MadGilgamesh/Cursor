@@ -3,6 +3,7 @@ import {
   dreamKeyCount,
   nextPortalFight,
   portalUnitName,
+  resourceMax,
   startMissionRequestSchema,
   type DashboardResponse,
 } from '@game/shared';
@@ -25,6 +26,8 @@ import {
   startMission,
   toActivityDto,
 } from './activities.js';
+import { loreHomeFrom } from './lore.js';
+import { loadLore, loreExtras } from './lore-state.js';
 import { loadResources, materializeAll, resourceContext, toResourcesDto } from './resources.js';
 import { loadPortal, materializePortal, ringOf } from './portal-state.js';
 import { walletOf } from './wallet.js';
@@ -53,7 +56,9 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
     await resolveDueActivities(deps, { characterId });
     const character = await characterOf(db, account.id);
     const now = clock.now();
-    const ctx = resourceContext(character.level);
+    const lore = await loadLore(db, character.id);
+    const extras = loreExtras(lore);
+    const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
     const resources = materializeAll(await loadResources(db, character.id), ctx, now);
     const portalRow = materializePortal(await loadPortal(db, character.id), now);
     const ring = ringOf(portalRow);
@@ -80,6 +85,7 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
         wellFloor: portalRow.wellFloor,
         candles: portalRow.candles,
       },
+      lore: loreHomeFrom(lore, portalRow, resources.sanity.value, resourceMax('sanity', ctx), now),
     };
   });
 

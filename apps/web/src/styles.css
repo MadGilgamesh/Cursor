@@ -101,6 +101,17 @@
   padding-top: max(env(safe-area-inset-top), 0.5rem);
 }
 
+/* Efekty obłędu da się wyłączyć (GDD 6.1). Bez atrybutu ekran zostaje spokojny. */
+html[data-madness='uneasy'] body {
+  box-shadow: inset 0 0 90px rgb(0 0 0 / 55%);
+}
+html[data-madness='shaken'] body {
+  box-shadow: inset 0 0 120px rgb(80 0 20 / 45%);
+}
+html[data-madness='edge'] .sigil {
+  transform: scaleX(-1);
+}
+
 @utility panel {
   border-radius: 1rem;
   border: 1px solid rgb(168 132 74 / 0.22);

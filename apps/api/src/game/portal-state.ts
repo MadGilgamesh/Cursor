@@ -9,16 +9,21 @@ import {
   STARTING_CANDLES,
   addKeyShards,
   addLootKeys,
+  addSigilShards,
+  advanceCalendar,
+  calendarSigilsDue,
   createRng,
   huntKeyShard,
   materializeKeyRing,
   missionKeyShards,
+  unlockedPortalGods,
+  utcDay,
   type KeyRing,
 } from '@game/shared';
 import { eq } from 'drizzle-orm';
 
 import type { Executor } from '../db/client.js';
-import { portalStates, type PortalStateRow } from '../db/schema.js';
+import { calendars, portalStates, type PortalStateRow } from '../db/schema.js';
 
 export async function insertPortalState(
   db: Executor,
@@ -124,6 +129,10 @@ export async function savePortal(db: Executor, row: PortalStateRow): Promise<voi
       ectoplasm: row.ectoplasm,
       echoes: row.echoes,
       activeEchoId: row.activeEchoId,
+      ichor: row.ichor,
+      reforgeDay: row.reforgeDay,
+      reforgeCount: row.reforgeCount,
+      starTracks: row.starTracks,
     })
     .where(eq(portalStates.characterId, row.characterId));
 }
@@ -162,4 +171,63 @@ export async function grantHuntShard(
 ): Promise<void> {
   const hit = createRng(`${seed}:shard`).rollBp(HUNT_SHARD_CHANCE_BP);
   if (huntKeyShard(circle, named, hit) === 1) await grantKeyShards(db, characterId, 1, now);
+}
+
+export async function grantSigilShards(
+  db: Executor,
+  characterId: string,
+  domain: number,
+  gained: number,
+  now: Date,
+): Promise<void> {
+  if (gained <= 0) return;
+  const row = materialized(await loadPortal(db, characterId, true), now);
+  const next = addSigilShards(row.sigilShards, row.sigils, domain, gained);
+  await savePortal(db, { ...row, sigilShards: next.shards, sigils: next.sigils });
+}
+
+/** Kalendarz Pamięci: kamienie 7/14/21/28 dają Sigile ostatnio odblokowanego boga. */
+export async function touchCalendar(db: Executor, characterId: string, now: Date): Promise<void> {
+  const day = utcDay(now.getTime());
+  const [existing] = await db
+    .select()
+    .from(calendars)
+    .where(eq(calendars.characterId, characterId))
+    .limit(1);
+  const state = {
+    streak: existing?.streak ?? 0,
+    lastDay: existing?.lastDay ?? null,
+    claimed: existing?.claimed ?? [],
+  };
+  const next = advanceCalendar(state, day);
+  const due = calendarSigilsDue(next);
+  const claimed = [...next.claimed];
+  if (due.length > 0) {
+    const portal = await loadPortal(db, characterId, true);
+    const gods = unlockedPortalGods({
+      domain: portal.clearedDomain,
+      stage: portal.clearedStage,
+      substage: portal.clearedSubstage,
+    });
+    const god = String(gods[gods.length - 1] ?? 1);
+    const sigils = { ...portal.sigils };
+    for (const entry of due) {
+      sigils[god] = (sigils[god] ?? 0) + entry.sigils;
+      claimed.push(entry.day);
+    }
+    await savePortal(db, { ...portal, sigils });
+  }
+  if (existing) {
+    await db
+      .update(calendars)
+      .set({ streak: next.streak, lastDay: next.lastDay, claimed })
+      .where(eq(calendars.characterId, characterId));
+  } else {
+    await db.insert(calendars).values({
+      characterId,
+      streak: next.streak,
+      lastDay: next.lastDay,
+      claimed,
+    });
+  }
 }

@@ -14,8 +14,12 @@ import { resourceStates, type ResourceStateRow } from '../db/schema.js';
 
 export type ResourceValues = Record<ResourceKind, StoredResource>;
 
-/** Do Etapu 3 (Wiedza Zakazana) postać nie ma jeszcze statystyk wpływających na limity. */
-export const resourceContext = (level: number): ResourceContext => ({ level, knowledge: 0 });
+/** Wiedza i Blizny obniżają maksimum Poczytalności (GDD 6.1, 6.2). */
+export const resourceContext = (
+  level: number,
+  knowledge = 0,
+  sanityPenalty = 0,
+): ResourceContext => ({ level, knowledge, sanityPenalty });
 
 function fromRow(row: ResourceStateRow): ResourceValues {
   return {

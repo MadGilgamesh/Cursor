@@ -131,12 +131,13 @@ describe('Pęk Kluczy', () => {
     expect(addKeyShards(ring, KEY_SHARDS_PER_KEY + 2)).toMatchObject({ lootKeys: 1, shards: 2 });
   });
 
-  it('nie da się pominąć podetapu ani wejść do Domeny 3', () => {
+  it('nie da się pominąć podetapu ani wejść do Domeny 4', () => {
     const none = { domain: 0, stage: 0, substage: 0 };
     expect(portalAccess({ domain: 1, stage: 1, substage: 1 }, none)).toBe('first');
     expect(portalAccess({ domain: 1, stage: 1, substage: 2 }, none)).toBe('skip');
     const cleared = { domain: 2, stage: 10, substage: 8 };
-    expect(portalAccess({ domain: 3, stage: 1, substage: 1 }, cleared)).toBe('locked');
+    expect(portalAccess({ domain: 3, stage: 1, substage: 1 }, cleared)).toBe('first');
+    expect(portalAccess({ domain: 4, stage: 1, substage: 1 }, cleared)).toBe('locked');
     expect(portalAccess({ domain: 1, stage: 1, substage: 1 }, cleared)).toBe('repeat');
   });
 });
@@ -235,12 +236,15 @@ describe('Seanse (GDD 10.8)', () => {
     expect(found?.rarity).toBe('beyond');
   });
 
-  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–2', () => {
+  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–3', () => {
     expect(SEANCE_ECHOES).toHaveLength(30);
     expect(SEANCE_ECHOES.every((echo) => echo.rarity !== 'beyond')).toBe(true);
     expect(ECHOES.filter((echo) => echo.godDomain === 1)).toHaveLength(2);
+    expect(ECHOES.filter((echo) => echo.godDomain === 3)).toHaveLength(2);
     expect(portalDomain(1)?.modifier).toBe('ib-vengeance');
     expect(portalDomain(2)?.modifier).toBe('pressure');
+    expect(portalDomain(3)?.modifier).toBe('drain');
+    expect(portalDomain(3)?.units).toHaveLength(10);
   });
 });
 

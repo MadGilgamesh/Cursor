@@ -29,6 +29,12 @@ const portalSchema = z.object({
     whisperPending: z.boolean(),
   }),
   candles: z.number(),
+  altar: z.object({
+    reforgeLeft: z.number(),
+    ichor: z.number(),
+    bokrugSigils: z.number(),
+    colourSigils: z.number(),
+  }),
 });
 
 const fightSchema = z.object({
@@ -42,6 +48,28 @@ export function usePortal() {
   return useQuery({
     queryKey: ['portal'],
     queryFn: ({ signal }) => apiRequest(`${API_PREFIX}/portal`, { schema: portalSchema, signal }),
+  });
+}
+
+export function useReforge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (domain: number) =>
+      apiRequest(`${API_PREFIX}/portal/reforge`, {
+        method: 'POST',
+        body: { domain },
+        idempotencyKey: newIdempotencyKey(),
+        schema: z.object({
+          domain: z.number(),
+          sigils: z.number(),
+          reforgeLeft: z.number(),
+        }),
+      }),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['portal'] }),
+        queryClient.invalidateQueries({ queryKey: dashboardQueryKey }),
+      ]),
   });
 }
 

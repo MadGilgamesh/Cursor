@@ -7,6 +7,7 @@ import { AuthScreen } from './screens/AuthScreen';
 import { CharacterScreen } from './screens/CharacterScreen';
 import { CityScreen } from './screens/CityScreen';
 import { HomeScreen } from './screens/HomeScreen';
+import { LoreScreen } from './screens/LoreScreen';
 import { MrokScreen } from './screens/MrokScreen';
 import { PortalScreen } from './screens/PortalScreen';
 import { PlaceholderScreen } from './screens/PlaceholderScreen';
@@ -68,6 +69,7 @@ export function App() {
         <Route path="miasto" element={<CityScreen />} />
         <Route path="mrok" element={<MrokScreen />} />
         <Route path="portal" element={<PortalScreen />} />
+        <Route path="wiedza" element={<LoreScreen />} />
         <Route path="postac" element={<CharacterScreen />} />
         <Route
           path="wspolnota"
