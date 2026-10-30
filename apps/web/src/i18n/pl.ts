@@ -105,6 +105,9 @@ export const pl = {
     expeditionTitle: 'Wyprawy',
     expeditionHint: 'Kanały, wrak, archiwum i krypty. Drużyna schodzi razem.',
     expeditionEnter: 'Wyprawy',
+    conjunctionTitle: 'Koniunkcja',
+    conjunctionHint: 'Zegar Koniunkcji, Latarnie i Noc Zmarłych.',
+    conjunctionEnter: 'Koniunkcja',
     madnessOn: 'Efekty obłędu włączone',
     madnessOff: 'Efekty obłędu wyłączone',
     claim: 'Odbierz',
@@ -161,6 +164,12 @@ export const pl = {
     dreams: 'Sny',
     dreamsHint:
       'Spokojny sen, Sen o Głębinach albo Sen Wspólny — wynik liczy serwer po przebudzeniu.',
+  },
+  conjunction: {
+    title: 'Koniunkcja',
+    clock: 'Zegar Koniunkcji',
+    deadNight: 'Noc Zmarłych',
+    domain: 'Nyarlathotep',
   },
   expeditions: {
     title: 'Wyprawy',

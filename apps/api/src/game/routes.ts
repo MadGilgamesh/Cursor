@@ -1,7 +1,9 @@
 import {
   ERROR_CODES,
   dreamKeyCount,
+  keyRegenIntervalMs,
   nextPortalFight,
+  patronActive,
   portalUnitName,
   resourceMax,
   startMissionRequestSchema,
@@ -59,9 +61,14 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
     const now = clock.now();
     const lore = await loadLore(db, character.id);
     const extras = loreExtras(lore);
-    const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
+    const patron = patronActive(character.patronUntil?.getTime() ?? null, now.getTime());
+    const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty, patron);
     const resources = materializeAll(await loadResources(db, character.id), ctx, now);
-    const portalRow = materializePortal(await loadPortal(db, character.id), now);
+    const portalRow = materializePortal(
+      await loadPortal(db, character.id),
+      now,
+      keyRegenIntervalMs(patron),
+    );
     const ring = ringOf(portalRow);
     const next = nextPortalFight({
       domain: portalRow.clearedDomain,

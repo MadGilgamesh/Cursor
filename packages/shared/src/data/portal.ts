@@ -1,5 +1,5 @@
 /**
- * Domeny 1–8 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
+ * Domeny 1–9 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
  * Echa bogów (boss Etapu 5 i herold Etapu 9) są poza pulą Seansu.
  */
 import type { EchoRarity, PortalModifier } from '../portal.js';
@@ -185,6 +185,27 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Cthulhu Przebudzony',
     ],
   },
+  {
+    domain: 9,
+    god: 'Nyarlathotep',
+    place: 'Piramidy pod Czarnym Niebem',
+    modifier: 'shapeshift',
+    modifierName: 'Zmienna Postać',
+    materialId: 'trapezohedron',
+    materialName: 'Odłamek Trapezoedru',
+    units: [
+      'Słudzy Proroka z Egiptu',
+      'Ludzie z Leng',
+      'Księżycowe Bestie',
+      'Shantaki',
+      'Kapłani Bezgwiezdnej Piramidy',
+      'Wyznawcy Lśniącego Trapezoedru',
+      'Cienie Ciemnej Wieży',
+      'Czarny Człowiek z Sabatu',
+      'Nawiedzający Ciemność',
+      'Nyarlathotep, Pełzający Chaos',
+    ],
+  },
 ];
 
 export function portalDomain(domain: number): PortalDomainDef | undefined {
@@ -368,6 +389,20 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     rarity: 'phantom',
     aspect: 'strength',
     godDomain: 8,
+  },
+  {
+    id: 'echo.god.nyar.wraith',
+    name: 'Kapłani Bezgwiezdnej Piramidy',
+    rarity: 'wraith',
+    aspect: 'accuracy',
+    godDomain: 9,
+  },
+  {
+    id: 'echo.god.nyar.phantom',
+    name: 'Nawiedzający Ciemność',
+    rarity: 'phantom',
+    aspect: 'evasion',
+    godDomain: 9,
   },
 ];
 

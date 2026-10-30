@@ -141,16 +141,21 @@ describe('Pęk Kluczy', () => {
     expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, cleared)).toBe('skip');
     expect(portalAccess({ domain: 7, stage: 1, substage: 1 }, cleared)).toBe('skip');
     expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, cleared)).toBe('skip');
-    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, cleared)).toBe('locked');
+    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, cleared)).toBe('skip');
+    expect(portalAccess({ domain: 10, stage: 1, substage: 1 }, cleared)).toBe('locked');
     const domainFour = { domain: 4, stage: 10, substage: 8 };
     expect(portalAccess({ domain: 5, stage: 1, substage: 1 }, domainFour)).toBe('first');
     expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, domainFour)).toBe('skip');
     expect(portalAccess({ domain: 7, stage: 1, substage: 1 }, domainFour)).toBe('skip');
     expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, domainFour)).toBe('skip');
-    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, domainFour)).toBe('locked');
+    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, domainFour)).toBe('skip');
+    expect(portalAccess({ domain: 10, stage: 1, substage: 1 }, domainFour)).toBe('locked');
     const domainSeven = { domain: 7, stage: 10, substage: 8 };
     expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, domainSeven)).toBe('first');
-    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, domainSeven)).toBe('locked');
+    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, domainSeven)).toBe('skip');
+    const domainEight = { domain: 8, stage: 10, substage: 8 };
+    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, domainEight)).toBe('first');
+    expect(portalAccess({ domain: 10, stage: 1, substage: 1 }, domainEight)).toBe('locked');
     expect(portalAccess({ domain: 1, stage: 1, substage: 1 }, cleared)).toBe('repeat');
   });
 });
@@ -249,7 +254,7 @@ describe('Seanse (GDD 10.8)', () => {
     expect(found?.rarity).toBe('beyond');
   });
 
-  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–8', () => {
+  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–9', () => {
     expect(SEANCE_ECHOES).toHaveLength(30);
     expect(SEANCE_ECHOES.every((echo) => echo.rarity !== 'beyond')).toBe(true);
     expect(ECHOES.filter((echo) => echo.godDomain === 1)).toHaveLength(2);
@@ -274,7 +279,11 @@ describe('Seanse (GDD 10.8)', () => {
     expect(portalDomain(8)?.god).toBe('Cthulhu');
     expect(portalDomain(8)?.place).toBe("R'lyeh, Miasto Nieeuklidesowe");
     expect(portalDomain(8)?.units).toHaveLength(10);
-    expect(portalDomain(9)).toBeUndefined();
+    expect(ECHOES.filter((echo) => echo.godDomain === 9)).toHaveLength(2);
+    expect(portalDomain(9)?.modifier).toBe('shapeshift');
+    expect(portalDomain(9)?.god).toBe('Nyarlathotep');
+    expect(portalDomain(9)?.units).toHaveLength(10);
+    expect(portalDomain(10)).toBeUndefined();
   });
 });
 

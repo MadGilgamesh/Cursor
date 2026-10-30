@@ -19,7 +19,8 @@ export const resourceContext = (
   level: number,
   knowledge = 0,
   sanityPenalty = 0,
-): ResourceContext => ({ level, knowledge, sanityPenalty });
+  patron = false,
+): ResourceContext => ({ level, knowledge, sanityPenalty, patron });
 
 function fromRow(row: ResourceStateRow): ResourceValues {
   return {
@@ -61,7 +62,7 @@ export function materializeAll(
   return Object.fromEntries(
     RESOURCE_KINDS.map((kind) => [
       kind,
-      materializeResource(kind, values[kind], at, resourceMax(kind, ctx)),
+      materializeResource(kind, values[kind], at, resourceMax(kind, ctx), ctx.patron === true),
     ]),
   ) as ResourceValues;
 }

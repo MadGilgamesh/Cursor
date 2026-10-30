@@ -5,10 +5,10 @@
  * Potęgi niecałkowite zaokrąglamy od razu albo zostawiamy w funkcji piętra, którą
  * testy porównują z tabelą 10.13 (tabela podaje f zaokrąglone, wzór jest ciągły).
  */
-import { HOUR_MS, pow125 } from './balance.js';
+import { HOUR_MS, enemyDamage, enemyLife, enemyStat, pow125 } from './balance.js';
 import { createRng, type Rng } from './rng.js';
 
-export const PORTAL_DOMAINS_THIS_STAGE = 8;
+export const PORTAL_DOMAINS_THIS_STAGE = 9;
 /** ★1–★5 są w tym etapie tylko dla Domen 1–3. Domena 4 ma na razie sam Sen. */
 export const PORTAL_STAR_DOMAINS_THIS_STAGE = 3;
 export const PORTAL_STARS_MAX = 5;
@@ -29,7 +29,10 @@ export const PORTAL_LOSS_SHARDS = 1;
 export const ENGRAVER_DAILY_CAP = 3;
 export const ENGRAVER_METEOR_COST = 2;
 
-/** Studnia w tym etapie: piętra 1–100. Bezdeń (po 100) jest w Etapie 9. */
+/**
+ * Studnia właściwa kończy się na 100. Dalej jest Bezdeń: piętra bez sufitu,
+ * ze skalą `S(100) · 1,035^(f−100)` (GDD 10.4).
+ */
 export const WELL_MAX_FLOOR_THIS_STAGE = 100;
 /** Od piętra 50 każda walka +0,2 Skażenia (2 dziesiąte). Od 70 Groza ≥ 6 (GDD 5.10). */
 export const WELL_CONTAMINATION_FLOOR = 50;
@@ -95,7 +98,8 @@ export type PortalModifier =
   | 'judgment'
   | 'yellow-sign'
   | 'fertility'
-  | 'rlyeh-dreams';
+  | 'rlyeh-dreams'
+  | 'shapeshift';
 
 export interface PortalCoord {
   domain: number;
@@ -184,6 +188,7 @@ export function portalModifier(domain: number): PortalModifier | null {
   if (domain === 6) return 'yellow-sign';
   if (domain === 7) return 'fertility';
   if (domain === 8) return 'rlyeh-dreams';
+  if (domain === 9) return 'shapeshift';
   return null;
 }
 
@@ -272,16 +277,21 @@ export interface KeyRing {
 }
 
 /** Leniwa regeneracja Pęku — ten sam schemat co Wigor (GDD 9.1, 5.12.5). */
-export function materializeKeyRing(ring: KeyRing, now: number, cap = KEY_RING_CAP): KeyRing {
+export function materializeKeyRing(
+  ring: KeyRing,
+  now: number,
+  cap = KEY_RING_CAP,
+  intervalMs = KEY_REGEN_INTERVAL_MS,
+): KeyRing {
   if (now <= ring.regenUpdatedAt) return ring;
   if (ring.regenKeys >= cap) return { ...ring, regenUpdatedAt: now };
-  const ticks = Math.floor((now - ring.regenUpdatedAt) / KEY_REGEN_INTERVAL_MS);
+  const ticks = Math.floor((now - ring.regenUpdatedAt) / intervalMs);
   const regenKeys = Math.min(cap, ring.regenKeys + ticks);
   if (regenKeys >= cap) return { ...ring, regenKeys, regenUpdatedAt: now };
   return {
     ...ring,
     regenKeys,
-    regenUpdatedAt: ring.regenUpdatedAt + ticks * KEY_REGEN_INTERVAL_MS,
+    regenUpdatedAt: ring.regenUpdatedAt + ticks * intervalMs,
   };
 }
 
@@ -454,9 +464,28 @@ export function wellFightDread(floor: number, guardian: boolean, hush: boolean):
 
 /** Po piętrach 5, 10, … trzeba wybrać Szept, zanim zejdziesz niżej. */
 export function wellWhisperPending(floorCleared: number, whisperUntilFloor: number): boolean {
-  if (floorCleared <= 0 || floorCleared >= WELL_MAX_FLOOR_THIS_STAGE) return false;
+  if (floorCleared <= 0) return false;
   if (floorCleared % WELL_WHISPER_EVERY !== 0) return false;
   return whisperUntilFloor < floorCleared + WELL_WHISPER_EVERY;
+}
+
+/** Bezdeń (f > 100) skaluje statystykę, Życie i obrażenia od piętra 100. Mutator tylko tam. */
+function wellScaled(floor: number, atFloor: number, atHundred: number, mutatorBp: number): number {
+  const base = floor <= 100 ? atFloor : Math.round(atHundred * 1.035 ** (floor - 100));
+  const bp = floor > 100 ? mutatorBp : 0;
+  return Math.max(1, Math.round((base * (10_000 + bp)) / 10_000));
+}
+
+export function wellEnemyStat(floor: number, mutatorBp = 0): number {
+  return wellScaled(floor, enemyStat(floor), enemyStat(100), mutatorBp);
+}
+
+export function wellEnemyLife(floor: number, mutatorBp = 0): number {
+  return wellScaled(floor, enemyLife(floor), enemyLife(100), mutatorBp);
+}
+
+export function wellEnemyDamage(floor: number, mutatorBp = 0): number {
+  return wellScaled(floor, enemyDamage(floor), enemyDamage(100), mutatorBp);
 }
 
 export const WELL_WHISPERS = ['plunder', 'hush', 'tide'] as const;

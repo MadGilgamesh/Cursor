@@ -11,6 +11,7 @@ export * from './world.js';
 export * from './lodge.js';
 export * from './hearth.js';
 export * from './expedition.js';
+export * from './conjunction.js';
 export * from './lore.js';
 export * from './portal.js';
 export * from './fixed-point.js';

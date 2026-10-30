@@ -30,6 +30,7 @@ import {
 import type { StatBlock } from './character.js';
 import type { EnemyDef } from './data/enemies.js';
 import { TUTORIAL_ENEMY_STATS } from './data/enemies.js';
+import { ASPECTS, aspectEdge, type Aspect } from './hearth.js';
 import type { PortalModifier } from './portal.js';
 import { createRng, type Rng } from './rng.js';
 
@@ -47,6 +48,8 @@ export interface PlayerCombatant {
   knowledge: number;
   /** Opanowanie z Kaplicy. Bez pola walka liczy się jak przy 0 — dziennik Etapu 1 zostaje. */
   composure?: number;
+  /** Aspekt Przysięgi. Zmienna Postać liczy przewagę tylko, gdy pole jest ustawione. */
+  aspect?: Aspect;
   /** Blizna „Pustka w Oczach” znosi Panikę. */
   panicImmune?: boolean;
   /** Piętno *Tętno* (Żyła Kamiennej Krwi): 5% szansy, że wróg straci turę. */
@@ -75,6 +78,7 @@ export const COMBAT_EVENT_KINDS = [
   'pulse',
   'brand',
   'dream',
+  'shape',
 ] as const;
 export type CombatEventKind = (typeof COMBAT_EVENT_KINDS)[number];
 
@@ -127,6 +131,8 @@ function variance(rng: Rng): number {
  * - `fertility`: co 3 rundy obrażenia wroga +10%, kumulatywnie, bez dodatkowego losowania.
  * - `rlyeh-dreams`: −1 Poczytalności co rundę; 10% ciosów gracza zakrzywia się w pudło.
  *   Dodatkowy rzut jest tylko przy tym modyfikatorze.
+ * - `shapeshift`: wróg losuje aspekt i kopiuje specjalność klasy gracza.
+ *   Ten rzut jest tylko przy tym modyfikatorze.
  * - `edge`: mnożnik obrażeń gracza z Przysięgi (1, 1,2 albo 0,8). Przy 1 dziennik się nie zmienia.
  */
 export function simulateCombat(
@@ -137,6 +143,10 @@ export function simulateCombat(
   edge = 1,
 ): CombatResult {
   const rng = createRng(seed);
+  let copiedAspect: Aspect | null = null;
+  if (modifier === 'shapeshift') {
+    copiedAspect = ASPECTS[rng.nextInt(0, ASPECTS.length - 1)] ?? null;
+  }
   const penetration = CLASS_PENETRATION[player.classId ?? 'none'];
   const kDefense = penetration.kDefenseBp / BP;
   const kEvasion = penetration.kEvasionBp / BP;
@@ -150,6 +160,10 @@ export function simulateCombat(
   const push = (event: Omit<CombatEvent, 'playerLife' | 'enemyLife' | 'sanity'>) => {
     events.push({ ...event, playerLife, enemyLife: enemyLifeLeft, sanity });
   };
+
+  if (copiedAspect) {
+    push({ round: 0, actor: 'enemy', kind: 'shape', damage: 0, word: false, frenzy: false });
+  }
 
   const dreadLoss = Math.min(sanity, dreadSanityLoss(enemy.dread, player.composure ?? 0));
   if (dreadLoss > 0) {
@@ -227,6 +241,8 @@ export function simulateCombat(
     return player.stats.evasion * Math.max(0, 1 - 0.1 - extra);
   };
 
+  let enemyWordUsed = false;
+  const copiedClass = modifier === 'shapeshift' ? player.classId : null;
   const enemyAttack = (round: number) => {
     if (enemy.gaze && round === GAZE_ROUND) {
       const loss = Math.min(sanity, gazeSanityLoss(enemy.dread));
@@ -234,13 +250,31 @@ export function simulateCombat(
       push({ round, actor: 'enemy', kind: 'gaze', damage: loss, word: false, frenzy: false });
       return;
     }
-    if (!rollChance(rng, hitChance(enemy.stats.accuracy, playerEvasion(round)))) {
+    const guaranteed = copiedClass === 'marksman' && round === 1;
+    if (!guaranteed && !rollChance(rng, hitChance(enemy.stats.accuracy, playerEvasion(round)))) {
       push({ round, actor: 'enemy', kind: 'miss', damage: 0, word: false, frenzy: false });
       return;
     }
     const ratio = damageRatio(enemy.stats.strength, player.stats.defense);
     const crit = rng.rollBp(CRIT_CHANCE_BP);
-    const raw = enemy.damage * ratio * variance(rng) * (crit ? CRIT_MULTIPLIER : 1);
+    const frenzy =
+      copiedClass === 'butcher' &&
+      enemyLifeLeft * BP < enemy.life * CLASS_UNIQUES.butcherFrenzyLifeBp;
+    const word = copiedClass === 'occultist' && !enemyWordUsed;
+    if (word) enemyWordUsed = true;
+    const wordMultiplier = word
+      ? CLASS_UNIQUES.occultistWordBase + CLASS_UNIQUES.occultistWordPerKnowledge * player.knowledge
+      : 1;
+    const frenzyMultiplier = frenzy ? 1 + CLASS_UNIQUES.butcherFrenzyStrengthBp / BP : 1;
+    const shape = copiedAspect && player.aspect ? aspectEdge(copiedAspect, player.aspect) : 1;
+    const raw =
+      enemy.damage *
+      ratio *
+      variance(rng) *
+      (crit ? CRIT_MULTIPLIER : 1) *
+      wordMultiplier *
+      frenzyMultiplier *
+      shape;
     const brood = modifier === 'fertility' ? 1 + Math.floor(round / 3) * 0.1 : 1;
     const damage = Math.max(1, Math.round(raw * brood));
     playerLife = Math.max(0, playerLife - damage);

@@ -140,6 +140,7 @@ export function portRoutes(app: FastifyInstance, deps: AppDeps): void {
         body.takerId,
         body.itemId,
         body.silver,
+        clock.now(),
       );
     }),
   );
@@ -151,6 +152,7 @@ export function portRoutes(app: FastifyInstance, deps: AppDeps): void {
         playerActor(request, character.accountId),
         character,
         z.object({ id: z.uuid() }).parse(request.params).id,
+        clock.now(),
       ),
     ),
   );
@@ -175,6 +177,7 @@ export function portRoutes(app: FastifyInstance, deps: AppDeps): void {
         body.silver,
         body.goodId,
         body.goodQty,
+        clock.now(),
       );
     }),
   );

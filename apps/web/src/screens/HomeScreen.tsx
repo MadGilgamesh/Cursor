@@ -179,6 +179,21 @@ export function HomeScreen() {
       ) : null}
 
       {dashboard.data ? (
+        <section aria-label={t('home.conjunctionTitle')} className="panel p-4">
+          <h2 className="font-display text-lg font-semibold text-brass-300">
+            {t('home.conjunctionTitle')}
+          </h2>
+          <p className="mt-1 text-sm text-bone-400">{t('home.conjunctionHint')}</p>
+          <Link
+            to="/koniunkcja"
+            className="mt-3 inline-block font-display font-semibold text-brass-300 underline-offset-4 hover:underline"
+          >
+            {t('home.conjunctionEnter')} →
+          </Link>
+        </section>
+      ) : null}
+
+      {dashboard.data ? (
         <section aria-label={t('home.portalTitle')} className="panel p-4">
           <h2 className="font-display text-lg font-semibold text-brass-300">
             {t('home.portalTitle')}

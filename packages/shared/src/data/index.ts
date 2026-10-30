@@ -21,13 +21,13 @@ export * from './missions.js';
 export * from './portal.js';
 
 /** Wersja danych statycznych — rośnie przy każdej zmianie plików w `data/`. */
-export const STATIC_DATA_VERSION = 9;
+export const STATIC_DATA_VERSION = 10;
 
 /**
  * Waluty obecne w grze (GDD 4.2). `bank` to srebro zdeponowane w Kasie — odporne
  * na Szabrowników (GDD 5.15). Kolejne (Kwity, Pieczęcie…) dochodzą z systemami.
  */
-export const CURRENCIES = ['silver', 'bank'] as const;
+export const CURRENCIES = ['silver', 'bank', 'pearls', 'wax', 'vouchers'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
 const idPattern = /^[a-z0-9]+(\.[a-z0-9-]+)+$/;

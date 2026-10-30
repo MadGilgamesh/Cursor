@@ -72,8 +72,12 @@ export function withRing(row: PortalStateRow, ring: KeyRing, now: Date): PortalS
   };
 }
 
-function materialized(row: PortalStateRow, now: Date): PortalStateRow {
-  return withRing(row, materializeKeyRing(ringOf(row), now.getTime(), row.keyCap), now);
+function materialized(
+  row: PortalStateRow,
+  now: Date,
+  intervalMs = KEY_REGEN_INTERVAL_MS,
+): PortalStateRow {
+  return withRing(row, materializeKeyRing(ringOf(row), now.getTime(), row.keyCap, intervalMs), now);
 }
 
 export async function grantKeyShards(
@@ -136,11 +140,15 @@ export async function savePortal(db: Executor, row: PortalStateRow): Promise<voi
     .where(eq(portalStates.characterId, row.characterId));
 }
 
-export function keyRegenFullAt(row: PortalStateRow, now: Date): string | null {
-  const ring = materializeKeyRing(ringOf(row), now.getTime(), row.keyCap);
+export function keyRegenFullAt(
+  row: PortalStateRow,
+  now: Date,
+  intervalMs = KEY_REGEN_INTERVAL_MS,
+): string | null {
+  const ring = materializeKeyRing(ringOf(row), now.getTime(), row.keyCap, intervalMs);
   if (ring.regenKeys >= row.keyCap) return null;
   const missing = row.keyCap - ring.regenKeys;
-  return new Date(ring.regenUpdatedAt + missing * KEY_REGEN_INTERVAL_MS).toISOString();
+  return new Date(ring.regenUpdatedAt + missing * intervalMs).toISOString();
 }
 
 export { materialized as materializePortal };

@@ -13,6 +13,7 @@ import { insertStartingStats } from '../game/avatar.js';
 import { insertLoreState } from '../game/lore-state.js';
 import { insertMarketState, insertWorkshopState } from '../game/port-state.js';
 import { insertWorldState } from '../game/world-state.js';
+import { issueReferralCode } from '../game/conjunction.js';
 import { insertPortalState } from '../game/portal-state.js';
 import { initialResources, insertResources, resourceContext } from '../game/resources.js';
 import { accounts, characters } from '../db/schema.js';
@@ -34,9 +35,15 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
 
     const created = await db
       .transaction(async (tx) => {
+        const issued = issueReferralCode();
         const [account] = await tx
           .insert(accounts)
-          .values({ email: input.email, passwordHash })
+          .values({
+            email: input.email,
+            passwordHash,
+            referralCode: issued.code,
+            emailVerifyCode: issued.verify,
+          })
           .returning();
         if (!account) throw new Error('INSERT nie zwrócił konta');
         const [character] = await tx

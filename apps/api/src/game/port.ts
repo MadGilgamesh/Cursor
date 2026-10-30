@@ -16,8 +16,11 @@ import {
   TRADE_MIN_LEVEL,
   WORKSHOP_MAX_LEVEL,
   adjustResource,
+  lanternCity,
+  lanternTax,
   listingFee,
   matchOrder,
+  patronActive,
   resourceMax,
   sellerFee,
   smugglePrice,
@@ -41,6 +44,8 @@ import {
   directTrades,
   friendships,
   itemInstances,
+  lanternStates,
+  lodges,
   mails,
   marketBooks,
   marketFills,
@@ -116,7 +121,12 @@ async function credit(
   });
 }
 
-async function changeGoods(db: Executor, characterId: string, goodId: string, delta: number) {
+export async function changeStock(
+  db: Executor,
+  characterId: string,
+  goodId: string,
+  delta: number,
+) {
   const [row] = await db
     .select()
     .from(marketStates)
@@ -188,7 +198,7 @@ export async function placeOrder(
       );
     }
   }
-  if (input.side === 'sell') await changeGoods(db, character.id, input.goodId, -input.quantity);
+  if (input.side === 'sell') await changeStock(db, character.id, input.goodId, -input.quantity);
 
   const incoming: IncomingOrder = {
     id: orderId,
@@ -208,6 +218,7 @@ export async function placeOrder(
     createdAt: order.createdAt.getTime(),
   }));
   const matched = matchOrder(resting, incoming);
+  const saltLodge = await saltLanternLodge(db);
   let marketNotional = 0;
   for (const fill of matched.fills) {
     const fillId = randomUUID();
@@ -221,9 +232,16 @@ export async function placeOrder(
       price: fill.price,
       quantity: fill.quantity,
     });
-    await changeGoods(db, fill.buyerId, input.goodId, fill.quantity);
+    await changeStock(db, fill.buyerId, input.goodId, fill.quantity);
     const gross = fill.price * fill.quantity;
-    const net = gross - sellerFee(gross);
+    const tax = saltLodge ? lanternTax(gross) : 0;
+    const net = gross - sellerFee(gross) - tax;
+    if (tax > 0 && saltLodge) {
+      await db
+        .update(lodges)
+        .set({ treasury: sql`${lodges.treasury} + ${tax}` })
+        .where(eq(lodges.id, saltLodge));
+    }
     await credit(db, fill.sellerId, net, `fill:${fillId}:sell`, 'market.sell');
     const restingBuy = live.find((order) => order.id === fill.buyOrderId);
     if (restingBuy?.price) {
@@ -241,7 +259,7 @@ export async function placeOrder(
     await pay(db, character.id, listingFee(marketNotional), `list:${orderId}`, 'market.list');
   }
   if (input.side === 'sell' && input.type === 'market' && matched.unfilled > 0) {
-    await changeGoods(db, character.id, input.goodId, matched.unfilled);
+    await changeStock(db, character.id, input.goodId, matched.unfilled);
   }
   for (const order of live) {
     const next = matched.resting.find((entry) => entry.id === order.id);
@@ -288,7 +306,7 @@ async function expireOrder(db: Executor, orderId: string) {
   if (!order) return;
   if (order.status !== 'open') return;
   if (order.side === 'sell' && order.remaining > 0) {
-    await changeGoods(db, order.characterId, order.goodId, order.remaining);
+    await changeStock(db, order.characterId, order.goodId, order.remaining);
   }
   if (order.side === 'buy' && order.escrowSilver > 0) {
     await credit(db, order.characterId, order.escrowSilver, `expire:${order.id}`, 'market.expire');
@@ -426,6 +444,16 @@ export async function bidAuction(
   return { price, sold: buyNow || (auction.buyNow !== null && price >= auction.buyNow) };
 }
 
+function canTrade(level: number, until: Date | null, now: Date): boolean {
+  return level >= TRADE_MIN_LEVEL || patronActive(until?.getTime() ?? null, now.getTime());
+}
+
+async function saltLanternLodge(db: Executor): Promise<string | null> {
+  const held = await db.select().from(lanternStates).where(eq(lanternStates.status, 'held'));
+  const salt = held.find((row) => row.lodgeId !== null && lanternCity(row.sleeperId) === 'salt');
+  return salt?.lodgeId ?? null;
+}
+
 export async function offerTrade(
   db: Executor,
   who: AuditActor,
@@ -433,8 +461,9 @@ export async function offerTrade(
   takerId: string,
   itemId: string,
   silver: number,
+  now: Date,
 ) {
-  if (character.level < TRADE_MIN_LEVEL) {
+  if (!canTrade(character.level, character.patronUntil, now)) {
     throw new AppError(409, ERROR_CODES.requirement, 'Handel bezpośredni od poziomu 10');
   }
   await lockCharacter(db, character.id);
@@ -455,10 +484,8 @@ export async function acceptTrade(
   who: AuditActor,
   character: CharacterRow,
   tradeId: string,
+  now: Date,
 ) {
-  if (character.level < TRADE_MIN_LEVEL) {
-    throw new AppError(409, ERROR_CODES.requirement, 'Handel bezpośredni od poziomu 10');
-  }
   const [trade] = await db
     .select()
     .from(directTrades)
@@ -467,6 +494,18 @@ export async function acceptTrade(
   if (!trade) throw new AppError(404, ERROR_CODES.notFound, 'Nie ma takiej wymiany');
   if (trade.status !== 'open' || trade.takerId !== character.id) {
     throw new AppError(404, ERROR_CODES.notFound, 'Nie ma takiej wymiany');
+  }
+  const [maker] = await db
+    .select()
+    .from(characters)
+    .where(eq(characters.id, trade.makerId))
+    .limit(1);
+  if (
+    !maker ||
+    !canTrade(character.level, character.patronUntil, now) ||
+    !canTrade(maker.level, maker.patronUntil, now)
+  ) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Handel bezpośredni od poziomu 10');
   }
   await lockIds(db, [character.id, trade.makerId]);
   if (trade.itemId) {
@@ -492,15 +531,16 @@ export async function sendMail(
   silver: number,
   goodId: string | null,
   goodQty: number,
+  now: Date,
 ) {
-  if (character.level < TRADE_MIN_LEVEL) {
+  if (!canTrade(character.level, character.patronUntil, now)) {
     throw new AppError(409, ERROR_CODES.requirement, 'Poczta z załącznikiem od poziomu 10');
   }
   await lockCharacter(db, character.id);
   if (silver > 0) await pay(db, character.id, silver, `mail:${randomUUID()}`, 'mail.escrow');
   if (goodId && goodQty > 0) {
     if (!tradableGood(goodId)) throw new AppError(409, ERROR_CODES.requirement, 'Tego nie wyślesz');
-    await changeGoods(db, character.id, goodId, -goodQty);
+    await changeStock(db, character.id, goodId, -goodQty);
   }
   const [row] = await db
     .insert(mails)
@@ -524,7 +564,7 @@ export async function claimMail(
   if (mail.silver > 0)
     await credit(db, character.id, mail.silver, `mail-claim:${mail.id}`, 'mail.claim');
   if (mail.goodId && mail.goodQty > 0)
-    await changeGoods(db, character.id, mail.goodId, mail.goodQty);
+    await changeStock(db, character.id, mail.goodId, mail.goodQty);
   await db.update(mails).set({ claimed: true }).where(eq(mails.id, mail.id));
   await audit(db, who, character.id, 'mail.claim', { mailId });
   return { mailId };
@@ -637,7 +677,7 @@ export async function startJob(
   } else {
     const recipe = JOBS[station];
     if (!recipe) throw new AppError(404, ERROR_CODES.notFound, 'Ta stacja nie przyjmuje zleceń');
-    await changeGoods(db, character.id, recipe.input, -1);
+    await changeStock(db, character.id, recipe.input, -1);
     output = recipe.output;
     ms = recipe.ms;
   }
@@ -660,7 +700,7 @@ export async function claimJobs(db: Executor, character: CharacterRow, clock: Cl
   if (!row) return [];
   const done = row.jobs.filter((job) => Date.parse(job.endsAt) <= now.getTime());
   if (done.length === 0) return row.jobs;
-  for (const job of done) await changeGoods(db, character.id, job.goodId, 1);
+  for (const job of done) await changeStock(db, character.id, job.goodId, 1);
   const jobs = row.jobs.filter((job) => Date.parse(job.endsAt) > now.getTime());
   await db.update(workshopStates).set({ jobs }).where(eq(workshopStates.characterId, character.id));
   return jobs;
@@ -767,7 +807,7 @@ export async function filletFish(db: Executor, character: CharacterRow) {
   const fish = world.basket[world.basket.length - 1];
   if (!fish) throw new AppError(409, ERROR_CODES.requirement, 'Kosz jest pusty');
   await saveWorld(db, { ...world, basket: world.basket.slice(0, -1) });
-  await changeGoods(db, character.id, 'fillet:filet', 1);
+  await changeStock(db, character.id, 'fillet:filet', 1);
   return { goodId: 'fillet:filet' };
 }
 
@@ -781,7 +821,7 @@ export async function eatRation(
     throw new AppError(409, ERROR_CODES.requirement, 'Tego się nie je');
   }
   await lockCharacter(db, character.id);
-  await changeGoods(db, character.id, goodId, -1);
+  await changeStock(db, character.id, goodId, -1);
   const now = clock.now();
   const lore = await loadLore(db, character.id);
   const ctx = resourceContext(character.level, lore.knowledge, 0);
@@ -813,7 +853,7 @@ export async function packCrate(
   const slots = CRATE_BASE_SLOTS + (mount && mount in MOUNTS ? MOUNTS[mount as MountId].slots : 0);
   const used = world.crate.reduce((sum, stack) => sum + stack.qty, 0);
   if (used + qty > slots) throw new AppError(409, ERROR_CODES.requirement, 'Skrzynia jest pełna');
-  await changeGoods(db, character.id, goodId, -qty);
+  await changeStock(db, character.id, goodId, -qty);
   const existing = world.crate.find((stack) => stack.goodId === goodId);
   const crate = existing
     ? world.crate.map((stack) =>
