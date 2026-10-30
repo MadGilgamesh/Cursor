@@ -7,6 +7,7 @@ import { AuthScreen } from './screens/AuthScreen';
 import { CharacterScreen } from './screens/CharacterScreen';
 import { CityScreen } from './screens/CityScreen';
 import { CommunityScreen } from './screens/CommunityScreen';
+import { ExpeditionScreen } from './screens/ExpeditionScreen';
 import { HearthScreen } from './screens/HearthScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LoreScreen } from './screens/LoreScreen';
@@ -78,6 +79,7 @@ export function App() {
         <Route path="postac" element={<CharacterScreen />} />
         <Route path="wspolnota" element={<CommunityScreen />} />
         <Route path="dom" element={<HearthScreen />} />
+        <Route path="wyprawy" element={<ExpeditionScreen />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

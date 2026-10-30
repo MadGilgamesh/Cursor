@@ -1,5 +1,5 @@
 import type { SessionResponse } from '@game/shared';
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 
 import { BottomNav } from './BottomNav';
@@ -8,8 +8,8 @@ import { TopBar } from './TopBar';
 export function AppShell({ session }: { session: SessionResponse }) {
   const { pathname } = useLocation();
 
-  // Każda zakładka zaczyna się od góry, jak ekran w aplikacji mobilnej.
-  useEffect(() => {
+  // Przed malowaniem, żeby nowa zakładka nie mignęła na poprzedniej pozycji.
+  useLayoutEffect(() => {
     window.scrollTo({ top: 0 });
   }, [pathname]);
 

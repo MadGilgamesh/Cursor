@@ -8,7 +8,7 @@
 import { HOUR_MS, pow125 } from './balance.js';
 import { createRng, type Rng } from './rng.js';
 
-export const PORTAL_DOMAINS_THIS_STAGE = 7;
+export const PORTAL_DOMAINS_THIS_STAGE = 8;
 /** ★1–★5 są w tym etapie tylko dla Domen 1–3. Domena 4 ma na razie sam Sen. */
 export const PORTAL_STAR_DOMAINS_THIS_STAGE = 3;
 export const PORTAL_STARS_MAX = 5;
@@ -29,8 +29,13 @@ export const PORTAL_LOSS_SHARDS = 1;
 export const ENGRAVER_DAILY_CAP = 3;
 export const ENGRAVER_METEOR_COST = 2;
 
-/** Studnia Bez Dna w tym etapie: piętra 1–50, Strażnik co 10 (GDD 5.10, 11). */
-export const WELL_MAX_FLOOR_THIS_STAGE = 50;
+/** Studnia w tym etapie: piętra 1–100. Bezdeń (po 100) jest w Etapie 9. */
+export const WELL_MAX_FLOOR_THIS_STAGE = 100;
+/** Od piętra 50 każda walka +0,2 Skażenia (2 dziesiąte). Od 70 Groza ≥ 6 (GDD 5.10). */
+export const WELL_CONTAMINATION_FLOOR = 50;
+export const WELL_DREAD_FLOOR = 70;
+export const WELL_DEEP_TENTHS = 2;
+export const WELL_DEEP_DREAD = 6;
 export const WELL_VIGOR_COST = 10;
 export const WELL_GUARDIAN_EVERY = 10;
 export const WELL_GUARDIAN_KEYS = 2;
@@ -83,7 +88,14 @@ export const HUNT_SHARD_CHANCE_BP = 1_000;
 
 export type PortalRole = 'minion' | 'boss' | 'avatar';
 export type PortalModifier =
-  'ib-vengeance' | 'pressure' | 'drain' | 'pulse' | 'judgment' | 'yellow-sign' | 'fertility';
+  | 'ib-vengeance'
+  | 'pressure'
+  | 'drain'
+  | 'pulse'
+  | 'judgment'
+  | 'yellow-sign'
+  | 'fertility'
+  | 'rlyeh-dreams';
 
 export interface PortalCoord {
   domain: number;
@@ -171,6 +183,7 @@ export function portalModifier(domain: number): PortalModifier | null {
   if (domain === 5) return 'judgment';
   if (domain === 6) return 'yellow-sign';
   if (domain === 7) return 'fertility';
+  if (domain === 8) return 'rlyeh-dreams';
   return null;
 }
 
@@ -426,6 +439,17 @@ export function huntKeyShard(circle: number, named: boolean, hit: boolean): numb
 
 export function isWellGuardian(floor: number): boolean {
   return floor > 0 && floor % WELL_GUARDIAN_EVERY === 0;
+}
+
+export function wellContaminationTenths(floor: number): number {
+  return floor >= WELL_CONTAMINATION_FLOOR ? WELL_DEEP_TENTHS : 0;
+}
+
+/** Szept „cisza” zeruje Grozę także poniżej progu 70. */
+export function wellFightDread(floor: number, guardian: boolean, hush: boolean): number {
+  if (hush) return 0;
+  const base = guardian ? 4 : 1;
+  return floor >= WELL_DREAD_FLOOR ? Math.max(base, WELL_DEEP_DREAD) : base;
 }
 
 /** Po piętrach 5, 10, … trzeba wybrać Szept, zanim zejdziesz niżej. */

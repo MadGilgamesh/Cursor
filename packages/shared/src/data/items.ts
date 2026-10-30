@@ -1,9 +1,9 @@
 /**
- * Dane statyczne: przedmioty (GDD 5.5, 8.2 `ItemDef`). Etap 1: Stopnie 1–3,
- * zestawy trzech klas (Rzeźnik, Okultysta, Strzelec), akcesoria i talizmany
+ * Dane statyczne: przedmioty (GDD 5.5, 8.2 `ItemDef`). Etap 8: Stopnie 1–8,
+ * zestawy czterech klas (Rzeźnik, Okultysta, Strzelec, Alienista), akcesoria i talizmany
  * bez klasy, konsumpcja (mikstura, laudanum, Kawa z Kresu) i śmieci z Łowów.
  */
-import type { CombatStat, EquipmentSlot, SetClassId } from '../balance.js';
+import { SET_CLASS_IDS, type CombatStat, type EquipmentSlot, type SetClassId } from '../balance.js';
 
 export interface GearDef {
   id: string;
@@ -74,12 +74,22 @@ const ARMOR_TEMPLATES: Record<SetClassId, ArmorTemplate> = {
     hands: { bonus: { accuracy: 500 }, life: 3 },
     feet: { bonus: { evasion: 300, strength: 200 }, life: 5 },
   },
+  alienist: {
+    head: { bonus: { defense: 200, evasion: 200 }, life: 3 },
+    torso: { bonus: { defense: 400 }, life: 8 },
+    legs: { bonus: { evasion: 300 }, life: 4 },
+    hands: { bonus: { accuracy: 300 }, life: 3 },
+    feet: { bonus: { evasion: 300 }, life: 4 },
+  },
 };
 
-/** Nazwy kolejno dla Stopni 1–3. */
+/**
+ * Nazwy od Stopnia 1. Wyższe Stopnie bez własnej nazwy biorą nazwę Stopnia 1
+ * (identyfikator i tak zawiera Stopień; GDD nie podaje nazw 4–8).
+ */
 const GEAR_NAMES: Record<
   SetClassId,
-  Record<Exclude<EquipmentSlot, 'accessory' | 'talisman'>, readonly [string, string, string]>
+  Record<Exclude<EquipmentSlot, 'accessory' | 'talisman'>, readonly string[]>
 > = {
   butcher: {
     weapon: ['Tasak z rybnego targu', 'Harpun wielorybnika', 'Łom kapitana portu'],
@@ -105,24 +115,35 @@ const GEAR_NAMES: Record<
     hands: ['Rękawice bez palców', 'Rękawice strzelca', 'Rękawice z karwaszem'],
     feet: ['Trzewiki wędrowne', 'Buty z cholewą', 'Buty zwiadowcy'],
   },
+  alienist: {
+    weapon: ['Strzykawka z apteki', 'Laska z ostrzem', 'Igła doktora Veya'],
+    head: ['Czepek pielęgniarki', 'Maska z gazy', 'Kaptur lekarza'],
+    torso: ['Fartuch lekarski', 'Fartuch z kauczuku', 'Fartuch sanatoryjny'],
+    legs: ['Spodnie z apteki', 'Spodnie sanitariusza', 'Spodnie z Ilmaru'],
+    hands: ['Rękawice gumowe', 'Rękawice z apteki', 'Rękawice z eteru'],
+    feet: ['Kalosze z apteki', 'Buty sanitariusza', 'Buty z Ilmaru'],
+  },
 };
 
-const CLASSLESS_NAMES = {
+const CLASSLESS_NAMES: Record<'accessory' | 'talisman', readonly string[]> = {
   accessory: ['Mosiężny sygnet', 'Amulet z zębem rekina', 'Sygnet z czarną perłą'],
   talisman: ['Ususzona rozgwiazda', 'Relikwia z kości palca', 'Fetysz z włosów topielca'],
-} as const;
+};
 
-const TIERS = [1, 2, 3] as const;
+const TIERS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+
+const gearName = (list: readonly string[], tier: number) =>
+  list[tier - 1] ?? list[0] ?? 'Bez nazwy';
 
 function buildGear(): GearDef[] {
   const gear: GearDef[] = [];
-  for (const classId of ['butcher', 'occultist', 'marksman'] as const) {
+  for (const classId of SET_CLASS_IDS) {
     const names = GEAR_NAMES[classId];
     for (const tier of TIERS) {
       gear.push({
         id: `gear.${classId}.weapon.${tier}`,
         kind: 'gear',
-        name: names.weapon[tier - 1] ?? names.weapon[0],
+        name: gearName(names.weapon, tier),
         slot: 'weapon',
         tier,
         classId,
@@ -134,7 +155,7 @@ function buildGear(): GearDef[] {
         gear.push({
           id: `gear.${classId}.${slot}.${tier}`,
           kind: 'gear',
-          name: names[slot][tier - 1] ?? names[slot][0],
+          name: gearName(names[slot], tier),
           slot,
           tier,
           classId,
@@ -148,7 +169,7 @@ function buildGear(): GearDef[] {
     gear.push({
       id: `gear.any.accessory.${tier}`,
       kind: 'gear',
-      name: CLASSLESS_NAMES.accessory[tier - 1] ?? CLASSLESS_NAMES.accessory[0],
+      name: gearName(CLASSLESS_NAMES.accessory, tier),
       slot: 'accessory',
       tier,
       classId: null,
@@ -158,7 +179,7 @@ function buildGear(): GearDef[] {
     gear.push({
       id: `gear.any.talisman.${tier}`,
       kind: 'gear',
-      name: CLASSLESS_NAMES.talisman[tier - 1] ?? CLASSLESS_NAMES.talisman[0],
+      name: gearName(CLASSLESS_NAMES.talisman, tier),
       slot: 'talisman',
       tier,
       classId: null,
@@ -299,6 +320,38 @@ export const JUNK: readonly JunkDef[] = [
     description: 'Nie da się go przeciąć nożem ze sklepu.',
     value: 110,
     circle: 4,
+  },
+  {
+    id: 'junk.third-ring',
+    kind: 'junk',
+    name: 'Obręcz z trzeciego kręgu',
+    description: 'Nie pasuje na żaden palec. Pasuje na gardło.',
+    value: 140,
+    circle: 3,
+  },
+  {
+    id: 'junk.ice-page',
+    kind: 'junk',
+    name: 'Kartka, która nie topnieje',
+    description: 'Pismo jest pod spodem lodu.',
+    value: 170,
+    circle: 2,
+  },
+  {
+    id: 'junk.survey-nail',
+    kind: 'junk',
+    name: 'Gwóźdź mierniczego',
+    description: 'Wskazuje zawsze w dół, nawet na płaskiej mapie.',
+    value: 200,
+    circle: 1,
+  },
+  {
+    id: 'junk.zero-coin',
+    kind: 'junk',
+    name: 'Moneta bez orła i reszki',
+    description: 'Obie strony są krawędzią.',
+    value: 240,
+    circle: 0,
   },
 ];
 

@@ -1,5 +1,5 @@
 /**
- * Domeny 1–7 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
+ * Domeny 1–8 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
  * Echa bogów (boss Etapu 5 i herold Etapu 9) są poza pulą Seansu.
  */
 import type { EchoRarity, PortalModifier } from '../portal.js';
@@ -162,6 +162,27 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Młode Czarnej Kozy',
       'Matka Stada',
       'Shub-Niggurath',
+    ],
+  },
+  {
+    domain: 8,
+    god: 'Cthulhu',
+    place: "R'lyeh, Miasto Nieeuklidesowe",
+    modifier: 'rlyeh-dreams',
+    modifierName: "Sny R'lyeh",
+    materialId: 'rlyeh-basalt',
+    materialName: "Bazalt R'lyeh",
+    units: [
+      'Kultyści z Bagien',
+      'Zaginiona Załoga',
+      'Głębinowcy Cthulhu',
+      'Śniący Kapłani',
+      'Strażnicy Monolitów',
+      'Pomiot z Gwiazd',
+      'Starszy Pomiot',
+      'Wrota Grobowca',
+      "Herold z R'lyeh",
+      'Cthulhu Przebudzony',
     ],
   },
 ];
@@ -333,6 +354,20 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     rarity: 'phantom',
     aspect: 'defense',
     godDomain: 7,
+  },
+  {
+    id: 'echo.god.cthulhu.wraith',
+    name: 'Strażnik Monolitu',
+    rarity: 'wraith',
+    aspect: 'defense',
+    godDomain: 8,
+  },
+  {
+    id: 'echo.god.cthulhu.phantom',
+    name: "Herold z R'lyeh",
+    rarity: 'phantom',
+    aspect: 'strength',
+    godDomain: 8,
   },
 ];
 

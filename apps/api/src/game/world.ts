@@ -58,6 +58,12 @@ import {
 } from '../db/schema.js';
 import { AppError } from '../errors.js';
 import { lockCharacter } from './activities.js';
+import {
+  absorbEscortFight,
+  activeWardEscort,
+  escortEventSanity,
+  escortTravelChance,
+} from './expedition.js';
 import { saltThresholdActive } from './hearth.js';
 import { assertCanAct, enterSanatorium } from './avatar.js';
 import { loadLore } from './lore-state.js';
@@ -183,6 +189,7 @@ async function resolveArrival(
     }
   }
   if (ambush === 'toll') {
+    const loss = await escortEventSanity(db, character.id, 2);
     resources = {
       ...resources,
       sanity: adjustResource(
@@ -190,7 +197,7 @@ async function resolveArrival(
         resources.sanity,
         now.getTime(),
         resourceMax('sanity', resourceContext(character.level, 0, 0)),
-        -2,
+        -loss,
       ),
     };
   }
@@ -284,10 +291,16 @@ export async function depart(
   if (duration === null) throw new AppError(409, ERROR_CODES.requirement, 'Już tu jesteś');
   const seed = randomBytes(16).toString('base64url');
   const baseChance = ambushChanceBp(isWolfHour(now.getTime()), lore.stealth);
-  const chance = (await saltThresholdActive(db, locked.id, now))
+  const salted = (await saltThresholdActive(db, locked.id, now))
     ? Math.floor(baseChance / 2)
     : baseChance;
-  const ambush = rollAmbush(seed, chance);
+  const escort = await activeWardEscort(db, locked.id);
+  const chance = escortTravelChance(salted, escort);
+  let ambush = rollAmbush(seed, chance);
+  if (escort && ambush === 'fight' && !escort.ambushTaken) {
+    await absorbEscortFight(db, escort);
+    ambush = null;
+  }
   if (mount === 'faceless') {
     const nextResources = {
       ...resources,

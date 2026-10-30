@@ -33,7 +33,7 @@ export function aspectEdge(attacker: Aspect, defender: Aspect): number {
   return 1;
 }
 
-/** Aspekt Domeny Portalu (GDD 5.12.2). Domena 7 to znowu Rój. */
+/** Aspekt Domeny Portalu (GDD 5.12.2). Domena 7 to znowu Rój, Domena 8 znowu Głębia. */
 const DOMAIN_ASPECTS: readonly Aspect[] = [
   'swarm',
   'depth',
@@ -42,6 +42,7 @@ const DOMAIN_ASPECTS: readonly Aspect[] = [
   'pale',
   'gale',
   'swarm',
+  'depth',
 ];
 
 export function domainAspect(domain: number): Aspect | null {

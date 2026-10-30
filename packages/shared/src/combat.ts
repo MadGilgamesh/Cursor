@@ -74,6 +74,7 @@ export const COMBAT_EVENT_KINDS = [
   'drain',
   'pulse',
   'brand',
+  'dream',
 ] as const;
 export type CombatEventKind = (typeof COMBAT_EVENT_KINDS)[number];
 
@@ -124,6 +125,8 @@ function variance(rng: Rng): number {
  * - `pressure`: Unik gracza −10%, a od 5. rundy dodatkowe −2% za rundę.
  * - `drain`: co rundę −2% maksimum Życia i −1 Poczytalności (Kolor).
  * - `fertility`: co 3 rundy obrażenia wroga +10%, kumulatywnie, bez dodatkowego losowania.
+ * - `rlyeh-dreams`: −1 Poczytalności co rundę; 10% ciosów gracza zakrzywia się w pudło.
+ *   Dodatkowy rzut jest tylko przy tym modyfikatorze.
  * - `edge`: mnożnik obrażeń gracza z Przysięgi (1, 1,2 albo 0,8). Przy 1 dziennik się nie zmienia.
  */
 export function simulateCombat(
@@ -178,6 +181,10 @@ export function simulateCombat(
         effects.accuracyPenaltyBp / BP,
     );
     if (!guaranteed && !rollChance(rng, chance)) {
+      push({ round, actor: 'player', kind: 'miss', damage: 0, word: false, frenzy: false });
+      return;
+    }
+    if (modifier === 'rlyeh-dreams' && rng.rollBp(1_000)) {
       push({ round, actor: 'player', kind: 'miss', damage: 0, word: false, frenzy: false });
       return;
     }
@@ -252,6 +259,10 @@ export function simulateCombat(
   let rounds = 0;
   for (let round = 1; round <= COMBAT_MAX_ROUNDS; round++) {
     rounds = round;
+    if (modifier === 'rlyeh-dreams' && sanity > 0) {
+      sanity -= 1;
+      push({ round, actor: 'enemy', kind: 'dream', damage: 1, word: false, frenzy: false });
+    }
     if (modifier === 'drain' && playerLife > 0) {
       const loss = Math.max(1, Math.round(player.maxLife * 0.02));
       playerLife = Math.max(0, playerLife - loss);

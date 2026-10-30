@@ -829,6 +829,75 @@ export const hearthStates = pgTable('hearth_states', {
   decayDay: text('decay_day'),
 });
 
+/** Wyprawa: lobby, bieg i rozliczenie (GDD 5.11). */
+export const expeditions = pgTable('expeditions', {
+  id: id(),
+  leaderId: uuid('leader_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  defId: text('def_id').notNull(),
+  status: text('status').notNull(),
+  weekKey: text('week_key').notNull(),
+  createdAt: createdAt(),
+  startedAt: tstz('started_at'),
+  endsAt: tstz('ends_at'),
+  seed: text('seed'),
+  pool: integer('pool'),
+  sharedSanity: integer('shared_sanity'),
+  missed: integer('missed'),
+  betrayerId: uuid('betrayer_id'),
+  log: jsonb('log').$type<string[]>().notNull().default([]),
+});
+
+export const expeditionMembers = pgTable(
+  'expedition_members',
+  {
+    expeditionId: uuid('expedition_id')
+      .notNull()
+      .references(() => expeditions.id, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    assist: boolean('assist').notNull().default(false),
+    ready: boolean('ready').notNull().default(false),
+    classId: text('class_id'),
+    sanity: integer('sanity'),
+    maxSanity: integer('max_sanity'),
+    level: integer('level'),
+    share: integer('share'),
+  },
+  (t) => [primaryKey({ columns: [t.expeditionId, t.characterId] })],
+);
+
+export const expeditionEntries = pgTable(
+  'expedition_entries',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    defId: text('def_id').notNull(),
+    weekKey: text('week_key').notNull(),
+    used: integer('used').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.defId, t.weekKey] })],
+);
+
+/** Eskorta w tym samym mieście (GDD 5.23). */
+export const escorts = pgTable('escorts', {
+  id: id(),
+  protectorId: uuid('protector_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  city: text('city').notNull(),
+  status: text('status').notNull(),
+  ambushTaken: boolean('ambush_taken').notNull().default(false),
+  sanityCut: boolean('sanity_cut').notNull().default(false),
+  createdAt: createdAt(),
+});
+
 export const friendships = pgTable(
   'friendships',
   {
@@ -844,6 +913,8 @@ export const friendships = pgTable(
 
 export type LoreStateRow = typeof loreStates.$inferSelect;
 export type HearthStateRow = typeof hearthStates.$inferSelect;
+export type EscortRow = typeof escorts.$inferSelect;
+export type ExpeditionRow = typeof expeditions.$inferSelect;
 export type WorldStateRow = typeof worldStates.$inferSelect;
 
 export type AccountRow = typeof accounts.$inferSelect;
