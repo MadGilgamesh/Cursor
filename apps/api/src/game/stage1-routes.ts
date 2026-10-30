@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@game/shared';
+import { ERROR_CODES, MAX_TRAINING_HALL_THIS_STAGE } from '@game/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -40,7 +40,7 @@ const trainSchema = z.object({
   stat: z.enum(['strength', 'defense', 'accuracy', 'evasion']),
   vigor: z.int().min(5).max(100).multipleOf(5),
 });
-const hallSchema = z.object({ hall: z.int().min(1).max(2) });
+const hallSchema = z.object({ hall: z.int().min(1).max(MAX_TRAINING_HALL_THIS_STAGE) });
 const itemSchema = z.object({ itemId: z.string().min(1).max(80) });
 const amountSchema = z.object({ amount: z.int().positive().max(1_000_000_000) });
 

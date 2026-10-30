@@ -1,42 +1,35 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  bokrugStarOneDay,
-  domainFinishDay,
-  dreamCareerDay,
-  effectiveStatOnDay,
-} from '../src/portal-pace.js';
+import { DOMAIN_DAY_TARGETS, LEVEL_80_DAY_TARGET, simulateActiveCareer } from '../src/career.js';
+import { ALARM_THRESHOLD, deviation } from '../src/targets.js';
 
-describe('tempo Portalu (interpolacja tabeli 10.3)', () => {
-  it('Domena 1 kończy się w dniu 13, nie w dniu 11 z GDD', () => {
-    // Cel GDD 10.13: dzień 11 ±15% (9–12). Ten model, oparty tylko na
-    // opublikowanej krzywej statystyk, daje dzień 13 (odchylenie ~18%).
-    // Nie dociągamy liczby — luka jest opisana w README.
-    expect(effectiveStatOnDay(7)).toBe(2440);
-    expect(domainFinishDay(1)).toBe(13);
-    expect(Math.abs(13 - 11) / 11).toBeGreaterThan(0.15);
+describe('tempo kariery aktywnego F2P', () => {
+  const career = simulateActiveCareer();
+
+  it('Domena 1, Domena 11 i poziom 80 mieszczą się w 15% celów z rozdziału 10', () => {
+    const domain1 = career.domainDays[0] ?? 0;
+    const domain11 = career.domainDays[10] ?? 0;
+    expect(domain1).toBe(10);
+    expect(domain11).toBe(427);
+    expect(career.level80Day).toBe(433);
+    expect(deviation(domain1, DOMAIN_DAY_TARGETS[0])).toBeLessThanOrEqual(ALARM_THRESHOLD);
+    expect(deviation(domain11, DOMAIN_DAY_TARGETS[10])).toBeLessThanOrEqual(ALARM_THRESHOLD);
+    expect(deviation(career.level80Day, LEVEL_80_DAY_TARGET)).toBeLessThanOrEqual(ALARM_THRESHOLD);
   });
 
-  it('Domena 3 mieści się w 62 ±15%, a ★1 Bokruga wychodzi po dniu 18', () => {
-    // Aktywny F2P, krzywa 10.3, próg p ≥ 0,6. Domena 3 jest limitowana
-    // statystyką (7 i 8,9 klucza dziennie dają ten sam dzień).
-    expect(dreamCareerDay(1)).toBe(13);
-    expect(dreamCareerDay(3)).toBe(70);
-    expect(Math.abs(70 - 62) / 62).toBeLessThanOrEqual(0.15);
-    // „Osiągalne ok. dnia 18” przy 8,9 klucza z tabeli 10.13 wychodzi w dniu 22
-    // (ukończenie ★1, nie samo odblokowanie). Odblokowanie jest w dniu 13,
-    // razem z awatarem Snu. Nie dociągamy krzywej.
-    expect(bokrugStarOneDay(8.9)).toBe(22);
-    expect(Math.abs(22 - 18) / 18).toBeGreaterThan(0.15);
+  it('żadna Domena nie odchyla się od tabeli 10.13 o więcej niż 15%', () => {
+    career.domainDays.forEach((day, index) => {
+      expect(day).toBeGreaterThan(0);
+      expect(deviation(day, DOMAIN_DAY_TARGETS[index] ?? day)).toBeLessThanOrEqual(ALARM_THRESHOLD);
+    });
   });
 
-  it('Sen w Portalu nie kończy Domeny 11 w dniu 472', () => {
-    // Cel GDD 11: dzień 472 ±15% dla aktywnego F2P. Krzywa statystyk z tabeli 10.3
-    // staje w dniu 450 na 486 000 i nie dogania wroga Azathotha. Model zwraca sufit 800.
-    // Nie dociągamy krzywej.
-    expect(dreamCareerDay(9)).toBe(338);
-    expect(dreamCareerDay(10)).toBe(393);
-    expect(dreamCareerDay(11)).toBe(800);
-    expect(Math.abs(800 - 472) / 472).toBeGreaterThan(0.15);
+  it('statystyka rośnie także po dniu 450 i jest powtarzalna', () => {
+    const again = simulateActiveCareer();
+    expect(again).toEqual(career);
+    const at = (day: number) =>
+      career.samples.find((sample) => sample.day === day)?.effectiveStat ?? 0;
+    expect(at(450)).toBeGreaterThan(at(365));
+    expect(at(472)).toBeGreaterThan(at(450));
   });
 });

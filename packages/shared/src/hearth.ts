@@ -191,6 +191,28 @@ export function bedroomVigorBp(level: number, arrears: boolean): number {
   return !arrears && level >= 1 ? 500 : 0;
 }
 
+/** Sala Ćwiczeń: +2% przyrostu treningu za poziom, maks. +10% (GDD 10.3). */
+export function trainingRoomFactor(level: number): number {
+  const safe = Math.max(0, Math.min(ROOM_MAX_LEVEL, Math.floor(level)));
+  return 1 + 0.02 * safe;
+}
+
+/**
+ * Biblioteka: −10% Poczytalności lektury za poziom (GDD 10.7) i tyle samo
+ * z czasu tomu. Piąty poziom zostawia połowę.
+ */
+export function libraryReadingFactor(level: number): number {
+  const safe = Math.max(0, Math.min(ROOM_MAX_LEVEL, Math.floor(level)));
+  return (100 - 10 * safe) / 100;
+}
+
+/**
+ * Gabinet skraca kurs. GDD podaje „tempo”, bez procentu — ta sama skala co Biblioteka.
+ */
+export function studyCourseFactor(level: number): number {
+  return libraryReadingFactor(level);
+}
+
 export const RITUAL_CATEGORIES = [
   'protective',
   'transmutation',

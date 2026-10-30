@@ -8,7 +8,9 @@ import {
   bestiaryPages,
   bestiarySigilUnlock,
   capReputation,
+  COLLEGE_COURSES,
   DOMAIN_BOOK_KNOWLEDGE,
+  eruditionFromCourses,
   reforgeIchorCost,
   REFORGE_DAILY_CAP,
   sanityPenaltyForScars,
@@ -23,6 +25,11 @@ import {
 } from '../src/portal.js';
 
 describe('Etap 3 — Wiedza, Sprawy, Sigile', () => {
+  it('kursy dają Erudycję z widełek 50–500', () => {
+    expect(COLLEGE_COURSES.map((course) => course.erudition)).toEqual([50, 100, 200, 350, 500]);
+    expect(eruditionFromCourses(['anatomy', 'forbidden', 'nie-ma'])).toBe(550);
+  });
+
   it('max Poczytalności spada o 0,75 za punkt Wiedzy i o Bliznę głosu', () => {
     expect(resourceMax('sanity', { level: 1, knowledge: 0 })).toBe(100);
     expect(resourceMax('sanity', { level: 1, knowledge: 80 })).toBe(40);

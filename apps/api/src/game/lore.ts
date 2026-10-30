@@ -25,6 +25,8 @@ import {
   bestiaryPages as pagesFromKills,
   capReputation,
   courseDurationMs,
+  libraryReadingFactor,
+  studyCourseFactor,
   deductionScore,
   findCourse,
   findStarNode,
@@ -55,7 +57,7 @@ import type { Executor } from '../db/client.js';
 import { type CharacterRow, type LoreStateRow, type PortalStateRow } from '../db/schema.js';
 import { AppError } from '../errors.js';
 import { lockCharacter } from './activities.js';
-import { grantSolvedCase, holdsTome, orderErrandBlocked } from './hearth.js';
+import { activeRoomLevel, grantSolvedCase, holdsTome, orderErrandBlocked } from './hearth.js';
 import { assertCanAct, enterSanatorium } from './avatar.js';
 import { loadLore, loreExtras, saveLore } from './lore-state.js';
 import { loadPortal, materializePortal, ringOf, savePortal, withRing } from './portal-state.js';
@@ -537,10 +539,11 @@ export async function startReading(
   if (tome.id === OPENING_TOME && !(await holdsTome(db, locked.id, tome.id))) {
     throw new AppError(409, ERROR_CODES.requirement, 'Ten tom leży przy Sprawie, nie na półce');
   }
+  const library = libraryReadingFactor(await activeRoomLevel(db, locked.id, 'library', now));
   const next = {
     ...lore,
     readingId: tome.id,
-    readingEndsAt: new Date(now.getTime() + tomeDurationMs(tome)),
+    readingEndsAt: new Date(now.getTime() + Math.round(tomeDurationMs(tome) * library)),
   };
   await saveLore(db, next);
   await audit(db, who, locked.id, 'tome.start', { tomeId });
@@ -596,7 +599,10 @@ export async function claimReading(
       resources.sanity,
       now.getTime(),
       maxSanity,
-      -tomeSanityCost(tome),
+      -Math.round(
+        tomeSanityCost(tome) *
+          libraryReadingFactor(await activeRoomLevel(db, locked.id, 'library', now)),
+      ),
     ),
   };
   if (resources.sanity.value > maxSanity) {
@@ -641,7 +647,13 @@ export async function startCourse(
   const next = {
     ...lore,
     courseId: course.id,
-    courseEndsAt: new Date(now.getTime() + courseDurationMs(course.hours)),
+    courseEndsAt: new Date(
+      now.getTime() +
+        Math.round(
+          courseDurationMs(course.hours) *
+            studyCourseFactor(await activeRoomLevel(db, locked.id, 'study', now)),
+        ),
+    ),
   };
   await saveLore(db, next);
   await audit(db, who, locked.id, 'college.start', { courseId });

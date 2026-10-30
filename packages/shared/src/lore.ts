@@ -184,17 +184,25 @@ export function findTome(id: string): TomeDef | undefined {
 export const tomeDurationMs = (tome: TomeDef) => tome.hours * HOUR_MS;
 export const tomeSanityCost = (tome: TomeDef) => tome.sanityPerQuarter * 4;
 
+/** Erudycja za kurs mieści się w widełkach GDD 10.3 (+50…+500). */
 export const COLLEGE_COURSES = [
-  { id: 'anatomy', branch: 'Anatomia Walki', hours: 1, silver: 40 },
-  { id: 'order', branch: 'Służba Zakonu', hours: 4, silver: 120 },
-  { id: 'craft', branch: 'Rzemiosło', hours: 12, silver: 300 },
-  { id: 'trade', branch: 'Polityka i Handel', hours: 24, silver: 800 },
-  { id: 'forbidden', branch: 'Nauki Wzbronione', hours: 168, silver: 2_000 },
+  { id: 'anatomy', branch: 'Anatomia Walki', hours: 1, silver: 40, erudition: 50 },
+  { id: 'order', branch: 'Służba Zakonu', hours: 4, silver: 120, erudition: 100 },
+  { id: 'craft', branch: 'Rzemiosło', hours: 12, silver: 300, erudition: 200 },
+  { id: 'trade', branch: 'Polityka i Handel', hours: 24, silver: 800, erudition: 350 },
+  { id: 'forbidden', branch: 'Nauki Wzbronione', hours: 168, silver: 2_000, erudition: 500 },
 ] as const;
 export type CollegeCourseId = (typeof COLLEGE_COURSES)[number]['id'];
 
 export function findCourse(id: string) {
   return COLLEGE_COURSES.find((course) => course.id === id);
+}
+
+/** Suma Erudycji z zaliczonych kursów. Nieznany identyfikator nic nie dodaje. */
+export function eruditionFromCourses(done: readonly string[]): number {
+  let total = 0;
+  for (const id of done) total += findCourse(id)?.erudition ?? 0;
+  return total;
 }
 
 export const courseDurationMs = (hours: number) => hours * HOUR_MS;

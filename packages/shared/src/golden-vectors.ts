@@ -15,7 +15,10 @@ export interface GoldenVectors {
   readonly rngUint32: readonly number[];
   readonly rngInt1to100: readonly number[];
   readonly applyBp: readonly number[];
-  /** Kolumna „XP z L−1 do L” tabeli GDD 10.2 dla poziomów `GOLDEN_LEVELS`. */
+  /**
+   * XP z L−1 do L dla poziomów `GOLDEN_LEVELS`.
+   * Poziomy do 10 są kolumną GDD 10.2. Dalej dochodzi pochylenie z `lateCareerTilt`.
+   */
   readonly experienceFromPreviousLevel: readonly number[];
   /** Łączne XP do osiągnięcia poziomu — suma progów stosowanych przez grę. */
   readonly totalExperienceToReach: readonly number[];
@@ -44,10 +47,10 @@ export const GOLDEN_VECTORS: GoldenVectors = {
   rngInt1to100: [60, 1, 76, 18, 50, 74, 30, 31, 59, 61],
   applyBp: [150, 332, -4, 12345],
   experienceFromPreviousLevel: [
-    446, 4894, 23945, 47543, 123012, 239522, 400264, 607856, 864532, 1172259,
+    446, 4894, 24971, 51509, 140515, 283930, 488213, 758837, 1100603, 1517826,
   ],
   totalExperienceToReach: [
-    833, 14995, 101368, 288317, 1146499, 2982138, 6223800, 11328576, 18777512, 29072463,
+    833, 14995, 103623, 303681, 1266434, 3412626, 7322889, 13636655, 23044203, 36281037,
   ],
   missionExperienceL10: [144, 288, 576, 1008, 1440],
   missionSilverL10: [44, 89, 178, 311, 445],

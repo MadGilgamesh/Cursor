@@ -1,8 +1,19 @@
+import { randomUUID } from 'node:crypto';
+
+import { eruditionFromCourses, trainingGainCenti, trainingRoomFactor } from '@game/shared';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { ManualClock } from '../../src/clock.js';
-import { acts, characters, classProgress } from '../../src/db/schema.js';
+import {
+  acts,
+  characterStats,
+  characters,
+  classProgress,
+  hearthStates,
+  loreStates,
+} from '../../src/db/schema.js';
+import { postLedgerEntry } from '../../src/game/wallet.js';
 import { call, createTestApp, registerPlayer, type TestContext } from './harness.js';
 
 let ctx: TestContext;
@@ -96,6 +107,61 @@ describe('Etap 10', () => {
     });
     expect(response.statusCode, response.body).toBe(409);
     expect(response.json<{ error: { message: string } }>().error.message).toBe('Za mało Wiedzy');
+  });
+
+  it('sala 5, kurs i Sala Ćwiczeń podnoszą przyrost treningu', async () => {
+    const player = await registerPlayer(ctx);
+    const plain = await call(ctx, player, 'POST', '/api/v1/training', {
+      body: { stat: 'strength', vigor: 5 },
+    });
+    expect(plain.statusCode, plain.body).toBe(200);
+    expect(plain.json<{ gainCenti: number }>().gainCenti).toBe(trainingGainCenti(2_000, 5, 4, 0));
+
+    await ctx.db
+      .update(characterStats)
+      .set({ strength: 6_000_000, defense: 6_000_000, accuracy: 6_000_000, evasion: 6_000_000 })
+      .where(eq(characterStats.characterId, player.characterId));
+    await postLedgerEntry(ctx.db, {
+      characterId: player.characterId,
+      currency: 'silver',
+      delta: 3_000_000,
+      reason: 'test',
+      idempotencyKey: randomUUID(),
+    });
+    const opened = await call(ctx, player, 'POST', '/api/v1/training/unlock', {
+      body: { hall: 5 },
+    });
+    expect(opened.statusCode, opened.body).toBe(200);
+    expect(opened.json<{ hall: number }>().hall).toBe(5);
+
+    await ctx.db
+      .update(characterStats)
+      .set({ strength: 2_000 })
+      .where(eq(characterStats.characterId, player.characterId));
+    await ctx.db
+      .update(loreStates)
+      .set({ coursesDone: ['anatomy', 'order', 'craft', 'trade', 'forbidden'] })
+      .where(eq(loreStates.characterId, player.characterId));
+    await ctx.db
+      .insert(hearthStates)
+      .values({
+        characterId: player.characterId,
+        houseId: 'room',
+        arrears: false,
+        rooms: { training: 5 },
+      })
+      .onConflictDoUpdate({
+        target: hearthStates.characterId,
+        set: { houseId: 'room', arrears: false, buildEndsAt: null, rooms: { training: 5 } },
+      });
+    const boosted = await call(ctx, player, 'POST', '/api/v1/training', {
+      body: { stat: 'strength', vigor: 5 },
+    });
+    expect(boosted.statusCode, boosted.body).toBe(200);
+    const erudition = eruditionFromCourses(['anatomy', 'order', 'craft', 'trade', 'forbidden']);
+    expect(boosted.json<{ gainCenti: number }>().gainCenti).toBe(
+      trainingGainCenti(2_000, 5, 18 * trainingRoomFactor(5), erudition),
+    );
   });
 
   it('kolejny akt zeruje zegar i podnosi generację', async () => {

@@ -14,7 +14,7 @@
  */
 import { applyBp } from './fixed-point.js';
 
-export const BALANCE_VERSION = 11;
+export const BALANCE_VERSION = 12;
 
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -247,8 +247,8 @@ export const TRAINING_HALLS: readonly TrainingHall[] = [
   },
 ];
 
-/** Najwyższa sala dostępna w bieżącym etapie gry. */
-export const MAX_TRAINING_HALL_THIS_STAGE = 2;
+/** Wszystkie pięć sal z GDD 10.3. Wcześniejsze etapy trzymały próg na 2. */
+export const MAX_TRAINING_HALL_THIS_STAGE = 5;
 
 export const TRAINING_VIGOR_STEP = 5;
 

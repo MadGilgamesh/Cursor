@@ -172,6 +172,22 @@ function built(row: HearthStateRow, now: Date): boolean {
   return Boolean(row.houseId) && (!row.buildEndsAt || row.buildEndsAt <= now);
 }
 
+/** Poziom pokoju, gdy dom stoi i nie ma zaległości. Brak domu to 0, bez wstawiania wiersza. */
+export async function activeRoomLevel(
+  db: Executor,
+  characterId: string,
+  room: RoomId,
+  now: Date,
+): Promise<number> {
+  const [row] = await db
+    .select()
+    .from(hearthStates)
+    .where(eq(hearthStates.characterId, characterId))
+    .limit(1);
+  if (!row || !built(row, now) || row.arrears) return 0;
+  return row.rooms[room] ?? 0;
+}
+
 function cellarLevel(row: HearthStateRow): number {
   if (row.arrears) return 0;
   return row.rooms.cellar ?? 0;

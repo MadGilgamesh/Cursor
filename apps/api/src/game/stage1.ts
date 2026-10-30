@@ -35,6 +35,7 @@ import {
   findItem,
   gearValue,
   grantClassExperience,
+  eruditionFromCourses,
   markedTrainingGain,
   resourceContextFor,
   resourceMax,
@@ -44,6 +45,7 @@ import {
   tierRequiredLevel,
   trainingGainCenti,
   trainingHall,
+  trainingRoomFactor,
   tutorialEnemy,
   utcDay,
   weaponDamage,
@@ -58,6 +60,8 @@ import type { Executor } from '../db/client.js';
 import {
   characterStats,
   classProgress,
+  hearthStates,
+  loreStates,
   combatLogs,
   dailyStates,
   huntBoards,
@@ -500,6 +504,25 @@ export async function train(
   await assertCanAct(db, character, now);
   const stats = await loadStats(db, character.id, true);
   const hall = trainingHall(stats.hall);
+  const [lore] = await db
+    .select({ coursesDone: loreStates.coursesDone })
+    .from(loreStates)
+    .where(eq(loreStates.characterId, character.id))
+    .limit(1);
+  const [hearth] = await db
+    .select({
+      houseId: hearthStates.houseId,
+      buildEndsAt: hearthStates.buildEndsAt,
+      arrears: hearthStates.arrears,
+      rooms: hearthStates.rooms,
+    })
+    .from(hearthStates)
+    .where(eq(hearthStates.characterId, character.id))
+    .limit(1);
+  const houseReady = Boolean(
+    hearth?.houseId && (!hearth.buildEndsAt || hearth.buildEndsAt <= now) && !hearth.arrears,
+  );
+  const roomLevel = houseReady ? (hearth?.rooms.training ?? 0) : 0;
   const state = await view(db, character, now);
   const spent = spendResource(
     'vigor',
@@ -510,7 +533,12 @@ export async function train(
   );
   if (!spent) throw new AppError(409, ERROR_CODES.insufficientResources, 'Za mało Wigoru');
   const gain = markedTrainingGain(
-    trainingGainCenti(stats[stat], vigor, hall.gain),
+    trainingGainCenti(
+      stats[stat],
+      vigor,
+      hall.gain * trainingRoomFactor(roomLevel),
+      eruditionFromCourses(lore?.coursesDone ?? []),
+    ),
     character.markTraining,
   );
   await db
@@ -529,7 +557,7 @@ export async function unlockHall(
   hall: number,
 ) {
   const def = trainingHall(hall);
-  if (def.stage > 1 || hall > MAX_TRAINING_HALL_THIS_STAGE) {
+  if (hall > MAX_TRAINING_HALL_THIS_STAGE) {
     throw new AppError(409, ERROR_CODES.requirement, 'Ta sala otwiera się później');
   }
   const stats = await loadStats(db, character.id, true);
