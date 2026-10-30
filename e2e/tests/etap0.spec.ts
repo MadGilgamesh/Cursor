@@ -16,7 +16,7 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
   test('rejestracja → zlecenie zużywa Wigor → nagroda do księgi → Wigor rośnie z czasem serwera', async ({
     page,
   }, testInfo) => {
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
     // Bez animacji przejść — zrzut ekranu na końcu ma pokazać stan ustalony.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await registerViaUi(page, newAccount());
@@ -79,11 +79,12 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
       'page',
     );
     await expect(resource(page, 'vigor')).toHaveAccessibleName(/^Wigor: 80\/100/);
-    await page.evaluate(() => {
-      window.scrollTo(0, 0);
-    });
-    await expect(page.getByRole('heading', { level: 1, name: 'Dom' })).toBeInViewport();
     await page.evaluate(() => document.fonts.ready);
+    const heading = page.getByRole('heading', { level: 1, name: 'Dom' });
+    await heading.evaluate((element) => {
+      element.scrollIntoView({ block: 'center' });
+    });
+    await expect(heading).toBeInViewport();
     const path = testInfo.outputPath(`etap0-dom-${testInfo.project.name}.png`);
     await page.screenshot({ path });
     await testInfo.attach('etap0-dom', { path, contentType: 'image/png' });

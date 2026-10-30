@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export interface TestAccount {
   email: string;
@@ -31,6 +31,18 @@ export async function loginViaUi(page: Page, account: Pick<TestAccount, 'email' 
   await page.getByLabel('E-mail').fill(account.email);
   await page.getByLabel('Hasło').fill(account.password);
   await page.getByRole('button', { name: 'Wejdź' }).click();
+}
+
+/**
+ * WebKit nie kończy sprawdzania „stabilności”, dopóki cel jest poza ekranem,
+ * więc sam klik nigdy nie dochodzi do przewinięcia. Najpierw środek widoku,
+ * z dala od stałego paska, potem zwykły klik.
+ */
+export async function clickInView(locator: Locator): Promise<void> {
+  await locator.evaluate((element) => {
+    element.scrollIntoView({ block: 'center', inline: 'nearest' });
+  });
+  await locator.click();
 }
 
 /** Na telefonie nic nie może wystawać poza szerokość ekranu. */

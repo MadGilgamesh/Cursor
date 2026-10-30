@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-import { expectNoHorizontalOverflow, loginViaUi, newAccount, registerViaUi } from './helpers';
+import {
+  clickInView,
+  expectNoHorizontalOverflow,
+  loginViaUi,
+  newAccount,
+  registerViaUi,
+} from './helpers';
 
 test('niezalogowany gracz trafia na ekran logowania', async ({ page }) => {
   await page.goto('/postac');
@@ -23,7 +29,9 @@ test('pełny cykl: rejestracja → Dom → wylogowanie → logowanie', async ({ 
   await expect(page.getByTestId('character-name')).toHaveText(account.characterName);
 
   await page.getByRole('link', { name: 'Postać' }).click();
-  await page.getByRole('button', { name: 'Wyloguj' }).click();
+  await expect(page).toHaveURL(/\/postac$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Postać' })).toBeVisible();
+  await clickInView(page.getByRole('button', { name: 'Wyloguj' }));
   await expect(page).toHaveURL(/\/logowanie$/);
 
   await page.goto('/');
