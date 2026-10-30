@@ -52,10 +52,11 @@ export function HomeScreen() {
     root.dataset.madness = madness.sanityTier;
   }, [madness]);
 
+  const pace = dashboard.data?.regen;
   const vigor = dashboard.data
-    ? resourceViews(dashboard.data.resources, now).find((view) => view.kind === 'vigor')
+    ? resourceViews(dashboard.data.resources, now, pace).find((view) => view.kind === 'vigor')
     : undefined;
-  const step = vigor ? nextStep(activities, vigor, now) : null;
+  const step = vigor ? nextStep(activities, vigor, now, pace) : null;
   const actionError = claim.error ?? claimAll.error;
 
   return (

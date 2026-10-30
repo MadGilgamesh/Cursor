@@ -22,6 +22,16 @@ export function HearthScreen() {
         <p className="text-sm text-bone-400">
           {data?.hideout ? t('hearth.hideout') : t('hearth.hideoutClosed')}
         </p>
+        {data && data.vigorBonusBp > 0 ? (
+          <p className="text-sm text-bone-200">
+            {t('hearth.bedroom', { percent: data.vigorBonusBp / 100 })}
+          </p>
+        ) : null}
+        {data && data.sanityBonusBp > 0 ? (
+          <p className="text-sm text-bone-200">
+            {t('hearth.chapel', { percent: data.sanityBonusBp / 100 })}
+          </p>
+        ) : null}
         {data?.cult ? (
           <p className="text-sm text-bone-200">
             {t('hearth.cult', { rank: data.cult.rank, suspicion: data.cult.suspicion })}

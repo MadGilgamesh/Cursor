@@ -31,6 +31,7 @@ const dashboard: DashboardResponse = {
     toil: { value: 50, max: 50, updatedAt: iso(0) },
     sanity: { value: 100, max: 100, updatedAt: iso(0) },
   },
+  regen: { patron: false, vigorRegenBp: 0, sanityRegenBp: 0 },
   wallet: { silver: 42 },
   portal: {
     regenKeys: 0,

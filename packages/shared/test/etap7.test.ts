@@ -8,6 +8,11 @@ import {
   SEAL_DOUBLE_BP,
   aspectEdge,
   bedroomVigorBp,
+  chapelSanityBp,
+  libraryReadingFactor,
+  roomRegenBp,
+  studyCourseFactor,
+  trainingRoomFactor,
   cultRankFor,
   domainAspect,
   domainContaminationTenths,
@@ -92,6 +97,24 @@ describe('Dom, rytuały i Domena 7', () => {
     expect(bedroomVigorBp(1, false)).toBe(500);
     expect(bedroomVigorBp(1, true)).toBe(0);
     expect(bedroomVigorBp(0, false)).toBe(0);
+    expect(chapelSanityBp(0, false)).toBe(0);
+    expect(chapelSanityBp(1, false)).toBe(2_000);
+    expect(chapelSanityBp(5, false)).toBe(6_000);
+    expect(chapelSanityBp(5, true)).toBe(0);
+    expect(roomRegenBp({ bedroom: 1, chapel: 3 }, false, true)).toEqual({
+      vigorRegenBp: 500,
+      sanityRegenBp: 4_000,
+    });
+    expect(roomRegenBp({ bedroom: 1, chapel: 3 }, false, false)).toEqual({
+      vigorRegenBp: 0,
+      sanityRegenBp: 0,
+    });
+    expect(trainingRoomFactor(0)).toBe(1);
+    expect(trainingRoomFactor(5)).toBeCloseTo(1.1);
+    expect(trainingRoomFactor(9)).toBeCloseTo(1.1);
+    expect(libraryReadingFactor(0)).toBe(1);
+    expect(libraryReadingFactor(5)).toBe(0.5);
+    expect(studyCourseFactor(2)).toBe(0.8);
   });
 
   it('przy p = 0,5 wagi rytuału to 4000/1000/4250/750, a rozkład przechodzi chi-kwadrat', () => {

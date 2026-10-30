@@ -19,7 +19,9 @@ export function CityScreen() {
   const navigate = useNavigate();
   const level = dashboard.data?.character.level ?? session.character.level;
   const vigor = dashboard.data
-    ? resourceViews(dashboard.data.resources, now).find((view) => view.kind === 'vigor')
+    ? resourceViews(dashboard.data.resources, now, dashboard.data.regen).find(
+        (view) => view.kind === 'vigor',
+      )
     : undefined;
   const busy = (dashboard.data?.activities.length ?? 0) > 0;
   const [loop, setLoop] = useState(false);

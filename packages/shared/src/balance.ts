@@ -14,7 +14,7 @@
  */
 import { applyBp } from './fixed-point.js';
 
-export const BALANCE_VERSION = 11;
+export const BALANCE_VERSION = 13;
 
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -63,6 +63,38 @@ export interface ResourceContext {
   patron?: boolean;
 }
 
+/**
+ * Tempo regeneracji ponad bazę. Premia jest w punktach bazowych (500 = +5%)
+ * i skraca tik; przyrost na tik zostaje liczbą całkowitą z tabeli.
+ * Patronat i Sypialnia sumują się: +10% i +5% dają `round(baza · 10000/11500)`.
+ */
+export interface RegenPace {
+  patron?: boolean;
+  /** Sypialnia: 500, gdy pokój stoi i nie ma zaległości. */
+  vigorRegenBp?: number;
+  /** Kaplica Domowa: 2000–6000 według poziomu (GDD 10.1). */
+  sanityRegenBp?: number;
+}
+
+function asPace(pace: boolean | RegenPace | undefined): {
+  patron: boolean;
+  vigorRegenBp: number;
+  sanityRegenBp: number;
+} {
+  if (typeof pace === 'boolean') return { patron: pace, vigorRegenBp: 0, sanityRegenBp: 0 };
+  return {
+    patron: pace?.patron === true,
+    vigorRegenBp: Math.max(0, pace?.vigorRegenBp ?? 0),
+    sanityRegenBp: Math.max(0, pace?.sanityRegenBp ?? 0),
+  };
+}
+
+/** Krótszy tik przy wyższym tempie. +10% Patronatu to `round(baza · 10000/11000)`. */
+function pacedInterval(intervalMs: number, bonusBp: number): number {
+  if (bonusBp <= 0) return intervalMs;
+  return Math.round((intervalMs * 10_000) / (10_000 + bonusBp));
+}
+
 export function resourceMax(kind: ResourceKind, ctx: ResourceContext): number {
   switch (kind) {
     case 'life':
@@ -91,8 +123,9 @@ export function resourceMax(kind: ResourceKind, ctx: ResourceContext): number {
 export function regenRule(
   kind: ResourceKind,
   max: number,
-  patron = false,
+  pace: boolean | RegenPace = false,
 ): { amount: number; intervalMs: number } {
+  const mods = asPace(pace);
   if (kind === 'life') {
     const rule = RESOURCE_RULES.life;
     return {
@@ -101,10 +134,14 @@ export function regenRule(
     };
   }
   const rule = RESOURCE_RULES[kind];
-  if (kind === 'vigor' && patron) {
+  if (kind === 'vigor') {
+    const bonusBp = (mods.patron ? 1_000 : 0) + mods.vigorRegenBp;
+    return { amount: rule.regenAmount, intervalMs: pacedInterval(rule.regenIntervalMs, bonusBp) };
+  }
+  if (kind === 'sanity') {
     return {
       amount: rule.regenAmount,
-      intervalMs: Math.round((rule.regenIntervalMs * 10_000) / 11_000),
+      intervalMs: pacedInterval(rule.regenIntervalMs, mods.sanityRegenBp),
     };
   }
   return { amount: rule.regenAmount, intervalMs: rule.regenIntervalMs };
@@ -127,11 +164,11 @@ export function materializeResource(
   stored: StoredResource,
   now: number,
   max: number,
-  patron = false,
+  pace: boolean | RegenPace = false,
 ): StoredResource {
   if (now <= stored.updatedAt) return stored;
   if (stored.value >= max) return { value: stored.value, updatedAt: now };
-  const { amount, intervalMs } = regenRule(kind, max, patron);
+  const { amount, intervalMs } = regenRule(kind, max, pace);
   const ticks = Math.floor((now - stored.updatedAt) / intervalMs);
   const value = Math.min(max, stored.value + ticks * amount);
   if (value >= max) return { value, updatedAt: now };
@@ -143,9 +180,10 @@ export function resourceTimers(
   kind: ResourceKind,
   stored: StoredResource,
   max: number,
+  pace: boolean | RegenPace = false,
 ): { nextTickAt: number | null; fullAt: number | null } {
   if (stored.value >= max) return { nextTickAt: null, fullAt: null };
-  const { amount, intervalMs } = regenRule(kind, max);
+  const { amount, intervalMs } = regenRule(kind, max, pace);
   const ticksNeeded = Math.ceil((max - stored.value) / amount);
   return {
     nextTickAt: stored.updatedAt + intervalMs,
@@ -247,8 +285,8 @@ export const TRAINING_HALLS: readonly TrainingHall[] = [
   },
 ];
 
-/** Najwyższa sala dostępna w bieżącym etapie gry. */
-export const MAX_TRAINING_HALL_THIS_STAGE = 2;
+/** Wszystkie pięć sal z GDD 10.3. Wcześniejsze etapy trzymały próg na 2. */
+export const MAX_TRAINING_HALL_THIS_STAGE = 5;
 
 export const TRAINING_VIGOR_STEP = 5;
 

@@ -1,8 +1,9 @@
 /**
  * Progresja postaci — krzywa doświadczenia z GDD 1.1 (rozdz. 10.2):
  *
- *   XP_do_następnego(L) = round((63·L^2,25 + 60) · f(L)),
- *   f(L) = 0,3 dla L ≤ 5, 0,55 dla L 6–9, 1 od L 10.
+ *   XP_do_następnego(L) = round((63·L^2,25 · t(L) + 60) · f(L)),
+ *   f(L) = 0,3 dla L ≤ 5, 0,55 dla L 6–9, 1 od L 10,
+ *   t(L) = 1 dla L ≤ 10, a dalej pierwiastek ósmego stopnia z L/10.
  *
  * L^2,25 liczymy jako L²·√√L: mnożenie i pierwiastek kwadratowy są w IEEE 754
  * zaokrąglane dokładnie, więc wynik jest identyczny w każdym silniku JS
@@ -16,6 +17,19 @@ function earlyGameFactor(level: number): number {
   if (level <= 5) return 0.3;
   if (level <= 9) return 0.55;
   return 1;
+}
+
+/**
+ * Od poziomu 10 próg rośnie jeszcze o pierwiastek ósmego stopnia z L/10.
+ * Sam współczynnik 63, przy pełnym dniu aktywnego F2P (zlecenia, pierwsze
+ * przejścia i powtórki Portalu, zadanie dzienne), kładzie poziom 80 w dniu 360.
+ * Ten czynnik narasta płynnie przez resztę kariery i przesuwa ten sam dochód
+ * XP w okolice dnia 430, czyli około 1,2 roku. Poziomy 1–10 zostają przy tabeli.
+ */
+function lateCareerTilt(level: number): number {
+  if (level <= 10) return 1;
+  const ratio = level / 10;
+  return Math.sqrt(Math.sqrt(Math.sqrt(ratio)));
 }
 
 function assertLevel(level: number): void {
@@ -33,7 +47,7 @@ export function experienceToNextLevel(level: number): number {
   assertLevel(level);
   if (level === CHARACTER_MAX_LEVEL) return 0;
   const powered = level * level * Math.sqrt(Math.sqrt(level));
-  return Math.round((63 * powered + 60) * earlyGameFactor(level));
+  return Math.round((63 * powered * lateCareerTilt(level) + 60) * earlyGameFactor(level));
 }
 
 /**

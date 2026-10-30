@@ -98,7 +98,9 @@ export async function resolveStatus(
   const journey = await loadWorld(db, character.id);
   const loadout = computeLoadout(equipped, journey.sealedItems);
   const ctx = resourceContextFor(character.level, loadout);
-  let resources = materializeAll(
+  let resources = await materializeAll(
+    db,
+    character.id,
     await loadResources(db, character.id, { forUpdate: true }),
     ctx,
     now,

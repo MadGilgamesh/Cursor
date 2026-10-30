@@ -26,7 +26,7 @@ import {
   WRATH_STAT_FACTOR,
   addContamination,
   aspectEdge,
-  bedroomVigorBp,
+  roomRegenBp,
   circleBonus,
   cultRankFor,
   domainAspect,
@@ -172,6 +172,22 @@ function built(row: HearthStateRow, now: Date): boolean {
   return Boolean(row.houseId) && (!row.buildEndsAt || row.buildEndsAt <= now);
 }
 
+/** Poziom pokoju, gdy dom stoi i nie ma zaległości. Brak domu to 0, bez wstawiania wiersza. */
+export async function activeRoomLevel(
+  db: Executor,
+  characterId: string,
+  room: RoomId,
+  now: Date,
+): Promise<number> {
+  const [row] = await db
+    .select()
+    .from(hearthStates)
+    .where(eq(hearthStates.characterId, characterId))
+    .limit(1);
+  if (!row || !built(row, now) || row.arrears) return 0;
+  return row.rooms[room] ?? 0;
+}
+
 function cellarLevel(row: HearthStateRow): number {
   if (row.arrears) return 0;
   return row.rooms.cellar ?? 0;
@@ -231,6 +247,7 @@ export async function hearthOf(db: Executor, character: CharacterRow, now: Date)
   const house = row.houseId ? findHouse(row.houseId) : undefined;
   const sleeper = row.sleeper ? findSleeper(row.sleeper) : undefined;
   const activeWounds = row.wounds.filter((wound) => Date.parse(wound.until) > now.getTime());
+  const regen = roomRegenBp(row.rooms, row.arrears, built(row, now));
   return {
     house: house
       ? {
@@ -267,7 +284,8 @@ export async function hearthOf(db: Executor, character: CharacterRow, now: Date)
     hideoutLooted: row.hideoutLooted,
     wounds: activeWounds.length,
     candles: row.candles,
-    vigorBonusBp: bedroomVigorBp(row.rooms.bedroom ?? 0, row.arrears),
+    vigorBonusBp: regen.vigorRegenBp,
+    sanityBonusBp: regen.sanityRegenBp,
     saltThreshold: Boolean(row.buffUntil && row.buffUntil > now),
   };
 }
@@ -450,7 +468,9 @@ export async function startRitual(
   const portal = await loadPortal(db, character.id, true);
   if ((ritual.ichor ?? 0) > portal.ichor) forbid('Za mało Ichoru');
   if ((ritual.shards ?? 0) > portal.sigilShards) forbid('Za mało Odprysków Sigilu');
-  const resources = materializeAll(
+  const resources = await materializeAll(
+    db,
+    character.id,
     await loadResources(db, character.id, { forUpdate: true }),
     resourceContext(character.level, lore.knowledge),
     now,
@@ -487,7 +507,9 @@ export async function resolveRitual(db: Executor, character: CharacterRow, now: 
   const ritual = findRitual(row.ritualId);
   if (!ritual) forbid('Rytuał zniknął z księgi');
   const lore = await loadLore(db, character.id, true);
-  const resources = materializeAll(
+  const resources = await materializeAll(
+    db,
+    character.id,
     await loadResources(db, character.id),
     resourceContext(character.level, lore.knowledge),
     now,

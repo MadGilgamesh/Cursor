@@ -825,7 +825,9 @@ export async function eatRation(
   const now = clock.now();
   const lore = await loadLore(db, character.id);
   const ctx = resourceContext(character.level, lore.knowledge, 0);
-  const resources = materializeAll(
+  const resources = await materializeAll(
+    db,
+    character.id,
     await loadResources(db, character.id, { forUpdate: true }),
     ctx,
     now,

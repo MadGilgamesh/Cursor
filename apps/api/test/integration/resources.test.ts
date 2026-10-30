@@ -1,9 +1,15 @@
-import { dashboardResponseSchema, ERROR_CODES, MINUTE_MS, type ApiError } from '@game/shared';
+import {
+  dashboardResponseSchema,
+  ERROR_CODES,
+  MINUTE_MS,
+  utcDay,
+  type ApiError,
+} from '@game/shared';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { ManualClock } from '../../src/clock.js';
-import { resourceStates } from '../../src/db/schema.js';
+import { hearthStates, resourceStates } from '../../src/db/schema.js';
 import { call, createTestApp, registerPlayer, virtualClock, type TestContext } from './harness.js';
 
 let ctx: TestContext;
@@ -82,5 +88,64 @@ describe('Etap 0 — test akceptacyjny (GDD 11)', () => {
     });
     expect(accepted.statusCode).toBe(201);
     expect((await dashboard(player)).resources.vigor.value).toBe(4);
+  });
+
+  it('Sypialnia i Kaplica Domowa skracają tik, a zaległość gasi premię', async () => {
+    const player = await registerPlayer(ctx);
+    const anchor = clock.now();
+    await ctx.db
+      .update(resourceStates)
+      .set({ vigor: 0, vigorUpdatedAt: anchor, sanity: 0, sanityUpdatedAt: anchor })
+      .where(eq(resourceStates.characterId, player.characterId));
+    await ctx.db
+      .insert(hearthStates)
+      .values({
+        characterId: player.characterId,
+        houseId: 'room',
+        arrears: false,
+        paidThrough: utcDay(anchor.getTime()),
+        rooms: { bedroom: 1, chapel: 1 },
+      })
+      .onConflictDoUpdate({
+        target: hearthStates.characterId,
+        set: {
+          houseId: 'room',
+          arrears: false,
+          buildEndsAt: null,
+          paidThrough: utcDay(anchor.getTime()),
+          rooms: { bedroom: 1, chapel: 1 },
+        },
+      });
+
+    const vigorInterval = Math.round((10 * MINUTE_MS * 10_000) / 10_500);
+    clock.advance(vigorInterval - 1);
+    expect((await dashboard(player)).resources.vigor.value).toBe(0);
+    clock.advance(1);
+    const ticked = await dashboard(player);
+    expect(ticked.resources.vigor.value).toBe(5);
+    expect(ticked.resources.sanity.value).toBe(0);
+    expect(ticked.regen).toEqual({ patron: false, vigorRegenBp: 500, sanityRegenBp: 2_000 });
+
+    const hearth = await call(ctx, player, 'GET', '/api/v1/hearth');
+    expect(hearth.statusCode).toBe(200);
+    expect(hearth.json()).toMatchObject({ vigorBonusBp: 500, sanityBonusBp: 2_000 });
+
+    const sanityInterval = 50 * MINUTE_MS;
+    clock.advance(sanityInterval - vigorInterval);
+    expect((await dashboard(player)).resources.sanity.value).toBe(3);
+
+    const restarted = clock.now();
+    await ctx.db
+      .update(hearthStates)
+      .set({ arrears: true })
+      .where(eq(hearthStates.characterId, player.characterId));
+    await ctx.db
+      .update(resourceStates)
+      .set({ vigor: 0, vigorUpdatedAt: restarted })
+      .where(eq(resourceStates.characterId, player.characterId));
+    clock.advance(vigorInterval);
+    const slowed = await dashboard(player);
+    expect(slowed.resources.vigor.value).toBe(0);
+    expect(slowed.regen).toEqual({ patron: false, vigorRegenBp: 0, sanityRegenBp: 0 });
   });
 });

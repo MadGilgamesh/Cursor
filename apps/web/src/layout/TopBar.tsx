@@ -25,7 +25,9 @@ export function TopBar({ session }: { session: SessionResponse }) {
   const now = useServerNow(dashboard.data?.clockOffsetMs ?? 0);
   const [selected, setSelected] = useState<ResourceView['kind'] | null>(null);
   const character = dashboard.data?.character ?? session.character;
-  const views = dashboard.data ? resourceViews(dashboard.data.resources, now) : [];
+  const views = dashboard.data
+    ? resourceViews(dashboard.data.resources, now, dashboard.data.regen)
+    : [];
   const selectedView = views.find((view) => view.kind === selected);
 
   return (

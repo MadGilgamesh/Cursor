@@ -7,6 +7,7 @@ import {
   materializeResource,
   missionExperience,
   missionSilver,
+  regenRule,
   resourceMax,
   resourceTimers,
   spendResource,
@@ -81,6 +82,33 @@ describe('leniwa regeneracja', () => {
   it('cofnięty zegar niczego nie zmienia', () => {
     const stored = { value: 40, updatedAt: T0 };
     expect(materializeResource('vigor', stored, T0 - HOUR_MS, 100)).toBe(stored);
+  });
+
+  it('Sypialnia skraca tik Wigoru o 5%, a Kaplica tik Poczytalności; bez premii wzór milczy', () => {
+    const empty = { value: 0, updatedAt: T0 };
+    const vigorInterval = Math.round((10 * MINUTE_MS * 10_000) / 10_500);
+    const bedroom = { vigorRegenBp: 500 };
+    expect(materializeResource('vigor', empty, T0 + vigorInterval - 1, 100, bedroom).value).toBe(0);
+    expect(materializeResource('vigor', empty, T0 + vigorInterval, 100, bedroom).value).toBe(5);
+    expect(materializeResource('vigor', empty, T0 + vigorInterval, 100).value).toBe(0);
+    expect(resourceTimers('vigor', empty, 100, bedroom).fullAt).toBe(T0 + 20 * vigorInterval);
+
+    const patronInterval = Math.round((10 * MINUTE_MS * 10_000) / 11_000);
+    expect(regenRule('vigor', 100, true).intervalMs).toBe(patronInterval);
+    const stacked = Math.round((10 * MINUTE_MS * 10_000) / 11_500);
+    expect(regenRule('vigor', 100, { patron: true, vigorRegenBp: 500 }).intervalMs).toBe(stacked);
+
+    const sanityInterval = Math.round((HOUR_MS * 10_000) / 12_000);
+    const chapel = { sanityRegenBp: 2_000 };
+    expect(materializeResource('sanity', empty, T0 + sanityInterval - 1, 100, chapel).value).toBe(
+      0,
+    );
+    expect(materializeResource('sanity', empty, T0 + sanityInterval, 100, chapel).value).toBe(3);
+    expect(materializeResource('sanity', empty, T0 + sanityInterval, 100).value).toBe(0);
+    expect(
+      regenRule('life', 100, { patron: true, vigorRegenBp: 500, sanityRegenBp: 6_000 }),
+    ).toEqual(regenRule('life', 100));
+    expect(regenRule('toil', 50, chapel)).toEqual(regenRule('toil', 50));
   });
 
   it('odmawia wydania, gdy zasobu brakuje, także po regeneracji', () => {
