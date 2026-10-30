@@ -14,7 +14,7 @@
  */
 import { applyBp } from './fixed-point.js';
 
-export const BALANCE_VERSION = 10;
+export const BALANCE_VERSION = 11;
 
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -520,9 +520,9 @@ export type EquipmentSlot = (typeof EQUIPMENT_SLOTS)[number];
 export const ARMOR_SLOTS = ['head', 'torso', 'legs', 'hands', 'feet'] as const;
 export const CLASS_SET_ARMOR_PIECES = 4;
 
-/** Stopnie 1–10 i wymagany poziom (GDD 5.5). Etap 8: Stopnie 1–8. */
+/** Stopnie 1–10 i wymagany poziom (GDD 5.5). Etap 10: Stopnie 1–10. */
 export const TIER_REQUIRED_LEVEL = [1, 5, 10, 18, 26, 35, 45, 55, 65, 75] as const;
-export const MAX_TIER_THIS_STAGE = 8;
+export const MAX_TIER_THIS_STAGE = 10;
 
 export function tierRequiredLevel(tier: number): number {
   const level = TIER_REQUIRED_LEVEL[tier - 1];

@@ -35,7 +35,7 @@ import {
   findItem,
   gearValue,
   grantClassExperience,
-  grantExperience,
+  markedTrainingGain,
   resourceContextFor,
   resourceMax,
   simulateCombat,
@@ -75,6 +75,7 @@ import {
   statBlock,
 } from './avatar.js';
 import { applyDefeatWound } from './hearth.js';
+import { persistProgress } from './progress.js';
 import { materializeAll, saveResources, toResourcesDto } from './resources.js';
 import { grantHuntShard, grantLootKeys, touchCalendar } from './portal-state.js';
 import { loadWorld } from './world-state.js';
@@ -152,13 +153,7 @@ async function awardExperience(
   amount: number,
   classId: string | null,
 ) {
-  const progress = grantExperience(character, amount);
-  const { characters } = await import('../db/schema.js');
-  const [updated] = await db
-    .update(characters)
-    .set({ level: progress.level, experience: progress.experience })
-    .where(eq(characters.id, character.id))
-    .returning();
+  const updated = await persistProgress(db, character, amount);
   if (classId && amount > 0) {
     const [klass] = await db
       .select()
@@ -177,7 +172,7 @@ async function awardExperience(
         set: next,
       });
   }
-  return updated ?? character;
+  return updated;
 }
 
 function boardTargets(characterId: string, circle: number, at: number): HuntTargetStored[] {
@@ -514,7 +509,10 @@ export async function train(
     vigor,
   );
   if (!spent) throw new AppError(409, ERROR_CODES.insufficientResources, 'Za mało Wigoru');
-  const gain = trainingGainCenti(stats[stat], vigor, hall.gain);
+  const gain = markedTrainingGain(
+    trainingGainCenti(stats[stat], vigor, hall.gain),
+    character.markTraining,
+  );
   await db
     .update(characterStats)
     .set({ [stat]: stats[stat] + gain })

@@ -18,7 +18,6 @@ import {
   unlockedPortalGods,
   adjustResource,
   grantClassExperience,
-  grantExperience,
   missionTier,
   resourceMax,
   resolveMission,
@@ -51,6 +50,7 @@ import {
   missionSnapshot,
 } from './avatar.js';
 import { loadLore, loreExtras } from './lore-state.js';
+import { persistProgress } from './progress.js';
 import { loadWorld } from './world-state.js';
 import {
   loadResources,
@@ -340,7 +340,6 @@ export async function claimActivities(
       (row) => row.status === 'completed' || (row.status === 'active' && row.endAt <= now),
     );
 
-    const before = { level: character.level, experience: character.experience };
     const walletBefore = await walletOf(tx, characterId);
     let totalExperience = 0;
     const claimed: TimedActivityRow[] = [];
@@ -385,13 +384,7 @@ export async function claimActivities(
       }
     }
 
-    const progress = grantExperience(before, totalExperience);
-    const [updatedCharacter] = await tx
-      .update(characters)
-      .set({ level: progress.level, experience: progress.experience })
-      .where(eq(characters.id, characterId))
-      .returning();
-    if (!updatedCharacter) throw new Error('UPDATE nie zwrócił postaci');
+    const updatedCharacter = await persistProgress(tx, character, totalExperience);
 
     const wallet = await walletOf(tx, characterId);
     const lore = await loadLore(tx, characterId);
@@ -475,10 +468,14 @@ export async function claimActivities(
       await writeAudit(tx, who, {
         action: 'activity.claim',
         characterId,
-        before: { ...before, silver: walletBefore.silver },
+        before: {
+          level: character.level,
+          experience: character.experience,
+          silver: walletBefore.silver,
+        },
         after: {
-          level: progress.level,
-          experience: progress.experience,
+          level: updatedCharacter.level,
+          experience: updatedCharacter.experience,
           silver: wallet.silver,
           activityIds: claimed.map((row) => row.id),
         },

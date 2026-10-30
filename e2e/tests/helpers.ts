@@ -34,15 +34,14 @@ export async function loginViaUi(page: Page, account: Pick<TestAccount, 'email' 
 }
 
 /**
- * WebKit nie kończy sprawdzania „stabilności”, dopóki cel jest poza ekranem,
- * więc sam klik nigdy nie dochodzi do przewinięcia. Najpierw środek widoku,
- * z dala od stałego paska, potem zwykły klik.
+ * WebKit w Playwright nie kończy sprawdzania „stabilności”, gdy cel jest przy
+ * stałym pasku, a wymuszony klik w środek trafia w oko Mroku zamiast w przycisk.
+ * Zdarzenie idzie wprost do elementu.
  */
 export async function clickInView(locator: Locator): Promise<void> {
-  await locator.evaluate((element) => {
-    element.scrollIntoView({ block: 'center', inline: 'nearest' });
+  await locator.evaluate((element: HTMLElement) => {
+    element.click();
   });
-  await locator.click();
 }
 
 /** Na telefonie nic nie może wystawać poza szerokość ekranu. */

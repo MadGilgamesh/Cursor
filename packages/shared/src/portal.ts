@@ -6,11 +6,12 @@
  * testy porównują z tabelą 10.13 (tabela podaje f zaokrąglone, wzór jest ciągły).
  */
 import { HOUR_MS, enemyDamage, enemyLife, enemyStat, pow125 } from './balance.js';
+import { ASPECTS, type Aspect } from './hearth.js';
 import { createRng, type Rng } from './rng.js';
 
-export const PORTAL_DOMAINS_THIS_STAGE = 9;
-/** ★1–★5 są w tym etapie tylko dla Domen 1–3. Domena 4 ma na razie sam Sen. */
-export const PORTAL_STAR_DOMAINS_THIS_STAGE = 3;
+export const PORTAL_DOMAINS_THIS_STAGE = 11;
+/** Etap 10 otwiera ★1–★5 dla wszystkich jedenastu Domen. */
+export const PORTAL_STAR_DOMAINS_THIS_STAGE = 11;
 export const PORTAL_STARS_MAX = 5;
 export const PORTAL_STAGES = 10;
 export const PORTAL_SUBSTAGES = 8;
@@ -99,7 +100,9 @@ export type PortalModifier =
   | 'yellow-sign'
   | 'fertility'
   | 'rlyeh-dreams'
-  | 'shapeshift';
+  | 'shapeshift'
+  | 'gate'
+  | 'chaos';
 
 export interface PortalCoord {
   domain: number;
@@ -189,6 +192,22 @@ export function portalModifier(domain: number): PortalModifier | null {
   if (domain === 7) return 'fertility';
   if (domain === 8) return 'rlyeh-dreams';
   if (domain === 9) return 'shapeshift';
+  if (domain === 10) return 'gate';
+  if (domain === 11) return 'chaos';
+  return null;
+}
+
+/**
+ * Yog-Sothoth (`gate`) ma inny aspekt na każdym Etapie, bez losowania.
+ * Azathoth (`chaos`) losuje aspekt na walkę z osobnego ziarna, więc dziennik
+ * walki bez tego modyfikatora zostaje przy tym samym strumieniu.
+ */
+export function outerAspect(modifier: PortalModifier, stage: number, seed: string): Aspect | null {
+  if (modifier === 'gate') return ASPECTS[(Math.max(1, stage) - 1) % ASPECTS.length] ?? null;
+  if (modifier === 'chaos') {
+    const index = createRng(`${seed}:chaos`).nextInt(0, ASPECTS.length - 1);
+    return ASPECTS[index] ?? null;
+  }
   return null;
 }
 

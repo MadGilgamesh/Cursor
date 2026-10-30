@@ -8,6 +8,7 @@ import { CharacterScreen } from './screens/CharacterScreen';
 import { CityScreen } from './screens/CityScreen';
 import { CommunityScreen } from './screens/CommunityScreen';
 import { ConjunctionScreen } from './screens/ConjunctionScreen';
+import { DescentScreen } from './screens/DescentScreen';
 import { ExpeditionScreen } from './screens/ExpeditionScreen';
 import { HearthScreen } from './screens/HearthScreen';
 import { HomeScreen } from './screens/HomeScreen';
@@ -82,6 +83,7 @@ export function App() {
         <Route path="dom" element={<HearthScreen />} />
         <Route path="wyprawy" element={<ExpeditionScreen />} />
         <Route path="koniunkcja" element={<ConjunctionScreen />} />
+        <Route path="zstapienie" element={<DescentScreen />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

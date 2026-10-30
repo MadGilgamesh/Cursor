@@ -171,7 +171,12 @@ async function addSigils(db: Executor, characterId: string, sigils: number) {
   });
 }
 
-async function payFinale(db: Executor, actId: string, finale: 'repelled' | 'emergence') {
+async function payFinale(
+  db: Executor,
+  actId: string,
+  finale: 'repelled' | 'emergence',
+  generation: number,
+) {
   const rows = await db.select().from(actContributions).where(eq(actContributions.actId, actId));
   const contributed = new Set(rows.filter((row) => row.rawPl > 0).map((row) => row.characterId));
   const cultRows = await db
@@ -184,7 +189,7 @@ async function payFinale(db: Executor, actId: string, finale: 'repelled' | 'emer
     if (sigils <= 0) continue;
     const inserted = await db
       .insert(actRewards)
-      .values({ actId, characterId, kind: 'finale' })
+      .values({ actId, characterId, kind: `finale-g${generation}` })
       .onConflictDoNothing()
       .returning();
     if (inserted.length === 0) continue;
@@ -238,7 +243,14 @@ export async function catchUp(db: Executor, now: Date) {
       .where(eq(acts.id, act.id));
     for (const threshold of step.crossed) {
       for (const characterId of [...active].sort()) {
-        await payKeys(db, act.id, characterId, `threshold-${threshold}`, THRESHOLD_KEYS, now);
+        await payKeys(
+          db,
+          act.id,
+          characterId,
+          `threshold-${threshold}-g${act.generation}`,
+          THRESHOLD_KEYS,
+          now,
+        );
       }
     }
     const lodgeIds = held
@@ -254,14 +266,14 @@ export async function catchUp(db: Executor, now: Date) {
           db,
           act.id,
           member.characterId,
-          `lantern-${day}`,
+          `lantern-g${act.generation}-${day}`,
           LANTERN_HELD_MEMBER_KEYS,
           now,
         );
       }
     }
     if (step.finaleStarted && clock.finale !== 'pending') {
-      await payFinale(db, act.id, clock.finale);
+      await payFinale(db, act.id, clock.finale, act.generation);
     }
   }
   const [fresh] = await db.select().from(acts).where(eq(acts.id, act.id)).limit(1);
@@ -291,6 +303,7 @@ export async function openObservatory(
       finale: 'pending',
       thresholds: [],
       pendingPk: 0,
+      generation: 1,
     });
   }
   const act = await catchUp(db, now);
@@ -318,7 +331,31 @@ export async function openObservatory(
     deadNight: deadNightOpen(now.getTime()),
     patron,
     domain: 'Nyarlathotep',
+    generation: act.generation,
   };
+}
+
+/** Kolejny akt tego samego wiersza. Wkłady dnia wracają do zera, nagrody zostają po generacji. */
+export async function beginNextAct(db: Executor, now: Date) {
+  const act = await lockAct(db);
+  if (!act) throw new AppError(409, ERROR_CODES.requirement, 'Nie ma aktu');
+  if (act.finale === 'pending')
+    throw new AppError(409, ERROR_CODES.requirement, 'Akt jeszcze trwa');
+  await db.delete(actContributions).where(eq(actContributions.actId, act.id));
+  const generation = act.generation + 1;
+  await db
+    .update(acts)
+    .set({
+      generation,
+      startedAt: now,
+      clockBp: 0,
+      closedDays: 0,
+      finale: 'pending',
+      thresholds: [],
+      pendingPk: 0,
+    })
+    .where(eq(acts.id, act.id));
+  return { generation, clockBp: 0, finale: 'pending' as const, day: 0 };
 }
 
 export async function noteClockAction(

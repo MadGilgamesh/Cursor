@@ -28,7 +28,7 @@ test('pełny cykl: rejestracja → Dom → wylogowanie → logowanie', async ({ 
   await page.reload();
   await expect(page.getByTestId('character-name')).toHaveText(account.characterName);
 
-  await page.getByRole('link', { name: 'Postać' }).click();
+  await clickInView(page.getByRole('link', { name: 'Postać' }));
   await expect(page).toHaveURL(/\/postac$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Postać' })).toBeVisible();
   await clickInView(page.getByRole('button', { name: 'Wyloguj' }));

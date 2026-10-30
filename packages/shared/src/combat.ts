@@ -64,6 +64,8 @@ export interface EnemyCombatant {
   damage: number;
   dread: number;
   gaze: boolean;
+  /** Aspekt Bramy albo Chaosu. Przewaga liczy się tylko, gdy gracz też ma aspekt. */
+  aspect?: Aspect;
 }
 
 export const COMBAT_EVENT_KINDS = [
@@ -230,7 +232,8 @@ export function simulateCombat(
             : 1
         : 1;
     const yellow = modifier === 'yellow-sign' && sanity * 10 < player.maxSanity * 3 ? 1.15 : 1;
-    const damage = Math.max(1, Math.round(raw * court * yellow * edge));
+    const shape = player.aspect && enemy.aspect ? aspectEdge(player.aspect, enemy.aspect) : 1;
+    const damage = Math.max(1, Math.round(raw * court * yellow * edge * shape));
     enemyLifeLeft = Math.max(0, enemyLifeLeft - damage);
     push({ round, actor: 'player', kind: crit ? 'crit' : 'hit', damage, word, frenzy });
   };
@@ -266,7 +269,8 @@ export function simulateCombat(
       ? CLASS_UNIQUES.occultistWordBase + CLASS_UNIQUES.occultistWordPerKnowledge * player.knowledge
       : 1;
     const frenzyMultiplier = frenzy ? 1 + CLASS_UNIQUES.butcherFrenzyStrengthBp / BP : 1;
-    const shape = copiedAspect && player.aspect ? aspectEdge(copiedAspect, player.aspect) : 1;
+    const faced = copiedAspect ?? enemy.aspect ?? null;
+    const shape = faced && player.aspect ? aspectEdge(faced, player.aspect) : 1;
     const raw =
       enemy.damage *
       ratio *

@@ -4,7 +4,7 @@ import {
   startPushReceiver,
   type PushReceiver,
 } from '../../apps/api/test/integration/push-receiver';
-import { newAccount, registerViaUi } from './helpers';
+import { clickInView, newAccount, registerViaUi } from './helpers';
 
 let receiver: PushReceiver;
 
@@ -47,7 +47,7 @@ test('Web Push: włączenie na urządzeniu → koniec zlecenia → zaszyfrowane 
   }, subscription);
 
   await registerViaUi(page, newAccount());
-  await page.getByRole('link', { name: 'Postać' }).click();
+  await clickInView(page.getByRole('link', { name: 'Postać' }));
 
   // WebKit w Playwright (Linux) nie ma Push API — aplikacja ma to uczciwie zakomunikować.
   if (!(await page.evaluate(() => 'PushManager' in window))) {
@@ -62,7 +62,7 @@ test('Web Push: włączenie na urządzeniu → koniec zlecenia → zaszyfrowane 
     'Powiadomienia są włączone na tym urządzeniu.',
   );
 
-  await page.getByRole('link', { name: 'Miasto' }).click();
+  await clickInView(page.getByRole('link', { name: 'Miasto' }));
   await page
     .getByRole('button', { name: 'Rozpocznij: Przeszukanie wraku przy falochronie' })
     .click();
@@ -86,7 +86,7 @@ test('Web Push: włączenie na urządzeniu → koniec zlecenia → zaszyfrowane 
   });
 
   // Wyłączenie usuwa subskrypcję z serwera.
-  await page.getByRole('link', { name: 'Postać' }).click();
+  await clickInView(page.getByRole('link', { name: 'Postać' }));
   await page.getByRole('button', { name: 'Wyłącz powiadomienia' }).click();
   await expect(page.getByRole('button', { name: 'Włącz powiadomienia' })).toBeVisible();
 });

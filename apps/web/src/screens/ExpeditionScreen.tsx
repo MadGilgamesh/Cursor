@@ -1,7 +1,7 @@
 import { useExpeditions } from '../api/expeditions';
 import { t } from '../i18n';
 
-/** Tablica wypraw 1–4. Lobby zostaje na serwerze; stąd widać zejścia i limity. */
+/** Tablica wypraw 1–6. Lobby zostaje na serwerze; stąd widać zejścia i limity. */
 export function ExpeditionScreen() {
   const hall = useExpeditions();
   const data = hall.data;

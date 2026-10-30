@@ -39,7 +39,7 @@ describe('resolveMission', () => {
     const result = resolveMission({ ...base, seed: 'sukces' });
     expect(mission.successTexts).toContain(result.outcome);
     expect(result).toMatchObject({
-      balanceVersion: 10,
+      balanceVersion: 11,
       success: true,
       experience: 144,
       silver: 10,

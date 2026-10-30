@@ -29,4 +29,14 @@ describe('tempo Portalu (interpolacja tabeli 10.3)', () => {
     expect(bokrugStarOneDay(8.9)).toBe(22);
     expect(Math.abs(22 - 18) / 18).toBeGreaterThan(0.15);
   });
+
+  it('Sen w Portalu nie kończy Domeny 11 w dniu 472', () => {
+    // Cel GDD 11: dzień 472 ±15% dla aktywnego F2P. Krzywa statystyk z tabeli 10.3
+    // staje w dniu 450 na 486 000 i nie dogania wroga Azathotha. Model zwraca sufit 800.
+    // Nie dociągamy krzywej.
+    expect(dreamCareerDay(9)).toBe(338);
+    expect(dreamCareerDay(10)).toBe(393);
+    expect(dreamCareerDay(11)).toBe(800);
+    expect(Math.abs(800 - 472) / 472).toBeGreaterThan(0.15);
+  });
 });

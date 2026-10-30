@@ -87,9 +87,10 @@ import {
   unlockedPortalGods,
   addKeyShards,
   addLootKeys,
+  beyondStarEcho,
   findGear,
-  grantExperience,
   lootersLoss,
+  outerAspect,
   pow125,
 } from '@game/shared';
 import { and, eq } from 'drizzle-orm';
@@ -97,13 +98,7 @@ import { and, eq } from 'drizzle-orm';
 import { writeAudit, type AuditActor } from '../audit.js';
 import type { Clock } from '../clock.js';
 import type { Executor } from '../db/client.js';
-import {
-  characters,
-  combatLogs,
-  itemInstances,
-  type CharacterRow,
-  type PortalStateRow,
-} from '../db/schema.js';
+import { combatLogs, itemInstances, type CharacterRow, type PortalStateRow } from '../db/schema.js';
 import { AppError } from '../errors.js';
 import {
   assertCanAct,
@@ -129,6 +124,7 @@ import {
   withRing,
 } from './portal-state.js';
 import { commitPortalHearth, portalHearthMods } from './hearth.js';
+import { persistProgress } from './progress.js';
 import { loadWorld } from './world-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 import { InsufficientFundsError } from './wallet.js';
@@ -330,6 +326,8 @@ export async function fightPortal(
   const body = await dreamCombatant(db, locked, row, now);
   const seed = randomBytes(16).toString('base64url');
   const modifier = portalModifier(coord.domain) ?? undefined;
+  const aspect = modifier ? outerAspect(modifier, coord.stage, seed) : null;
+  const enemy = portalEnemy(coord, stars);
   const player = {
     ...body.player,
     stats: {
@@ -340,7 +338,13 @@ export async function fightPortal(
     },
     composure: body.player.composure + mods.composure,
   };
-  const result = simulateCombat(player, portalEnemy(coord, stars), seed, modifier, mods.edge);
+  const result = simulateCombat(
+    player,
+    aspect ? { ...enemy, aspect } : enemy,
+    seed,
+    modifier,
+    mods.edge,
+  );
   const won = result.winner === 'player';
   const firstClear = access === 'first' && won;
   const payout = portalPayout(coord, firstClear, won, stars);
@@ -388,6 +392,13 @@ export async function fightPortal(
   }
   if (firstClear && stars > 0) {
     const finished = coord.stage === 10 && coord.substage === 8;
+    if (finished && stars >= 3) {
+      const beyond = beyondStarEcho(coord.domain);
+      if (beyond) {
+        const prev = echoes[beyond.id] ?? { shards: 0, level: 0 };
+        echoes[beyond.id] = { ...prev, shards: prev.shards + 1 };
+      }
+    }
     const previous = starTrackOf(row, coord.domain);
     row = {
       ...row,
@@ -409,11 +420,7 @@ export async function fightPortal(
   };
   await savePortal(db, row);
 
-  const progress = grantExperience(locked, payout.experience);
-  await db
-    .update(characters)
-    .set({ level: progress.level, experience: progress.experience })
-    .where(eq(characters.id, locked.id));
+  await persistProgress(db, locked, payout.experience);
   if (silver > 0) {
     await postLedgerEntry(db, {
       characterId: locked.id,
@@ -708,11 +715,7 @@ export async function fightWell(
     silver = Math.round(silver * 1.3);
   }
   if (whisper === 'tide') experience = Math.round(experience * 0.8);
-  const progress = grantExperience(locked, experience);
-  await db
-    .update(characters)
-    .set({ level: progress.level, experience: progress.experience })
-    .where(eq(characters.id, locked.id));
+  await persistProgress(db, locked, experience);
   if (silver > 0) {
     await postLedgerEntry(db, {
       characterId: locked.id,
