@@ -494,6 +494,8 @@ export const worldStates = pgTable('world_states', {
   mountId: text('mount_id'),
   mountUntil: tstz('mount_until'),
   contamination: integer('contamination').notNull().default(0),
+  /** Dziesiąte części Skażenia (Domeny 7+ i Przeklęte dokładają 0,1). */
+  contaminationTenths: integer('contamination_tenths').notNull().default(0),
   sealDay: text('seal_day'),
   sealCount: integer('seal_count').notNull().default(0),
   sealedItems: jsonb('sealed_items').$type<string[]>().notNull().default([]),
@@ -791,6 +793,42 @@ export const awakeningReceipts = pgTable('awakening_receipts', {
   amount: integer('amount').notNull().default(0),
 });
 
+/** Dom, Przysięga, kult, rytuał i półka tomów (GDD 5.4, 5.21, 6.4–6.6). */
+export const hearthStates = pgTable('hearth_states', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  houseId: text('house_id'),
+  buildEndsAt: tstz('build_ends_at'),
+  paidThrough: text('paid_through'),
+  arrears: boolean('arrears').notNull().default(false),
+  rooms: jsonb('rooms').$type<Record<string, number>>().notNull().default({}),
+  materials: jsonb('materials').$type<Record<string, number>>().notNull().default({}),
+  candles: integer('candles').notNull().default(0),
+  shelf: jsonb('shelf').$type<string[]>().notNull().default([]),
+  sleeper: text('sleeper'),
+  circle: integer('circle').notNull().default(0),
+  pendingSleeper: text('pending_sleeper'),
+  pendingFrom: tstz('pending_from'),
+  wrathUntil: tstz('wrath_until'),
+  cultSleeper: text('cult_sleeper'),
+  cultOrders: integer('cult_orders').notNull().default(0),
+  suspicion: integer('suspicion').notNull().default(0),
+  unmaskedUntil: tstz('unmasked_until'),
+  mutations: jsonb('mutations').$type<string[]>().notNull().default([]),
+  mutationOffer: jsonb('mutation_offer').$type<string[] | null>(),
+  chosenThresholds: jsonb('chosen_thresholds').$type<number[]>().notNull().default([]),
+  wounds: jsonb('wounds').$type<{ id: string; until: string }[]>().notNull().default([]),
+  ritualId: text('ritual_id'),
+  ritualEndsAt: tstz('ritual_ends_at'),
+  ritualSeed: text('ritual_seed'),
+  hideout: boolean('hideout').notNull().default(false),
+  hideoutLooted: boolean('hideout_looted').notNull().default(false),
+  cursed: boolean('cursed').notNull().default(false),
+  buffUntil: tstz('buff_until'),
+  decayDay: text('decay_day'),
+});
+
 export const friendships = pgTable(
   'friendships',
   {
@@ -805,6 +843,7 @@ export const friendships = pgTable(
 );
 
 export type LoreStateRow = typeof loreStates.$inferSelect;
+export type HearthStateRow = typeof hearthStates.$inferSelect;
 export type WorldStateRow = typeof worldStates.$inferSelect;
 
 export type AccountRow = typeof accounts.$inferSelect;

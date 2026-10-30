@@ -68,8 +68,10 @@ import {
   PORTAL_WIN_SHARD_CHANCE_BP,
   REFORGE_DAILY_CAP,
   REFORGE_KEYS,
+  SEAL_DOUBLE_BP,
   SIGIL_SHARDS_PER_SIGIL,
   UNARMED_DAMAGE,
+  sealSigilCount,
   reforgeIchorCost,
   unlockedPortalGods,
   addKeyShards,
@@ -114,6 +116,7 @@ import {
   savePortal,
   withRing,
 } from './portal-state.js';
+import { commitPortalHearth, portalHearthMods } from './hearth.js';
 import { loadWorld } from './world-state.js';
 import { postLedgerEntry, walletOf } from './wallet.js';
 import { InsufficientFundsError } from './wallet.js';
@@ -279,6 +282,7 @@ export async function fightPortal(
   const now = clock.now();
   const locked = await lockCharacter(db, character.id);
   await assertCanAct(db, locked, now);
+  const mods = await portalHearthMods(db, locked.id, coord.domain, now);
   const journey = await loadWorld(db, locked.id, true);
   if (travelInProgress(journey.travelTo, journey.travelEndsAt?.getTime() ?? null, now.getTime())) {
     throw new AppError(409, ERROR_CODES.activityBusy, 'W podróży Brama milczy');
@@ -311,7 +315,17 @@ export async function fightPortal(
   const body = await dreamCombatant(db, locked, row, now);
   const seed = randomBytes(16).toString('base64url');
   const modifier = portalModifier(coord.domain) ?? undefined;
-  const result = simulateCombat(body.player, portalEnemy(coord, stars), seed, modifier);
+  const player = {
+    ...body.player,
+    stats: {
+      strength: body.player.stats.strength * mods.strength,
+      defense: body.player.stats.defense * mods.defense,
+      accuracy: body.player.stats.accuracy * mods.accuracy,
+      evasion: body.player.stats.evasion * mods.evasion,
+    },
+    composure: body.player.composure + mods.composure,
+  };
+  const result = simulateCombat(player, portalEnemy(coord, stars), seed, modifier, mods.edge);
   const won = result.winner === 'player';
   const firstClear = access === 'first' && won;
   const payout = portalPayout(coord, firstClear, won, stars);
@@ -327,7 +341,7 @@ export async function fightPortal(
   const materialBonus = awakeningMaterialBonus(now.getTime(), coord.domain, row.clearedDomain)
     ? 1.25
     : 1;
-  const materialAmount = Math.round(payout.materials * materialBonus);
+  const materialAmount = Math.round(payout.materials * materialBonus * mods.materialFactor);
   if (materialAmount > 0) {
     const materialId = portalDomain(coord.domain)?.materialId ?? 'unknown';
     materials[materialId] = (materials[materialId] ?? 0) + materialAmount;
@@ -426,6 +440,7 @@ export async function fightPortal(
     engineVersion: result.engineVersion,
     balanceVersion: result.balanceVersion,
   });
+  await commitPortalHearth(db, locked.id, now, mods.tenths, mods.suspicion);
   await audit(db, who, locked.id, 'portal.fight', {
     coord,
     won,
@@ -495,7 +510,7 @@ export async function reforgeSigil(
   };
 }
 
-/** 10 Odprysków → 1 Sigil na Ołtarzu Bramy (do Etapu 7, GDD 5.12.5). */
+/** 10 Odprysków → 1 Sigil, 20% na drugi (Rytuał Pieczęci, GDD 6.5). */
 export async function exchangeSigilShards(
   db: Executor,
   who: AuditActor,
@@ -514,14 +529,16 @@ export async function exchangeSigilShards(
     throw new AppError(409, ERROR_CODES.requirement, 'Potrzeba 10 Odprysków Sigilu');
   }
   const key = String(domain);
+  const doubled = createRng(randomBytes(16).toString('base64url')).rollBp(SEAL_DOUBLE_BP);
+  const gained = sealSigilCount(doubled);
   const next = {
     ...row,
     sigilShards: row.sigilShards - SIGIL_SHARDS_PER_SIGIL,
-    sigils: { ...row.sigils, [key]: (row.sigils[key] ?? 0) + 1 },
+    sigils: { ...row.sigils, [key]: (row.sigils[key] ?? 0) + gained },
   };
   await savePortal(db, next);
-  await audit(db, who, locked.id, 'portal.exchange', { domain });
-  return { domain, sigils: next.sigils[key] ?? 0, shards: next.sigilShards };
+  await audit(db, who, locked.id, 'portal.exchange', { domain, gained, doubled });
+  return { domain, sigils: next.sigils[key] ?? 0, shards: next.sigilShards, doubled };
 }
 
 export async function engraveKey(

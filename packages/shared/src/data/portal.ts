@@ -1,5 +1,5 @@
 /**
- * Domeny 1–6 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
+ * Domeny 1–7 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
  * Echa bogów (boss Etapu 5 i herold Etapu 9) są poza pulą Seansu.
  */
 import type { EchoRarity, PortalModifier } from '../portal.js';
@@ -141,6 +141,27 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Cassilda i Camilla',
       'Nieznajomy w Masce',
       'Król w Żółci',
+    ],
+  },
+  {
+    domain: 7,
+    god: 'Shub-Niggurath',
+    place: 'Las Tysiąca Młodych',
+    modifier: 'fertility',
+    modifierName: 'Płodność',
+    materialId: 'goat-blood',
+    materialName: 'Kozia Krew',
+    units: [
+      'Kultyści Sabatu',
+      'Koźli Ludzie z Gaju',
+      'Mi-Go Zbieracze',
+      'Rój Larw',
+      'Strażnicy Kamiennych Kręgów',
+      'Mięsne Drzewa',
+      'Mi-Go Chirurdzy',
+      'Młode Czarnej Kozy',
+      'Matka Stada',
+      'Shub-Niggurath',
     ],
   },
 ];
@@ -298,6 +319,20 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     rarity: 'phantom',
     aspect: 'accuracy',
     godDomain: 6,
+  },
+  {
+    id: 'echo.god.shub.wraith',
+    name: 'Strażnik Kamiennego Kręgu',
+    rarity: 'wraith',
+    aspect: 'strength',
+    godDomain: 7,
+  },
+  {
+    id: 'echo.god.shub.phantom',
+    name: 'Matka Stada',
+    rarity: 'phantom',
+    aspect: 'defense',
+    godDomain: 7,
   },
 ];
 

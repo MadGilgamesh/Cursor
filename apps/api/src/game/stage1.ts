@@ -74,6 +74,7 @@ import {
   resolveStatus,
   statBlock,
 } from './avatar.js';
+import { applyDefeatWound } from './hearth.js';
 import { materializeAll, saveResources, toResourcesDto } from './resources.js';
 import { grantHuntShard, grantLootKeys, touchCalendar } from './portal-state.js';
 import { loadWorld } from './world-state.js';
@@ -357,7 +358,9 @@ async function finishFight(
         idempotencyKey: `hunt:${seed}:looters`,
       });
     }
-    resources = await enterHospital(db, character, resources, now, findEnemy(enemyId)?.dread ?? 0);
+    const dread = findEnemy(enemyId)?.dread ?? 0;
+    resources = await enterHospital(db, character, resources, now, dread);
+    await applyDefeatWound(db, character.id, now, dread, `${seed}:wound`);
   }
   const [log] = await db
     .insert(combatLogs)

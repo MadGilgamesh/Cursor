@@ -7,6 +7,7 @@ import { AuthScreen } from './screens/AuthScreen';
 import { CharacterScreen } from './screens/CharacterScreen';
 import { CityScreen } from './screens/CityScreen';
 import { CommunityScreen } from './screens/CommunityScreen';
+import { HearthScreen } from './screens/HearthScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LoreScreen } from './screens/LoreScreen';
 import { MrokScreen } from './screens/MrokScreen';
@@ -76,6 +77,7 @@ export function App() {
         <Route path="wiedza" element={<LoreScreen />} />
         <Route path="postac" element={<CharacterScreen />} />
         <Route path="wspolnota" element={<CommunityScreen />} />
+        <Route path="dom" element={<HearthScreen />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

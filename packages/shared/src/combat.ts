@@ -123,12 +123,15 @@ function variance(rng: Rng): number {
  * - `ib-vengeance`: co 4. rundę wróg leczy 5% Życia początkowego.
  * - `pressure`: Unik gracza −10%, a od 5. rundy dodatkowe −2% za rundę.
  * - `drain`: co rundę −2% maksimum Życia i −1 Poczytalności (Kolor).
+ * - `fertility`: co 3 rundy obrażenia wroga +10%, kumulatywnie, bez dodatkowego losowania.
+ * - `edge`: mnożnik obrażeń gracza z Przysięgi (1, 1,2 albo 0,8). Przy 1 dziennik się nie zmienia.
  */
 export function simulateCombat(
   player: PlayerCombatant,
   enemy: EnemyCombatant,
   seed: string,
   modifier?: PortalModifier,
+  edge = 1,
 ): CombatResult {
   const rng = createRng(seed);
   const penetration = CLASS_PENETRATION[player.classId ?? 'none'];
@@ -206,7 +209,7 @@ export function simulateCombat(
             : 1
         : 1;
     const yellow = modifier === 'yellow-sign' && sanity * 10 < player.maxSanity * 3 ? 1.15 : 1;
-    const damage = Math.max(1, Math.round(raw * court * yellow));
+    const damage = Math.max(1, Math.round(raw * court * yellow * edge));
     enemyLifeLeft = Math.max(0, enemyLifeLeft - damage);
     push({ round, actor: 'player', kind: crit ? 'crit' : 'hit', damage, word, frenzy });
   };
@@ -231,7 +234,8 @@ export function simulateCombat(
     const ratio = damageRatio(enemy.stats.strength, player.stats.defense);
     const crit = rng.rollBp(CRIT_CHANCE_BP);
     const raw = enemy.damage * ratio * variance(rng) * (crit ? CRIT_MULTIPLIER : 1);
-    const damage = Math.max(1, Math.round(raw));
+    const brood = modifier === 'fertility' ? 1 + Math.floor(round / 3) * 0.1 : 1;
+    const damage = Math.max(1, Math.round(raw * brood));
     playerLife = Math.max(0, playerLife - damage);
     push({
       round,
