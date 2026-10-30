@@ -253,6 +253,26 @@ Skażenie ma część całkowitą i dziesiąte. Domena 7+ i przeklęty przedmiot
 
 Portal: Domena 7, Shub-Niggurath, modyfikator Płodność. Co trzecią rundę obrażenia wroga rosną o 10% kumulatywnie i bez dodatkowego losu. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 8. Patronat nie wchodzi w ten etap. Krzywych tempa z wcześniejszych etapów nie ruszano.
 
+## Etap 8 — Wyprawy
+
+Wyprawy 1–4: Kanały pod Solą, Wrak „Miłosierdzia”, Archiwum pod Ilmarem, Lodowe Krypty Kresu. Ys-Kahal i Oko Czerni zostają na Etap 10. Każda ma te same cztery przeszkody (Rzeźnik, Strzelec, Okultysta, Alienista). Kanały biorą drużynę 3, więc zawsze brakuje co najmniej jednej klasy.
+
+GDD nie podaje tabeli utraty łupu. Założenie, które sprawdza test: każda pominięta przeszkoda zabiera `floor(pula × 1500 / 10000)` (15% puli bazowej) i 5 wspólnej Poczytalności. Pula bazowa to `100 × poziom wyprawy × liczebność`. Wejście kosztuje `poziom postaci × 50` srebra od każdego, kto nie jest asystą — GDD wymienia lampy i liny, ale nie ma ich identyfikatorów. Snapshot klasy zapisuje się przy starcie i rozliczenie nie czyta później sprzętu. Wspólna Poczytalność to średnia (w dół). Alienista leczy ją o 8, nie powyżej średniej maksimów, zanim spadnie za przeszkody. Poniżej 25% maksimum losowy członek „słyszy Śpiącego”, a łup spada do 80%. Lider dzieli pulę po stratach; suma musi się zgadzać. Asysta nie dostaje srebra, doświadczenia ani łupu. Dostaje +10 reputacji Zakonu. Doświadczenie zwykłego udziału to jedna dziesiąta srebra. Osobisty łup to 1 Pieczęć Zakonu i 1 Odłamek Klucza.
+
+Okna: przypływ to wysoki pływ, noc to Godzina Wilka, pt–nd to piątek, sobota i niedziela UTC. Tydzień liczy się od poniedziałku UTC, jak Przebudzenie.
+
+Rozdział 5.5 mówi, że Alienista wchodzi w etapie 9. Rozdział 11 kładzie go w Etapie 8 i tego słuchamy. Specjalność to +30% Opanowania, gdy klasa jest aktywna. Nie ignoruje Hartu ani Uniku. Leczenie drużyny jest w rozliczeniu wyprawy, nie w pojedynku.
+
+Eskorta: to samo miasto, po akceptacji. Szansa zasadzki spada o połowę po soli na progu, jeśli sól też działa. Eskorta przejmuje pierwszą walkę (podopieczny jej nie dostaje) i dostaje 1 Pieczęć Straży. Pierwsze zdarzenie, które zabiera Poczytalność (dziś myto, −2), jest mniejsze o 30%, czyli zostaje −1. Walka zasadzki nie zabiera dziś Poczytalności, więc tych 30% nie dokłada nowej straty.
+
+Studnia schodzi do piętra 100. Od 50 każda walka, wygrana czy nie, dodaje 0,2 Skażenia. Od 70 Groza jest co najmniej 6, chyba że Szept wycisza ją do zera. Setne piętro nadal mówi, że głębiej prowadzi Bezdeń — ranking Bezdeni jest w Etapie 9.
+
+Kręgi III–Zerowy są otwarte: wrogowie i śmieci doszły do katalogu. Stopnie 1–8 mają przedmioty; nazwy od Stopnia 4 powtarzają Stopień 1, bo GDD ich nie podaje. Awans Kręgu może zejść aż do Zerowego.
+
+Portal: Domena 8, Cthulhu, R'lyeh, aspekt Głębia, modyfikator Sny R'lyeh. Co rundę −1 Poczytalności, a 10% ciosów gracza zakrzywia się w pudło. Ten rzut jest tylko przy tym modyfikatorze. Domena 9 zostaje zamknięta. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 9. Patronat nie wchodzi w ten etap.
+
+Rozjazdu tempa Domeny 1 (dzień 13 wobec dnia 11 w GDD) ten etap nie rusza. Krzywych z wcześniejszych etapów też nie.
+
 ## Konwencje
 
 - Interfejs, komentarze, commity i dokumentacja po polsku; identyfikatory w kodzie po angielsku.

@@ -140,12 +140,17 @@ describe('Pęk Kluczy', () => {
     expect(portalAccess({ domain: 5, stage: 1, substage: 1 }, cleared)).toBe('skip');
     expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, cleared)).toBe('skip');
     expect(portalAccess({ domain: 7, stage: 1, substage: 1 }, cleared)).toBe('skip');
-    expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, cleared)).toBe('locked');
+    expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, cleared)).toBe('skip');
+    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, cleared)).toBe('locked');
     const domainFour = { domain: 4, stage: 10, substage: 8 };
     expect(portalAccess({ domain: 5, stage: 1, substage: 1 }, domainFour)).toBe('first');
     expect(portalAccess({ domain: 6, stage: 1, substage: 1 }, domainFour)).toBe('skip');
     expect(portalAccess({ domain: 7, stage: 1, substage: 1 }, domainFour)).toBe('skip');
-    expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, domainFour)).toBe('locked');
+    expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, domainFour)).toBe('skip');
+    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, domainFour)).toBe('locked');
+    const domainSeven = { domain: 7, stage: 10, substage: 8 };
+    expect(portalAccess({ domain: 8, stage: 1, substage: 1 }, domainSeven)).toBe('first');
+    expect(portalAccess({ domain: 9, stage: 1, substage: 1 }, domainSeven)).toBe('locked');
     expect(portalAccess({ domain: 1, stage: 1, substage: 1 }, cleared)).toBe('repeat');
   });
 });
@@ -244,7 +249,7 @@ describe('Seanse (GDD 10.8)', () => {
     expect(found?.rarity).toBe('beyond');
   });
 
-  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–7', () => {
+  it('katalog ma 30 Ech do Widma i po dwa Echa bogów Domen 1–8', () => {
     expect(SEANCE_ECHOES).toHaveLength(30);
     expect(SEANCE_ECHOES.every((echo) => echo.rarity !== 'beyond')).toBe(true);
     expect(ECHOES.filter((echo) => echo.godDomain === 1)).toHaveLength(2);
@@ -264,6 +269,12 @@ describe('Seanse (GDD 10.8)', () => {
     expect(portalDomain(7)?.modifier).toBe('fertility');
     expect(portalDomain(7)?.god).toBe('Shub-Niggurath');
     expect(portalDomain(7)?.units).toHaveLength(10);
+    expect(ECHOES.filter((echo) => echo.godDomain === 8)).toHaveLength(2);
+    expect(portalDomain(8)?.modifier).toBe('rlyeh-dreams');
+    expect(portalDomain(8)?.god).toBe('Cthulhu');
+    expect(portalDomain(8)?.place).toBe("R'lyeh, Miasto Nieeuklidesowe");
+    expect(portalDomain(8)?.units).toHaveLength(10);
+    expect(portalDomain(9)).toBeUndefined();
   });
 });
 

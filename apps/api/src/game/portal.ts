@@ -58,7 +58,10 @@ import {
   travelInProgress,
   utcDay,
   weaponDamage,
+  wellContaminationTenths,
+  wellFightDread,
   wellWhisperPending,
+  composureWithClass,
   type PortalCoord,
   type WellWhisper,
   ENGRAVER_DAILY_CAP,
@@ -244,7 +247,7 @@ export async function dreamCombatant(
           ? weaponDamage(gear.tier, weapon.qualityBp, weapon.enhancement, 0)
           : UNARMED_DAMAGE,
       knowledge: lore.knowledge,
-      composure: lore.composure,
+      composure: composureWithClass(lore.composure, loadout.classId),
       panicImmune: panicImmune(lore.scars),
       contamination: journey.contamination,
       pulseBrand: loadout.weapon?.instanceId
@@ -654,11 +657,12 @@ export async function fightWell(
       stats: { strength: rounded, defense: rounded, accuracy: rounded, evasion: rounded },
       life: Math.round(enemyLife(floor) * (guardian ? 1.5 : 1)),
       damage: enemyDamage(floor),
-      dread: whisper === 'hush' ? 0 : guardian ? 4 : 1,
+      dread: wellFightDread(floor, guardian, whisper === 'hush'),
       gaze: false,
     },
     seed,
   );
+  await commitPortalHearth(db, locked.id, now, wellContaminationTenths(floor), 0);
   let resources = { ...body.resources, vigor };
   if (result.winner !== 'player') {
     const carried = (await walletOf(db, locked.id)).silver;

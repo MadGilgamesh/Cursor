@@ -14,7 +14,7 @@
  */
 import { applyBp } from './fixed-point.js';
 
-export const BALANCE_VERSION = 8;
+export const BALANCE_VERSION = 9;
 
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -278,10 +278,10 @@ export function trainingGainCenti(
 export const COMBAT_MAX_ROUNDS = 25;
 export const COMBAT_ENGINE_VERSION = 1;
 
-export const CLASS_IDS = ['butcher', 'occultist', 'marksman', 'vagrant'] as const;
+export const CLASS_IDS = ['butcher', 'occultist', 'marksman', 'alienist', 'vagrant'] as const;
 export type ClassId = (typeof CLASS_IDS)[number];
 /** Klasy z własnym zestawem przedmiotów; Włóczęga nosi dowolne. */
-export const SET_CLASS_IDS = ['butcher', 'occultist', 'marksman'] as const;
+export const SET_CLASS_IDS = ['butcher', 'occultist', 'marksman', 'alienist'] as const;
 export type SetClassId = (typeof SET_CLASS_IDS)[number];
 
 /** Mnożniki Hartu i Uniku wroga dla klasy (GDD 10.4) w punktach bazowych. */
@@ -292,6 +292,11 @@ export const CLASS_PENETRATION: Record<
   butcher: { kDefenseBp: 8_700, kEvasionBp: 8_700 },
   occultist: { kDefenseBp: 7_500, kEvasionBp: 10_000 },
   marksman: { kDefenseBp: 10_000, kEvasionBp: 7_500 },
+  /**
+   * Alienista nie ignoruje Hartu ani Uniku (GDD 5.5: specjalność to Opanowanie).
+   * Założenie Etapu 8: oba mnożniki zostają 1.
+   */
+  alienist: { kDefenseBp: 10_000, kEvasionBp: 10_000 },
   vagrant: { kDefenseBp: 10_000, kEvasionBp: 10_000 },
   none: { kDefenseBp: 10_000, kEvasionBp: 10_000 },
 };
@@ -309,7 +314,15 @@ export const CLASS_UNIQUES = {
   occultistWordPerKnowledge: 0.01,
   /** Włóczęga: +10% Znoju max. */
   vagrantToilBp: 1_000,
+  /** Alienista: +30% Opanowania, gdy klasa jest aktywna (GDD 5.5). */
+  alienistComposureBp: 3_000,
 } as const;
+
+/** Opanowanie z klasy. Inna klasa zostawia liczbę bez zmian, więc stare dzienniki walki zostają. */
+export function composureWithClass(base: number, classId: ClassId | null): number {
+  if (classId !== 'alienist') return base;
+  return Math.round((base * (10_000 + CLASS_UNIQUES.alienistComposureBp)) / 10_000);
+}
 
 /** Szansa trafienia: `clamp(0,10; 0,95; 1,3 · Cel / (Cel + Unik_wroga · k_unik))`. */
 export function hitChance(accuracy: number, enemyEvasion: number, kEvasion = 1): number {
@@ -393,15 +406,15 @@ export const CIRCLES: readonly CircleDef[] = [
   { circle: 6, numeral: 'VI', floorMin: 18, floorMax: 28, stage: 2 },
   { circle: 5, numeral: 'V', floorMin: 28, floorMax: 40, stage: 2 },
   { circle: 4, numeral: 'IV', floorMin: 40, floorMax: 52, stage: 2 },
-  { circle: 3, numeral: 'III', floorMin: 52, floorMax: 65, stage: 5 },
-  { circle: 2, numeral: 'II', floorMin: 65, floorMax: 80, stage: 5 },
-  { circle: 1, numeral: 'I', floorMin: 80, floorMax: 95, stage: 5 },
-  { circle: 0, numeral: 'Zerowy', floorMin: 95, floorMax: 110, stage: 5 },
+  { circle: 3, numeral: 'III', floorMin: 52, floorMax: 65, stage: 8 },
+  { circle: 2, numeral: 'II', floorMin: 65, floorMax: 80, stage: 8 },
+  { circle: 1, numeral: 'I', floorMin: 80, floorMax: 95, stage: 8 },
+  { circle: 0, numeral: 'Zerowy', floorMin: 95, floorMax: 110, stage: 8 },
 ];
 
 export const STARTING_CIRCLE = 9;
-/** Najwyższy Krąg dostępny w bieżącym etapie (Etap 2: IV; niższy numer = trudniejszy). */
-export const TOP_CIRCLE_THIS_STAGE = 4;
+/** Najtrudniejszy Krąg dostępny w bieżącym etapie (niższy numer = trudniejszy). Etap 8: Zerowy. */
+export const TOP_CIRCLE_THIS_STAGE = 0;
 
 export function circleDef(circle: number): CircleDef {
   const found = CIRCLES.find((candidate) => candidate.circle === circle);
@@ -494,9 +507,9 @@ export type EquipmentSlot = (typeof EQUIPMENT_SLOTS)[number];
 export const ARMOR_SLOTS = ['head', 'torso', 'legs', 'hands', 'feet'] as const;
 export const CLASS_SET_ARMOR_PIECES = 4;
 
-/** Stopnie 1–10 i wymagany poziom (GDD 5.5); Etap 1: Stopnie 1–3. */
+/** Stopnie 1–10 i wymagany poziom (GDD 5.5). Etap 8: Stopnie 1–8. */
 export const TIER_REQUIRED_LEVEL = [1, 5, 10, 18, 26, 35, 45, 55, 65, 75] as const;
-export const MAX_TIER_THIS_STAGE = 3;
+export const MAX_TIER_THIS_STAGE = 8;
 
 export function tierRequiredLevel(tier: number): number {
   const level = TIER_REQUIRED_LEVEL[tier - 1];

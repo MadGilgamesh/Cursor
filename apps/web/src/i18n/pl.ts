@@ -102,6 +102,9 @@ export const pl = {
     hearthTitle: 'Próg',
     hearthHint: 'Próg, Przysięga i Skażenie.',
     hearthEnter: 'Próg domu',
+    expeditionTitle: 'Wyprawy',
+    expeditionHint: 'Kanały, wrak, archiwum i krypty. Drużyna schodzi razem.',
+    expeditionEnter: 'Wyprawy',
     madnessOn: 'Efekty obłędu włączone',
     madnessOff: 'Efekty obłędu wyłączone',
     claim: 'Odbierz',
@@ -158,6 +161,13 @@ export const pl = {
     dreams: 'Sny',
     dreamsHint:
       'Spokojny sen, Sen o Głębinach albo Sen Wspólny — wynik liczy serwer po przebudzeniu.',
+  },
+  expeditions: {
+    title: 'Wyprawy',
+    empty: 'Tablica zejść jest pusta.',
+    level: 'Poziom {level}',
+    party: 'Drużyna {party}',
+    weekly: 'Wejścia w tym tygodniu: {remaining}',
   },
   soon: 'Wkrótce',
   character: {
