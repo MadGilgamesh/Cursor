@@ -31,7 +31,13 @@ import {
 import { loreHomeFrom } from './lore.js';
 import { worldOf } from './world.js';
 import { loadLore, loreExtras } from './lore-state.js';
-import { loadResources, materializeAll, resourceContext, toResourcesDto } from './resources.js';
+import {
+  houseRegenBp,
+  loadResources,
+  materializeAll,
+  resourceContext,
+  toResourcesDto,
+} from './resources.js';
 import { loadPortal, materializePortal, ringOf } from './portal-state.js';
 import { walletOf } from './wallet.js';
 
@@ -63,7 +69,14 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
     const extras = loreExtras(lore);
     const patron = patronActive(character.patronUntil?.getTime() ?? null, now.getTime());
     const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty, patron);
-    const resources = materializeAll(await loadResources(db, character.id), ctx, now);
+    const house = await houseRegenBp(db, character.id, now);
+    const resources = await materializeAll(
+      db,
+      character.id,
+      await loadResources(db, character.id),
+      ctx,
+      now,
+    );
     const portalRow = materializePortal(
       await loadPortal(db, character.id),
       now,
@@ -79,6 +92,11 @@ export function gameRoutes(app: FastifyInstance, deps: AppDeps): void {
       serverTime: now.toISOString(),
       character: toCharacterDto(character),
       resources: toResourcesDto(resources, ctx),
+      regen: {
+        patron,
+        vigorRegenBp: house.vigorRegenBp,
+        sanityRegenBp: house.sanityRegenBp,
+      },
       wallet: await walletOf(db, character.id),
       activities: (await openActivities(db, character.id)).map(toActivityDto),
       portal: {

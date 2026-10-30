@@ -36,6 +36,17 @@ describe('resourceViews', () => {
     });
     expect(vigorView(100, T0).fullAt).toBeNull();
   });
+
+  it('Sypialnia skraca czas do pełnego Wigoru, a zero premii zostawia 40 min', () => {
+    const pace = { patron: false, vigorRegenBp: 500, sanityRegenBp: 0 };
+    const interval = Math.round((10 * MIN * 10_000) / 10_500);
+    const boosted = resourceViews(resources(80), T0, pace).find((view) => view.kind === 'vigor')!;
+    expect(boosted.fullAt).toBe(T0 + 4 * interval);
+    expect(vigorView(80, T0).fullAt).toBe(T0 + 40 * MIN);
+    expect(nextStep([], boosted, T0, pace)).toEqual({ kind: 'board', vigor: 80 });
+    const resting = resourceViews(resources(2), T0, pace).find((view) => view.kind === 'vigor')!;
+    expect(nextStep([], resting, T0, pace)).toEqual({ kind: 'rest', at: T0 + interval });
+  });
 });
 
 describe('nextStep (brak martwych końców)', () => {

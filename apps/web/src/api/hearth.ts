@@ -41,6 +41,7 @@ const hearthSchema = z.object({
   wounds: z.number(),
   candles: z.number(),
   vigorBonusBp: z.number(),
+  sanityBonusBp: z.number(),
   saltThreshold: z.boolean(),
 });
 

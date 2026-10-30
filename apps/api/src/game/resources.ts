@@ -2,6 +2,8 @@ import {
   RESOURCE_KINDS,
   materializeResource,
   resourceMax,
+  roomRegenBp,
+  type RegenPace,
   type ResourceContext,
   type ResourceKind,
   type Resources,
@@ -10,7 +12,7 @@ import {
 import { eq } from 'drizzle-orm';
 
 import type { Executor } from '../db/client.js';
-import { resourceStates, type ResourceStateRow } from '../db/schema.js';
+import { hearthStates, resourceStates, type ResourceStateRow } from '../db/schema.js';
 
 export type ResourceValues = Record<ResourceKind, StoredResource>;
 
@@ -52,17 +54,48 @@ export function initialResources(ctx: ResourceContext, now: Date): ResourceValue
   ) as ResourceValues;
 }
 
-/** Wylicza bieżące wartości z czasu serwera (bez zapisu). */
-export function materializeAll(
+/**
+ * Premia Sypialni i Kaplicy Domowej. Ten sam wynik co pole `vigorBonusBp` /
+ * `sanityBonusBp` na progu: dom stoi, a zaległość gasi pokoje.
+ */
+export async function houseRegenBp(
+  db: Pick<Executor, 'select'>,
+  characterId: string,
+  now: Date,
+): Promise<{ vigorRegenBp: number; sanityRegenBp: number }> {
+  const [row] = await db
+    .select({
+      houseId: hearthStates.houseId,
+      buildEndsAt: hearthStates.buildEndsAt,
+      arrears: hearthStates.arrears,
+      rooms: hearthStates.rooms,
+    })
+    .from(hearthStates)
+    .where(eq(hearthStates.characterId, characterId))
+    .limit(1);
+  const built = Boolean(row?.houseId) && (!row?.buildEndsAt || row.buildEndsAt <= now);
+  return roomRegenBp(row?.rooms ?? {}, row?.arrears ?? false, built);
+}
+
+/** Wylicza bieżące wartości z czasu serwera (bez zapisu). Tempo pokoi bierze z progu. */
+export async function materializeAll(
+  db: Pick<Executor, 'select'>,
+  characterId: string,
   values: ResourceValues,
   ctx: ResourceContext,
   now: Date,
-): ResourceValues {
+): Promise<ResourceValues> {
+  const house = await houseRegenBp(db, characterId, now);
+  const pace: RegenPace = {
+    patron: ctx.patron === true,
+    vigorRegenBp: house.vigorRegenBp,
+    sanityRegenBp: house.sanityRegenBp,
+  };
   const at = now.getTime();
   return Object.fromEntries(
     RESOURCE_KINDS.map((kind) => [
       kind,
-      materializeResource(kind, values[kind], at, resourceMax(kind, ctx), ctx.patron === true),
+      materializeResource(kind, values[kind], at, resourceMax(kind, ctx), pace),
     ]),
   ) as ResourceValues;
 }

@@ -103,7 +103,7 @@ async function view(db: Executor, character: CharacterRow, now: Date) {
   const loadout = computeLoadout(await equippedOf(db, character.id), journey.sealedItems);
   const effective = effectiveStatsCenti(base, loadout);
   const ctx = resourceContextFor(character.level, loadout);
-  const current = materializeAll(resources, ctx, now);
+  const current = await materializeAll(db, character.id, resources, ctx, now);
   const [klass] = loadout.classId
     ? await db
         .select()

@@ -191,7 +191,7 @@ export async function startMission(
       }
 
       const stored = await loadResources(tx, characterId, { forUpdate: true });
-      const current = materializeAll(stored, ctx, now);
+      const current = await materializeAll(tx, characterId, stored, ctx, now);
       const vigor = spendResource(
         'vigor',
         current.vigor,
@@ -395,7 +395,13 @@ export async function claimActivities(
       extras.sanityPenalty,
       patronActive(updatedCharacter.patronUntil?.getTime() ?? null, now.getTime()),
     );
-    let resources = materializeAll(await loadResources(tx, characterId), ctx, now);
+    let resources = await materializeAll(
+      tx,
+      characterId,
+      await loadResources(tx, characterId),
+      ctx,
+      now,
+    );
     for (const row of claimed) {
       const result = row.result;
       if (!result) continue;

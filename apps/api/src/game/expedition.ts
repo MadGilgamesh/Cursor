@@ -400,7 +400,7 @@ export async function startExpedition(
     const lore = await loadLore(db, row.id);
     const extras = loreExtras(lore);
     const ctx = resourceContext(row.level, extras.knowledge, extras.sanityPenalty);
-    const resources = materializeAll(await loadResources(db, row.id), ctx, now);
+    const resources = await materializeAll(db, row.id, await loadResources(db, row.id), ctx, now);
     const journey = await loadWorld(db, row.id);
     const classId = computeLoadout(await equippedOf(db, row.id), journey.sealedItems).classId;
     await db

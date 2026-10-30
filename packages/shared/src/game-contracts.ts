@@ -100,11 +100,20 @@ export const worldHomeSchema = z.object({
 export type WorldHome = z.infer<typeof worldHomeSchema>;
 export type PortalHome = z.infer<typeof portalHomeSchema>;
 
+/** Tempo, którym klient dolicza regenerację między odświeżeniami pulpitu. */
+export const regenPaceSchema = z.object({
+  patron: z.boolean(),
+  vigorRegenBp: z.int().min(0),
+  sanityRegenBp: z.int().min(0),
+});
+export type RegenPaceDto = z.infer<typeof regenPaceSchema>;
+
 /** Pulpit Dom: wszystko, czego potrzebuje ekran główny, w jednym żądaniu. */
 export const dashboardResponseSchema = z.object({
   serverTime: isoDateTime,
   character: characterSchema,
   resources: resourcesSchema,
+  regen: regenPaceSchema,
   wallet: walletSchema,
   /** Aktywne i zakończone, jeszcze nieodebrane aktywności. */
   activities: z.array(activitySchema),

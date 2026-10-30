@@ -108,7 +108,9 @@ async function ready(db: Executor, character: CharacterRow, now: Date) {
   const lore = await loadLore(db, locked.id, true);
   const extras = loreExtras(lore);
   const ctx = resourceContext(locked.level, extras.knowledge, extras.sanityPenalty);
-  const resources = materializeAll(
+  const resources = await materializeAll(
+    db,
+    locked.id,
     await loadResources(db, locked.id, { forUpdate: true }),
     ctx,
     now,
@@ -133,7 +135,13 @@ export async function loreOf(db: Executor, character: CharacterRow, clock: Clock
   const lore = await loadLore(db, character.id);
   const extras = loreExtras(lore);
   const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
-  const resources = materializeAll(await loadResources(db, character.id), ctx, now);
+  const resources = await materializeAll(
+    db,
+    character.id,
+    await loadResources(db, character.id),
+    ctx,
+    now,
+  );
   const portal = materializePortal(await loadPortal(db, character.id), now);
   const ratio = percent(resources.sanity.value, resourceMax('sanity', ctx));
   return {
@@ -406,7 +414,9 @@ export async function claimDocument(
   };
   await saveLore(db, next);
   await audit(db, who, locked.id, 'case.document.claim', {});
-  const resources = materializeAll(
+  const resources = await materializeAll(
+    db,
+    locked.id,
     await loadResources(db, locked.id),
     resourceContext(locked.level, next.knowledge, sanityPenaltyForScars(next.scars)),
     now,

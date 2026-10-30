@@ -239,7 +239,7 @@ Portal: Domena 6, Król w Żółci, modyfikator Żółty Znak (Panika ×2; przy 
 
 Dom ma pięć typów z ceną, czasem budowy i utrzymaniem z GDD 5.21. Sprzedaż zwraca 70% ceny i czyści pokoje. Utrzymanie rozlicza się leniwie przy wejściu na próg: dzień bez srebra to zaległość i pokoje gasną. Koszt ulepszenia pokoju to założenie `1 000 × nowy poziom`, maksimum 5. Mosiądz, szkło, marmur i ichor domu kapitana i dworu nie mają liczb w GDD — założenie: 40, 20, 30 i 1.
 
-Sypialnia daje +5% Wigoru, a kaplica regenerację Poczytalności, ale tylko jako liczba na progu. Tik Wigoru zostaje 5 na 10 minut, żeby klient i serwer nie rozjechały się na każdym odczycie zasobów.
+Sypialnia daje +5% tempa regeneracji Wigoru: tik jest krótszy, przyrost zostaje 5. Kaplica Domowa skraca tik Poczytalności o 20/30/40/50/60% przy poziomach 1–5. Próg domu pokazuje te same punkty bazowe, których używa tik. Zaległość i niedokończona budowa gaszą oba. Patronat dokłada swoje +10% do Wigoru, więc tempa się mnożą.
 
 Sześć kategorii rytuałów. Szansa i wagi są w `ritualChance` / `ritualWeightBp` (GDD 10.9). Przy `p = 0,5` wagi to 4000 / 1000 / 4250 / 750. Katastrofa otwiera krótką walkę w domu. Rytuał Pieczęci na ołtarzu i w piwnicy: 10 Odprysków daje 1 Sigil, 20% na drugi. Ołtarz jest natychmiastowy i nie wymaga piwnicy. Rytuał w piwnicy może się nie udać — Odpryski i tak giną przy starcie.
 
@@ -305,9 +305,9 @@ Portal: Domeny 10 i 11, Yog-Sothoth (Brama, aspekt etapu bez losu, od etapu 8 wr
 
 Tempo kariery liczy `tools/balance` (`pnpm --filter @game/balance test` i `simulate`), dzień po dniu, tymi samymi funkcjami co serwer. Aktywny F2P: 250 Wigoru w trening (65/65/60/60, rotowane), 6 zleceń po 50 Wigoru, 8,9 klucza, sprzęt od ×1,2 do ×2,2 w dniu 400, kursy z Erudycją 50/100/200/350/500 w dobach 1, 2, 3, 4 i 12, Sala Ćwiczeń od doby 5 do +10% około doby 20, wszystkie 10 Piętn Szkolenia. Próg Portalu to p ≥ 0,6. Wynik: Domena 1 w dniu 10 (cel 11, −9%), Domena 11 w dniu 427 (cel 472, −10%), poziom 80 w dniu 433 (cel 430, około 1,2 roku). Żaden kamień nie odchyla się od tabeli 10.13 o więcej niż 10%. Wcześniejsza interpolacja tabeli 10.3 dawała Domenę 1 w dniu 13 i urywała statystykę w dniu 450 na 486 000, więc Domena 11 nie kończyła się przed sufitem 800.
 
-Od poziomu 10 próg XP mnoży `t(L) = (L/10)^(1/8)` (trzy pierwiastki). Poziomy 1–10 zostają przy tabeli 10.2. Bez tego pochylenia ten sam dochód XP (zlecenia, pierwsze przejścia, powtórki i zadanie dzienne) kładł poziom 80 w dniu 360. Pięć sal Fechtowni jest otwartych: próg `stage > 1` i schemat `hall ≤ 2` trzymały gracza na G = 6. Kurs dodaje Erudycję do wzoru treningu. Sala Ćwiczeń mnoży G przez `1 + 0,02·poziom`. Biblioteka skraca tom i jego Poczytalność o 10% za poziom (GDD 10.7). Gabinet skraca kurs o tyle samo — GDD mówi tylko „tempo”, więc skala jest wspólna z Biblioteką. Sypialnia nadal wystawia +5% Wigoru w widoku domu, ale tik regeneracji tego nie mnoży.
+Od poziomu 10 próg XP mnoży `t(L) = (L/10)^(1/8)` (trzy pierwiastki). Poziomy 1–10 zostają przy tabeli 10.2. Bez tego pochylenia ten sam dochód XP (zlecenia, pierwsze przejścia, powtórki i zadanie dzienne) kładł poziom 80 w dniu 360. Pięć sal Fechtowni jest otwartych: próg `stage > 1` i schemat `hall ≤ 2` trzymały gracza na G = 6. Kurs dodaje Erudycję do wzoru treningu. Sala Ćwiczeń mnoży G przez `1 + 0,02·poziom`. Biblioteka skraca tom i jego Poczytalność o 10% za poziom (GDD 10.7). Gabinet skraca kurs o tyle samo — GDD mówi tylko „tempo”, więc skala jest wspólna z Biblioteką. Sypialnia skraca tik Wigoru o 5%, a Kaplica Domowa tik Poczytalności o 20–60% według poziomu. Widok progu i podgląd na pasku używają tego samego tempa co serwer. Symulacja kariery zostaje przy bazowej regeneracji, bez tych pokoi.
 
-Opakowania Capacitora nie ma. Podpis sklepu i toolchain natywny są poza tą pętlą serwera. `BALANCE_VERSION` 12.
+Opakowania Capacitora nie ma. Podpis sklepu i toolchain natywny są poza tą pętlą serwera. `BALANCE_VERSION` 13.
 
 ## Konwencje
 

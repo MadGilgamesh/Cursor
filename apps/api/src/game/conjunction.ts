@@ -536,7 +536,9 @@ export async function standLantern(
     0,
     patronActive(character.patronUntil?.getTime() ?? null, now.getTime()),
   );
-  const resources = materializeAll(
+  const resources = await materializeAll(
+    db,
+    character.id,
     await loadResources(db, character.id, { forUpdate: true }),
     ctx,
     now,

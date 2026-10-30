@@ -227,7 +227,7 @@ export async function dreamCombatant(
   const extras = loreExtras(lore);
   const patron = patronActive(character.patronUntil?.getTime() ?? null, now.getTime());
   const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty, patron);
-  const current = materializeAll(resources, ctx, now);
+  const current = await materializeAll(db, character.id, resources, ctx, now);
   const echo = row.activeEchoId ? findEcho(row.activeEchoId) : undefined;
   const echoLevel = echo ? (row.echoes[echo.id]?.level ?? 0) : 0;
   const multiplier = echo && echoLevel > 0 ? echoStatMultiplier(echo.rarity, echoLevel) : 1;

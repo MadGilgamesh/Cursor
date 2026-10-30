@@ -186,9 +186,31 @@ export const ROOM_MAX_LEVEL = 5;
 /** Założenie: poziom pokoju kosztuje 1 000 × nowy poziom. */
 export const roomUpgradeCost = (nextLevel: number) => 1_000 * nextLevel;
 
-/** Sypialnia +5% regeneracji Wigoru (GDD 5.21). Tik zasobu jeszcze tego nie mnoży. */
+/** Sypialnia +5% tempa regeneracji Wigoru (GDD 5.21). Tik jest krótszy, przyrost zostaje 5. */
 export function bedroomVigorBp(level: number, arrears: boolean): number {
   return !arrears && level >= 1 ? 500 : 0;
+}
+
+/** Kaplica Domowa: +20/30/40/50/60% tempa Poczytalności przy poziomach 1–5 (GDD 10.1). */
+const CHAPEL_SANITY_BP = [0, 2_000, 3_000, 4_000, 5_000, 6_000] as const;
+
+export function chapelSanityBp(level: number, arrears: boolean): number {
+  if (arrears || level < 1) return 0;
+  const safe = Math.min(ROOM_MAX_LEVEL, Math.floor(level));
+  return CHAPEL_SANITY_BP[safe] ?? 0;
+}
+
+/** Te same punkty bazowe dostaje próg domu i tik zasobów. Niedokończona budowa gasi oba. */
+export function roomRegenBp(
+  rooms: Readonly<Record<string, number>>,
+  arrears: boolean,
+  built: boolean,
+): { vigorRegenBp: number; sanityRegenBp: number } {
+  if (!built) return { vigorRegenBp: 0, sanityRegenBp: 0 };
+  return {
+    vigorRegenBp: bedroomVigorBp(rooms.bedroom ?? 0, arrears),
+    sanityRegenBp: chapelSanityBp(rooms.chapel ?? 0, arrears),
+  };
 }
 
 /** Sala Ćwiczeń: +2% przyrostu treningu za poziom, maks. +10% (GDD 10.3). */

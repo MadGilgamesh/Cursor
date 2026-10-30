@@ -166,6 +166,8 @@ export const pl = {
     oathEmpty: 'Przysięga Śpiącym czeka na poniedziałek.',
     hideout: 'Kryjówka otwarta.',
     hideoutClosed: 'Kryjówka zamknięta.',
+    bedroom: 'Sypialnia: +{percent}% regeneracji Wigoru.',
+    chapel: 'Kaplica Domowa: +{percent}% regeneracji Poczytalności.',
     cult: 'Kult: {rank}, podejrzenie {suspicion}',
   },
   community: {

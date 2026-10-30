@@ -102,7 +102,9 @@ async function ready(db: Executor, character: CharacterRow, now: Date) {
   world = await resolveArrival(db, locked, world, now);
   const lore = await loadLore(db, locked.id, true);
   const ctx = resourceContext(locked.level, lore.knowledge, 0);
-  const resources = materializeAll(
+  const resources = await materializeAll(
+    db,
+    locked.id,
     await loadResources(db, locked.id, { forUpdate: true }),
     ctx,
     now,
@@ -166,7 +168,9 @@ async function resolveArrival(
 ): Promise<WorldStateRow> {
   if (!row.travelTo || !row.travelEndsAt || row.travelEndsAt > now) return row;
   const destination = asCity(row.travelTo);
-  let resources = materializeAll(
+  let resources = await materializeAll(
+    db,
+    character.id,
     await loadResources(db, character.id, { forUpdate: true }),
     resourceContext(character.level, 0, 0),
     now,
