@@ -44,11 +44,16 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
   },
   {
+    files: ['apps/web/public/**/*.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
+  {
     // Testy i skrypty CLI: dopuszczamy wygodniejsze konstrukcje.
     files: [
       '**/test/**',
       '**/tests/**',
       '**/scripts/**',
+      'tools/*/src/report.ts',
       'apps/api/src/db/migrate.ts',
       'apps/api/src/worker.ts',
     ],

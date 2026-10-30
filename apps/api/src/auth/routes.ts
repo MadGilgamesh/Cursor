@@ -8,25 +8,20 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { AppDeps } from '../app.js';
+import { playerActor, writeAudit } from '../audit.js';
+import { insertStartingStats } from '../game/avatar.js';
+import { insertLoreState } from '../game/lore-state.js';
+import { insertMarketState, insertWorkshopState } from '../game/port-state.js';
+import { insertWorldState } from '../game/world-state.js';
+import { issueReferralCode } from '../game/conjunction.js';
+import { insertPortalState } from '../game/portal-state.js';
+import { initialResources, insertResources, resourceContext } from '../game/resources.js';
 import { accounts, characters } from '../db/schema.js';
-import { AppError } from '../errors.js';
+import { AppError, uniqueViolationConstraint } from '../errors.js';
 import { toSessionResponse } from '../serializers.js';
 import { burnPasswordCheck, hashPassword, verifyPassword } from './password.js';
 import { clearSessionCookie, setSessionCookie } from './plugin.js';
 import { createSession, deleteSession, SESSION_COOKIE } from './session.js';
-
-const UNIQUE_VIOLATION = '23505';
-
-/** Wyszukuje nazwę naruszonego ograniczenia UNIQUE (błąd może być opakowany przez Drizzle). */
-function uniqueViolationConstraint(error: unknown): string | undefined {
-  let current: unknown = error;
-  for (let depth = 0; depth < 5 && current instanceof Error; depth++) {
-    const candidate = current as Error & { code?: string; constraint_name?: string };
-    if (candidate.code === UNIQUE_VIOLATION) return candidate.constraint_name ?? '';
-    current = current.cause;
-  }
-  return undefined;
-}
 
 export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps): void {
   const rateLimited = {
@@ -40,9 +35,15 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
 
     const created = await db
       .transaction(async (tx) => {
+        const issued = issueReferralCode();
         const [account] = await tx
           .insert(accounts)
-          .values({ email: input.email, passwordHash })
+          .values({
+            email: input.email,
+            passwordHash,
+            referralCode: issued.code,
+            emailVerifyCode: issued.verify,
+          })
           .returning();
         if (!account) throw new Error('INSERT nie zwrócił konta');
         const [character] = await tx
@@ -55,6 +56,23 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
           })
           .returning();
         if (!character) throw new Error('INSERT nie zwrócił postaci');
+        const now = clock.now();
+        await insertResources(
+          tx,
+          character.id,
+          initialResources(resourceContext(character.level), now),
+        );
+        await insertStartingStats(tx, character.id);
+        await insertPortalState(tx, character.id, now);
+        await insertLoreState(tx, character.id);
+        await insertWorldState(tx, character.id);
+        await insertMarketState(tx, character.id);
+        await insertWorkshopState(tx, character.id);
+        await writeAudit(tx, playerActor(request, account.id), {
+          action: 'account.register',
+          characterId: character.id,
+          after: { characterName: character.name },
+        });
         const session = await createSession(tx, clock, account.id, config.sessionTtlMs);
         return { account, character, session };
       })
@@ -94,6 +112,10 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
       .set({ lastLoginAt: clock.now() })
       .where(eq(accounts.id, row.account.id));
     const session = await createSession(db, clock, row.account.id, config.sessionTtlMs);
+    await writeAudit(db, playerActor(request, row.account.id), {
+      action: 'account.login',
+      characterId: row.character.id,
+    });
     setSessionCookie(reply, config, session.token, session.expiresAt);
     return reply.send(toSessionResponse(row.account, row.character));
   });

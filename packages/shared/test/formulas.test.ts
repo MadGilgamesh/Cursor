@@ -30,17 +30,41 @@ describe('clampInt', () => {
   });
 });
 
-describe('krzywa doświadczenia (GDD 10.2)', () => {
-  it.each([
-    [1, 30, 30],
-    [3, 160, 265],
-    [5, 467, 1022],
-    [8, 2401, 6482],
-    [10, 7173, 16775],
-    [79, 744314, 18460322],
-  ])('poziom %i: %i do następnego, %i łącznie', (level, next, total) => {
-    expect(experienceToNextLevel(level)).toBe(next);
-    expect(cumulativeExperience(level)).toBe(total);
+describe('krzywa doświadczenia (GDD 1.1, 10.2)', () => {
+  // [poziom L, XP z L−1 do L, XP łącznie do L]. Do poziomu 10 to tabela GDD.
+  // Dalej próg ma pochylenie t(L) = (L/10)^(1/8), więc kolumna GDD już nie obowiązuje.
+  const EARLY_TABLE = [
+    [5, 446, 832],
+    [10, 4_894, 14_994],
+  ] as const;
+  const TILTED = [
+    [15, 24_971, 103_623],
+    [20, 51_509, 303_681],
+    [30, 140_515, 1_266_434],
+    [40, 283_930, 3_412_626],
+    [50, 488_213, 7_322_889],
+    [60, 758_837, 13_636_655],
+    [70, 1_100_603, 23_044_203],
+    [80, 1_517_826, 36_281_037],
+  ] as const;
+
+  it.each(EARLY_TABLE)('poziom %i: próg %i jak w tabeli GDD', (level, fromPrevious) => {
+    expect(experienceToNextLevel(level - 1)).toBe(fromPrevious);
+  });
+
+  it.each(EARLY_TABLE)(
+    'poziom %i: suma progów gry zgadza się z kolumną „łącznie” z dokładnością do zaokrągleń',
+    (level, _fromPrevious, total) => {
+      // Każdy z L−1 progów jest zaokrąglany osobno, więc różnica nie przekracza (L−1)/2.
+      expect(Math.abs(cumulativeExperience(level - 1) - total)).toBeLessThanOrEqual(
+        (level - 1) / 2,
+      );
+    },
+  );
+
+  it.each(TILTED)('poziom %i: próg %i z pochyleniem kariery', (level, fromPrevious, total) => {
+    expect(experienceToNextLevel(level - 1)).toBe(fromPrevious);
+    expect(cumulativeExperience(level - 1)).toBe(total);
   });
 
   it('rośnie monotonicznie aż do poziomu maksymalnego', () => {

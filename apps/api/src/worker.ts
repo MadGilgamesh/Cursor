@@ -1,19 +1,34 @@
-/** Osobny proces roboczy przetwarzający kolejkę timerów gry. */
+/** Osobny proces roboczy: harmonogram (GDD 9.3), rozstrzyganie timerów i Web Push. */
+import { systemClock } from './clock.js';
 import { loadConfig } from './config.js';
-import { createTimersWorker } from './queues/timers.js';
+import { createDatabase } from './db/client.js';
+import { createJobsQueue, createJobsWorker, registerSchedules } from './jobs/queue.js';
+import { createWebPushSender } from './push/sender.js';
 
 const config = loadConfig();
-const worker = createTimersWorker(config.redisUrl);
+const database = createDatabase(config.databaseUrl, { max: 5 });
+const queue = createJobsQueue(config.redisUrl);
+const push = config.vapid ? createWebPushSender(config.vapid) : null;
+
+await registerSchedules(queue);
+const worker = createJobsWorker(config.redisUrl, {
+  db: database.db,
+  clock: systemClock,
+  queue,
+  push,
+});
 
 worker.on('ready', () => {
-  console.log('Worker timerów gotowy.');
+  console.log(`Worker gotowy (Web Push: ${push ? 'włączony' : 'wyłączony'}).`);
 });
 worker.on('failed', (job, error) => {
-  console.error(`Zadanie ${job?.id ?? '?'} nieudane:`, error);
+  console.error(`Zadanie ${job?.name ?? '?'} (${job?.id ?? '?'}) nieudane:`, error);
 });
 
 async function shutdown(): Promise<void> {
   await worker.close();
+  await queue.close();
+  await database.close();
   process.exit(0);
 }
 

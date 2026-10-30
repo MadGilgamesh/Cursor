@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export interface TestAccount {
   email: string;
@@ -17,12 +17,23 @@ export function newAccount(): TestAccount {
   };
 }
 
+/**
+ * WebKit w Playwright nie kończy sprawdzania „stabilności”, gdy cel jest przy
+ * stałym pasku albo poza kadrem, a wymuszony klik w środek trafia w oko Mroku.
+ * Zdarzenie idzie wprost do elementu.
+ */
+export async function clickInView(locator: Locator): Promise<void> {
+  await locator.evaluate((element: HTMLElement) => {
+    element.click();
+  });
+}
+
 export async function registerViaUi(page: Page, account: TestAccount): Promise<void> {
   await page.goto('/rejestracja');
   await page.getByLabel('E-mail').fill(account.email);
   await page.getByLabel('Imię postaci').fill(account.characterName);
   await page.getByLabel('Hasło').fill(account.password);
-  await page.getByRole('button', { name: 'Przebudź się' }).click();
+  await clickInView(page.getByRole('button', { name: 'Przebudź się' }));
   await expect(page.getByRole('heading', { level: 1, name: 'Dom' })).toBeVisible();
 }
 
@@ -30,7 +41,7 @@ export async function loginViaUi(page: Page, account: Pick<TestAccount, 'email' 
   await page.goto('/logowanie');
   await page.getByLabel('E-mail').fill(account.email);
   await page.getByLabel('Hasło').fill(account.password);
-  await page.getByRole('button', { name: 'Wejdź' }).click();
+  await clickInView(page.getByRole('button', { name: 'Wejdź' }));
 }
 
 /** Na telefonie nic nie może wystawać poza szerokość ekranu. */

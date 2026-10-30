@@ -14,9 +14,11 @@ export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     databaseUrl: TEST_DATABASE_URL,
     redisUrl: TEST_REDIS_URL,
     cookieSecure: false,
-    sessionTtlMs: 60 * 60 * 1000,
+    sessionTtlMs: 30 * 24 * 60 * 60 * 1000,
     authRateLimitMax: 1_000,
     trustProxyHops: 0,
+    vapid: null,
+    enableTestControls: false,
     ...overrides,
   };
 }

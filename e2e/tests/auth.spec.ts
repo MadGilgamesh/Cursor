@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-import { expectNoHorizontalOverflow, loginViaUi, newAccount, registerViaUi } from './helpers';
+import {
+  clickInView,
+  expectNoHorizontalOverflow,
+  loginViaUi,
+  newAccount,
+  registerViaUi,
+} from './helpers';
 
 test('niezalogowany gracz trafia na ekran logowania', async ({ page }) => {
   await page.goto('/postac');
@@ -22,8 +28,10 @@ test('pełny cykl: rejestracja → Dom → wylogowanie → logowanie', async ({ 
   await page.reload();
   await expect(page.getByTestId('character-name')).toHaveText(account.characterName);
 
-  await page.getByRole('link', { name: 'Postać' }).click();
-  await page.getByRole('button', { name: 'Wyloguj' }).click();
+  await clickInView(page.getByRole('link', { name: 'Postać' }));
+  await expect(page).toHaveURL(/\/postac$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Postać' })).toBeVisible();
+  await clickInView(page.getByRole('button', { name: 'Wyloguj' }));
   await expect(page).toHaveURL(/\/logowanie$/);
 
   await page.goto('/');
@@ -53,6 +61,6 @@ test('rejestracja odrzuca zajęte imię postaci', async ({ page }) => {
   await page.getByLabel('E-mail').fill(`inny-${account.email}`);
   await page.getByLabel('Imię postaci').fill(account.characterName.toUpperCase());
   await page.getByLabel('Hasło').fill(account.password);
-  await page.getByRole('button', { name: 'Przebudź się' }).click();
+  await clickInView(page.getByRole('button', { name: 'Przebudź się' }));
   await expect(page.getByRole('alert')).toHaveText('To imię nosi już inna postać');
 });

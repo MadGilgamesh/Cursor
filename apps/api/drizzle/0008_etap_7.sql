@@ -1,0 +1,35 @@
+CREATE TABLE "hearth_states" (
+	"character_id" uuid PRIMARY KEY NOT NULL,
+	"house_id" text,
+	"build_ends_at" timestamp with time zone,
+	"paid_through" text,
+	"arrears" boolean DEFAULT false NOT NULL,
+	"rooms" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"materials" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"candles" integer DEFAULT 0 NOT NULL,
+	"shelf" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"sleeper" text,
+	"circle" integer DEFAULT 0 NOT NULL,
+	"pending_sleeper" text,
+	"pending_from" timestamp with time zone,
+	"wrath_until" timestamp with time zone,
+	"cult_sleeper" text,
+	"cult_orders" integer DEFAULT 0 NOT NULL,
+	"suspicion" integer DEFAULT 0 NOT NULL,
+	"unmasked_until" timestamp with time zone,
+	"mutations" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"mutation_offer" jsonb,
+	"chosen_thresholds" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"wounds" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"ritual_id" text,
+	"ritual_ends_at" timestamp with time zone,
+	"ritual_seed" text,
+	"hideout" boolean DEFAULT false NOT NULL,
+	"hideout_looted" boolean DEFAULT false NOT NULL,
+	"cursed" boolean DEFAULT false NOT NULL,
+	"buff_until" timestamp with time zone,
+	"decay_day" text
+);
+--> statement-breakpoint
+ALTER TABLE "world_states" ADD COLUMN "contamination_tenths" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "hearth_states" ADD CONSTRAINT "hearth_states_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;

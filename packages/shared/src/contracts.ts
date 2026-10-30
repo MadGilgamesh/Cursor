@@ -18,7 +18,26 @@ export const ERROR_CODES = {
   rateLimited: 'RATE_LIMITED',
   notFound: 'NOT_FOUND',
   internal: 'INTERNAL_ERROR',
+  insufficientResources: 'INSUFFICIENT_RESOURCES',
+  activityBusy: 'ACTIVITY_BUSY',
+  activityNotReady: 'ACTIVITY_NOT_READY',
+  activityAlreadyClaimed: 'ACTIVITY_ALREADY_CLAIMED',
+  idempotencyKeyRequired: 'IDEMPOTENCY_KEY_REQUIRED',
+  idempotencyKeyReused: 'IDEMPOTENCY_KEY_REUSED',
+  idempotencyInProgress: 'IDEMPOTENCY_IN_PROGRESS',
+  pushUnavailable: 'PUSH_UNAVAILABLE',
+  incapacitated: 'INCAPACITATED',
+  loopFinished: 'LOOP_FINISHED',
+  requirement: 'REQUIREMENT_NOT_MET',
+  noDreamKey: 'NO_DREAM_KEY',
+  noSigil: 'NO_SIGIL',
 } as const;
+
+/**
+ * Nagłówek idempotencji (GDD 9.2 `requestId`). Każde żądanie mutujące stan gry
+ * musi go mieć; powtórka z tym samym kluczem zwraca zapisaną odpowiedź.
+ */
+export const IDEMPOTENCY_HEADER = 'idempotency-key';
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 

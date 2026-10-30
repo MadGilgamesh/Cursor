@@ -1,4 +1,5 @@
 import { ERROR_CODES, type ErrorCode } from '@game/shared';
+import { InsufficientFundsError } from './game/wallet.js';
 import type { FastifyError, FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 
@@ -14,6 +15,19 @@ export class AppError extends Error {
   }
 }
 
+const UNIQUE_VIOLATION = '23505';
+
+/** Nazwa naruszonego ograniczenia UNIQUE w PostgreSQL (błąd może być opakowany przez Drizzle). */
+export function uniqueViolationConstraint(error: unknown): string | undefined {
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && current instanceof Error; depth++) {
+    const candidate = current as Error & { code?: string; constraint_name?: string };
+    if (candidate.code === UNIQUE_VIOLATION) return candidate.constraint_name ?? '';
+    current = current.cause;
+  }
+  return undefined;
+}
+
 export function registerErrorHandling(app: FastifyInstance): void {
   app.setNotFoundHandler((_request, reply) => {
     void reply
@@ -22,6 +36,11 @@ export function registerErrorHandling(app: FastifyInstance): void {
   });
 
   app.setErrorHandler((error: FastifyError | AppError | ZodError, request, reply) => {
+    if (error instanceof InsufficientFundsError) {
+      return reply.status(409).send({
+        error: { code: ERROR_CODES.insufficientResources, message: 'Za mało srebra' },
+      });
+    }
     if (error instanceof AppError) {
       return reply
         .status(error.statusCode)

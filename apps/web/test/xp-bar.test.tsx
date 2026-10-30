@@ -16,9 +16,9 @@ describe('XpBar', () => {
     render(<XpBar character={character(3, 40)} />);
     expect(screen.getByRole('progressbar', { name: 'Doświadczenie' })).toHaveAttribute(
       'aria-valuemax',
-      '160',
+      '242',
     );
-    expect(screen.getByText('40 / 160 PD')).toBeInTheDocument();
+    expect(screen.getByText('40 / 242 PD')).toBeInTheDocument();
   });
 
   it('na poziomie maksymalnym nie pokazuje progu', () => {

@@ -1,11 +1,22 @@
 import { Navigate, Route, Routes } from 'react-router';
 
 import { useSession } from './api/auth';
+import { errorMessage, t } from './i18n';
 import { AppShell } from './layout/AppShell';
 import { AuthScreen } from './screens/AuthScreen';
 import { CharacterScreen } from './screens/CharacterScreen';
+import { CityScreen } from './screens/CityScreen';
+import { CommunityScreen } from './screens/CommunityScreen';
+import { ConjunctionScreen } from './screens/ConjunctionScreen';
+import { DescentScreen } from './screens/DescentScreen';
+import { ExpeditionScreen } from './screens/ExpeditionScreen';
+import { HearthScreen } from './screens/HearthScreen';
 import { HomeScreen } from './screens/HomeScreen';
-import { PlaceholderScreen } from './screens/PlaceholderScreen';
+import { LoreScreen } from './screens/LoreScreen';
+import { MrokScreen } from './screens/MrokScreen';
+import { PortScreen } from './screens/PortScreen';
+import { PortalScreen } from './screens/PortalScreen';
+import { RoadScreen } from './screens/RoadScreen';
 import { Button } from './ui/Button';
 import { Sigil } from './ui/Sigil';
 
@@ -21,12 +32,12 @@ function Splash({ error, onRetry }: { error?: string; onRetry?: () => void }) {
             </p>
             {onRetry ? (
               <Button variant="ghost" className="mt-4" onClick={onRetry}>
-                Spróbuj ponownie
+                {t('app.retry')}
               </Button>
             ) : null}
           </>
         ) : (
-          <p className="mt-4 text-sm text-bone-400 italic">Mgła się rozstępuje…</p>
+          <p className="mt-4 text-sm text-bone-400 italic">{t('app.loading')}</p>
         )}
       </div>
     </div>
@@ -39,7 +50,10 @@ export function App() {
   if (sessionQuery.isPending) return <Splash />;
   if (sessionQuery.isError) {
     return (
-      <Splash error={sessionQuery.error.message} onRetry={() => void sessionQuery.refetch()} />
+      <Splash
+        error={errorMessage(sessionQuery.error)}
+        onRetry={() => void sessionQuery.refetch()}
+      />
     );
   }
 
@@ -58,34 +72,18 @@ export function App() {
     <Routes>
       <Route element={<AppShell session={session} />}>
         <Route index element={<HomeScreen />} />
-        <Route
-          path="miasto"
-          element={
-            <PlaceholderScreen
-              title="Miasto"
-              description="Sól nocą: Kasa, Kuźnia Szarego Młota i Przytułek św. Agaty wciąż zamknięte na cztery spusty."
-            />
-          }
-        />
-        <Route
-          path="mrok"
-          element={
-            <PlaceholderScreen
-              title="Mrok"
-              description="Łowy, Studnia Bez Dna i wyprawy czekają, aż coś wypełznie z morza."
-            />
-          }
-        />
+        <Route path="droga" element={<RoadScreen />} />
+        <Route path="port" element={<PortScreen />} />
+        <Route path="miasto" element={<CityScreen />} />
+        <Route path="mrok" element={<MrokScreen />} />
+        <Route path="portal" element={<PortalScreen />} />
+        <Route path="wiedza" element={<LoreScreen />} />
         <Route path="postac" element={<CharacterScreen />} />
-        <Route
-          path="wspolnota"
-          element={
-            <PlaceholderScreen
-              title="Wspólnota"
-              description="Loże, poczta i giełda ożyją, gdy na Brzegu zbierze się więcej Przebudzonych."
-            />
-          }
-        />
+        <Route path="wspolnota" element={<CommunityScreen />} />
+        <Route path="dom" element={<HearthScreen />} />
+        <Route path="wyprawy" element={<ExpeditionScreen />} />
+        <Route path="koniunkcja" element={<ConjunctionScreen />} />
+        <Route path="zstapienie" element={<DescentScreen />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

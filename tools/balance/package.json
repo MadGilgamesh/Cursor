@@ -1,0 +1,21 @@
+{
+  "name": "@game/balance",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Symulacje Monte Carlo balansu (GDD 10.12) — alarm przy odchyleniu > 15% od tabel GDD.",
+  "type": "module",
+  "scripts": {
+    "simulate": "tsx src/report.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@game/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
+}

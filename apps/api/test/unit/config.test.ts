@@ -27,4 +27,20 @@ describe('loadConfig', () => {
     expect(() => loadConfig({})).toThrow(/DATABASE_URL/);
     expect(() => loadConfig({ ...base, REDIS_URL: 'http://localhost' })).toThrow(/REDIS_URL/);
   });
+
+  it('Web Push jest wyłączony bez kluczy VAPID i wymaga obu kluczy naraz', () => {
+    expect(loadConfig(base).vapid).toBeNull();
+    expect(
+      loadConfig({ ...base, VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv' }).vapid,
+    ).toMatchObject({ publicKey: 'pub', privateKey: 'priv' });
+    expect(() => loadConfig({ ...base, VAPID_PUBLIC_KEY: 'pub' })).toThrow(/VAPID/);
+    expect(loadConfig({ ...base, VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY: '' }).vapid).toBeNull();
+  });
+
+  it('nie pozwala włączyć sterowania testowego na produkcji', () => {
+    expect(loadConfig({ ...base, ENABLE_TEST_CONTROLS: 'true' }).enableTestControls).toBe(true);
+    expect(() =>
+      loadConfig({ ...base, NODE_ENV: 'production', ENABLE_TEST_CONTROLS: 'true' }),
+    ).toThrow(/ENABLE_TEST_CONTROLS/);
+  });
 });
