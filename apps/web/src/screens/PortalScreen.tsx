@@ -24,7 +24,9 @@ export function PortalScreen() {
               : 'Sen tej Domeny jest jeszcze zamknięty.'}
           </p>
           <p className="text-sm text-bone-400">
-            Studnia: piętro {view.well.floor}/{view.well.max}. Świece: {view.candles}.
+            {view.well.floor > view.well.max
+              ? `Bezdeń: piętro ${view.well.floor}. Świece: ${view.candles}.`
+              : `Studnia: piętro ${view.well.floor}/${view.well.max}. Świece: ${view.candles}.`}
           </p>
           <p data-testid="portal-altar" className="text-sm text-bone-200">
             Ołtarz Bramy: Sigil Bokruga {view.altar.bokrugSigils}, Sigil Koloru{' '}

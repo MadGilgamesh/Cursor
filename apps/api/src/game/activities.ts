@@ -12,6 +12,7 @@ import {
   MISSION_MAX_LOOPS,
   computeLoadout,
   DEEPENING_MAX,
+  patronActive,
   deepenedRequirement,
   findMission,
   unlockedPortalGods,
@@ -139,7 +140,12 @@ export async function startMission(
       }
       const lore = await loadLore(tx, characterId);
       const extras = loreExtras(lore);
-      const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
+      const ctx = resourceContext(
+        character.level,
+        extras.knowledge,
+        extras.sanityPenalty,
+        patronActive(character.patronUntil?.getTime() ?? null, now.getTime()),
+      );
       const [known] = await tx
         .select()
         .from(missionProgress)
@@ -390,7 +396,12 @@ export async function claimActivities(
     const wallet = await walletOf(tx, characterId);
     const lore = await loadLore(tx, characterId);
     const extras = loreExtras(lore);
-    const ctx = resourceContext(updatedCharacter.level, extras.knowledge, extras.sanityPenalty);
+    const ctx = resourceContext(
+      updatedCharacter.level,
+      extras.knowledge,
+      extras.sanityPenalty,
+      patronActive(updatedCharacter.patronUntil?.getTime() ?? null, now.getTime()),
+    );
     let resources = materializeAll(await loadResources(tx, characterId), ctx, now);
     for (const row of claimed) {
       const result = row.result;

@@ -14,7 +14,7 @@
  */
 import { applyBp } from './fixed-point.js';
 
-export const BALANCE_VERSION = 9;
+export const BALANCE_VERSION = 10;
 
 export const MINUTE_MS = 60_000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -59,6 +59,8 @@ export interface ResourceContext {
   lifeBonus?: number;
   /** Premia do limitu Znoju w punktach bazowych (Włóczęga: +10%). */
   toilBonusBp?: number;
+  /** Patronat: max Wigor 200 i +10% regeneracji (GDD 5.26). */
+  patron?: boolean;
 }
 
 export function resourceMax(kind: ResourceKind, ctx: ResourceContext): number {
@@ -70,7 +72,7 @@ export function resourceMax(kind: ResourceKind, ctx: ResourceContext): number {
         (ctx.lifeBonus ?? 0)
       );
     case 'vigor':
-      return RESOURCE_RULES.vigor.baseMax;
+      return ctx.patron ? 200 : RESOURCE_RULES.vigor.baseMax;
     case 'toil':
       return (
         RESOURCE_RULES.toil.baseMax + applyBp(RESOURCE_RULES.toil.baseMax, ctx.toilBonusBp ?? 0)
@@ -86,7 +88,11 @@ export function resourceMax(kind: ResourceKind, ctx: ResourceContext): number {
 }
 
 /** Przyrost na jeden „tik” regeneracji i długość tiku. */
-export function regenRule(kind: ResourceKind, max: number): { amount: number; intervalMs: number } {
+export function regenRule(
+  kind: ResourceKind,
+  max: number,
+  patron = false,
+): { amount: number; intervalMs: number } {
   if (kind === 'life') {
     const rule = RESOURCE_RULES.life;
     return {
@@ -95,6 +101,12 @@ export function regenRule(kind: ResourceKind, max: number): { amount: number; in
     };
   }
   const rule = RESOURCE_RULES[kind];
+  if (kind === 'vigor' && patron) {
+    return {
+      amount: rule.regenAmount,
+      intervalMs: Math.round((rule.regenIntervalMs * 10_000) / 11_000),
+    };
+  }
   return { amount: rule.regenAmount, intervalMs: rule.regenIntervalMs };
 }
 
@@ -115,10 +127,11 @@ export function materializeResource(
   stored: StoredResource,
   now: number,
   max: number,
+  patron = false,
 ): StoredResource {
   if (now <= stored.updatedAt) return stored;
   if (stored.value >= max) return { value: stored.value, updatedAt: now };
-  const { amount, intervalMs } = regenRule(kind, max);
+  const { amount, intervalMs } = regenRule(kind, max, patron);
   const ticks = Math.floor((now - stored.updatedAt) / intervalMs);
   const value = Math.min(max, stored.value + ticks * amount);
   if (value >= max) return { value, updatedAt: now };

@@ -273,6 +273,24 @@ Portal: Domena 8, Cthulhu, R'lyeh, aspekt Głębia, modyfikator Sny R'lyeh. Co r
 
 Rozjazdu tempa Domeny 1 (dzień 13 wobec dnia 11 w GDD) ten etap nie rusza. Krzywych z wcześniejszych etapów też nie.
 
+## Etap 9 — Latarnie i Koniunkcja
+
+Zegar Koniunkcji trzyma się w punktach bazowych, 10000 = 100%. Dzień bazowy to 190 bp (1,9 pp). Mnożnik to `clamp(3000, 17000, 10000 + round(10000·(PK−PL)/(PK+PL+10·N)))`. Mianownik 0 zostawia mnożnik 10000. Surowa suma PL+PK gracza obcina się do 30 na dobę: pierwsze 15 liczą się w całości, kolejne 15 w połowie w dół, więc skuteczne maksimum to 22. To założenie, bo GDD nie rozcina dziennego sufitu. Dwa boty ze sprawą poważną (po 5 PL) dają 127 bp na dobę. Po 56 dobach zegar staje na 7112 bp, progi 2500 i 5000, finał „odparte” raz. 53. doba bez akcji dochodzi do 10000 i daje Wynurzenie. Nagrody są idempotentne: próg to 3 klucze z łupu, finał to 5 albo 2 Sigile Domeny 9, wyższa z ról Latarnika i kultu. Przyspieszony akt (1 min = 1 doba) działa tylko przy `NODE_ENV=test`. Produkcyjny odczyt Obserwatorium zakłada akt żywy.
+
+Latarnie: siedem, po jednej na Śpiącego. Miasta: Ulthaeg, Zhar'Nuul i Omm w Soli, Ma'Ghulla w Mgławcu, Ossarath na Kresie, Ithrakel i Aelis w Ilmarze. Fazy UTC: pn–czw zgłoszenia, pt wybór, sobota 19:00–20:30 bitwa, poza tym sobota to wybór, niedziela wypłata. Stanowisko kosztuje 20 Wigoru. Wynik to stanowiska × 3. Ostatnia fala pada poniżej 3 stanowisk. Obie strony padają — Latarnia gaśnie i dokłada 80 PK do następnej doby. Sam pretendent bez obrońcy bierze Latarnię bez bitwy. Remis albo sam obrońca zostawia obrońcę. Pretendent to najwyższa zgłoszona obrona tygodnia (liczba 1–10000); licznika obrony regionu jeszcze nie ma. Loża trzymająca Latarnię musi się jej zrzec, zanim zgłosi się gdzie indziej. Jedno zgłoszenie na lożę na tydzień. Udział daje 2 klucze, zwycięstwo 1 Sigil stojącym. Podatek 1% obrotu giełdy idzie do skarbca loży, która trzyma Latarnię soli, ponad istniejące 3% prowizji sprzedającego.
+
+Patronat: max Wigor 200 i tik Wigoru skrócony o 10%. Pęk kluczy co 3,5 h. Pieczęć Patrona (`seal:patron`) kosztuje 25 000 srebra — założenie — i jest towarem giełdy. Wykup przedłuża 30 dni od późniejszej z chwil: teraz albo obecny koniec. Świeca Patrona raz na dobę UTC, 5 kwitów raz na miesiąc. Handel i poczta z załącznikiem od poziomu 10 albo przy aktywnym Patronacie; przy akceptacji wymiany sprawdza się obie strony. Kosmetyki: ramka Bezdeni za 8 Pereł, tło R'lyeh za 12. Zmiana imienia za 5 Pereł. Płatność web to szkic: SKU `pearls-10` i `patron-30`. Potwierdzenie wymaga `PAYMENT_WEBHOOK_SECRET` i skrótu `sha256(paragon + '.' + sekret)`. Brak sekretu to 503, zły podpis 403, drugi raz nie księguje. Kupione polecenie daje polecającemu 2 Perły raz. Perły i pieniądze nie dają kluczy ani Sigili. Sklep wydarzenia odrzuca zapłatę Perłami.
+
+Polecenie powstaje przy rejestracji (8 znaków i 6-cyfrowy kod). Listu nie wysyłamy — kod jest w bazie, test go czyta. Tytuł liczy się od poziomu 15 i zweryfikowanego adresu: Świadek, Pochodnia, Latarnia Rodu przy 1, 3 i 10. Katedra chce obojga w Soli i poza drogą. Pakt krwi chce obojga w Mgławcu. Nie zaślubisz siebie. Jedne otwarte oświadczyny. Akceptacja daje tytuł Zaślubieni.
+
+Noc Zmarłych: 25 października–1 listopada UTC włącznie. Zadanie daje 10 wosku raz na dobę. Klucz kosztuje 30 wosku, limit 3 na postać. Ramka żałobna kosztuje 20 wosku raz.
+
+Bezdeń zdejmuje ścianę piętra 100. Szepty idą dalej co 5 pięter. Do 100 statystyki są jak wcześniej. Powyżej: `round(wartość(100) · 1,035^(f−100))`, a mutator tygodnia ±10–30% tylko tam. Ranking tygodnia: 1. miejsce 3 Sigile, 2–3 po 2, 4–10 po 1, drugi raz w tym samym tygodniu nie dopłaca. Na ekranie Portalu piętro ponad 100 czyta się jako Bezdeń.
+
+Portal: Domena 9, Nyarlathotep, Piramidy pod Czarnym Niebem, aspekt Pustka, modyfikator Zmienna Postać, materiał Odłamek Trapezoedru. Wróg losuje aspekt i kopiuje klasę gracza. Ten rzut jest tylko przy tym modyfikatorze, więc zwykłe walki trzymają to samo ziarno. Domena 10 zostaje zamknięta. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 10.
+
+Rozjazdu tempa Domeny 1 (dzień 13 wobec dnia 11 w GDD) ten etap nie rusza. Krzywych z wcześniejszych etapów też nie. Panel personelu i pakiet treści nie są na tej gałęzi.
+
 ## Konwencje
 
 - Interfejs, komentarze, commity i dokumentacja po polsku; identyfikatory w kodzie po angielsku.

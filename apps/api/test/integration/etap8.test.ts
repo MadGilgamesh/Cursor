@@ -183,7 +183,7 @@ describe('Etap 8 — wyprawy, eskorty, studnia', () => {
     expect(abroad.json<{ error: { message: string } }>().error.message).toContain('mieście');
   });
 
-  it('walka na piętrze 50 dodaje 0,2 Skażenia, a setne piętro zostaje dla Bezdeni', async () => {
+  it('walka na piętrze 50 dodaje 0,2 Skażenia, a setne piętro schodzi w Bezdeń', async () => {
     const player = await registerPlayer(ctx);
     await ctx.db
       .update(portalStates)
@@ -200,11 +200,11 @@ describe('Etap 8 — wyprawy, eskorty, studnia', () => {
     const capped = await registerPlayer(ctx);
     await ctx.db
       .update(portalStates)
-      .set({ wellFloor: 100 })
+      .set({ wellFloor: 100, whisperUntilFloor: 105 })
       .where(eq(portalStates.characterId, capped.characterId));
-    const blocked = await call(ctx, capped, 'POST', '/api/v1/well/fight');
-    expect(blocked.statusCode).toBe(409);
-    expect(blocked.json<{ error: { message: string } }>().error.message).toContain('Bezdeń');
+    const descent = await call(ctx, capped, 'POST', '/api/v1/well/fight');
+    expect(descent.statusCode, descent.body).toBe(200);
+    expect(descent.json<{ result: { winner: string } }>().result.winner).not.toBe('player');
   });
 
   it('rozliczenie daje asyście reputację Zakonu, nie srebro', async () => {

@@ -14,6 +14,7 @@ import { registerErrorHandling } from './errors.js';
 import { gameRoutes } from './game/routes.js';
 import { loreRoutes } from './game/lore-routes.js';
 import { worldRoutes } from './game/world-routes.js';
+import { conjunctionRoutes } from './game/conjunction-routes.js';
 import { expeditionRoutes } from './game/expedition-routes.js';
 import { hearthRoutes } from './game/hearth-routes.js';
 import { lodgeRoutes } from './game/lodge-routes.js';
@@ -84,6 +85,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(routes(lodgeRoutes), { prefix: API_PREFIX });
   await app.register(routes(hearthRoutes), { prefix: API_PREFIX });
   await app.register(routes(expeditionRoutes), { prefix: API_PREFIX });
+  await app.register(routes(conjunctionRoutes), { prefix: API_PREFIX });
   await app.register(routes(pushRoutes), { prefix: API_PREFIX });
   if (config.enableTestControls) {
     await app.register(routes(testControlRoutes), { prefix: '/api/test' });

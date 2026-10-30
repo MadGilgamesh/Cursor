@@ -30,10 +30,16 @@ export const accounts = pgTable(
     id: id(),
     email: text('email').notNull(),
     passwordHash: text('password_hash').notNull(),
+    referralCode: text('referral_code'),
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    emailVerifyCode: text('email_verify_code'),
     createdAt: createdAt(),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   },
-  (t) => [uniqueIndex('accounts_email_unique').on(t.email)],
+  (t) => [
+    uniqueIndex('accounts_email_unique').on(t.email),
+    uniqueIndex('accounts_referral_code_unique').on(t.referralCode),
+  ],
 );
 
 /** Sesje logowania. W bazie trzymamy wyłącznie skrót SHA-256 tokenu, nigdy sam token. */
@@ -68,6 +74,9 @@ export const characters = pgTable(
     name: text('name').notNull(),
     level: integer('level').notNull().default(1),
     experience: bigint('experience', { mode: 'number' }).notNull().default(0),
+    patronUntil: timestamp('patron_until', { withTimezone: true }),
+    titles: jsonb('titles').$type<string[]>().notNull().default([]),
+    cosmetics: jsonb('cosmetics').$type<string[]>().notNull().default([]),
     createdAt: createdAt(),
   },
   (t) => [
@@ -909,6 +918,178 @@ export const friendships = pgTable(
       .references(() => characters.id, { onDelete: 'cascade' }),
   },
   (t) => [primaryKey({ columns: [t.characterId, t.friendId] })],
+);
+
+/** Jeden akt Zegara Koniunkcji. `id` to zawsze `current`. */
+export const acts = pgTable('acts', {
+  id: text('id').primaryKey(),
+  startedAt: tstz('started_at').notNull(),
+  pace: text('pace').notNull(),
+  clockBp: integer('clock_bp').notNull().default(0),
+  closedDays: integer('closed_days').notNull().default(0),
+  finale: text('finale').notNull().default('pending'),
+  thresholds: jsonb('thresholds').$type<number[]>().notNull().default([]),
+  pendingPk: integer('pending_pk').notNull().default(0),
+});
+
+export const actContributions = pgTable(
+  'act_contributions',
+  {
+    actId: text('act_id')
+      .notNull()
+      .references(() => acts.id, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    dayIndex: integer('day_index').notNull(),
+    rawPl: integer('raw_pl').notNull().default(0),
+    rawPk: integer('raw_pk').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.actId, t.characterId, t.dayIndex] })],
+);
+
+export const actRewards = pgTable(
+  'act_rewards',
+  {
+    actId: text('act_id')
+      .notNull()
+      .references(() => acts.id, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.actId, t.characterId, t.kind] })],
+);
+
+export const lanternStates = pgTable('lantern_states', {
+  sleeperId: text('sleeper_id').primaryKey(),
+  lodgeId: uuid('lodge_id').references(() => lodges.id, { onDelete: 'set null' }),
+  status: text('status').notNull().default('open'),
+  resolvedWeek: text('resolved_week'),
+});
+
+export const lanternApplications = pgTable(
+  'lantern_applications',
+  {
+    weekKey: text('week_key').notNull(),
+    sleeperId: text('sleeper_id')
+      .notNull()
+      .references(() => lanternStates.sleeperId, { onDelete: 'cascade' }),
+    lodgeId: uuid('lodge_id')
+      .notNull()
+      .references(() => lodges.id, { onDelete: 'cascade' }),
+    defense: integer('defense').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.weekKey, t.sleeperId, t.lodgeId] })],
+);
+
+export const lanternStands = pgTable(
+  'lantern_stands',
+  {
+    weekKey: text('week_key').notNull(),
+    sleeperId: text('sleeper_id')
+      .notNull()
+      .references(() => lanternStates.sleeperId, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    lodgeId: uuid('lodge_id')
+      .notNull()
+      .references(() => lodges.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.weekKey, t.sleeperId, t.characterId] })],
+);
+
+export const abyssRanks = pgTable('abyss_ranks', {
+  characterId: uuid('character_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  floor: integer('floor').notNull(),
+  updatedAt: tstz('updated_at').notNull(),
+});
+
+export const abyssPayouts = pgTable('abyss_payouts', {
+  weekKey: text('week_key').primaryKey(),
+  paidAt: tstz('paid_at').notNull(),
+});
+
+export const abyssReceipts = pgTable(
+  'abyss_receipts',
+  {
+    weekKey: text('week_key').notNull(),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    sigils: integer('sigils').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.weekKey, t.characterId] })],
+);
+
+export const payments = pgTable(
+  'payments',
+  {
+    id: id(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    sku: text('sku').notNull(),
+    status: text('status').notNull().default('pending'),
+    providerRef: text('provider_ref'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('payments_provider_ref_unique').on(t.providerRef)],
+);
+
+export const marriages = pgTable('marriages', {
+  id: id(),
+  proposerId: uuid('proposer_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  partnerId: uuid('partner_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  rite: text('rite').notNull(),
+  status: text('status').notNull(),
+  createdAt: createdAt(),
+});
+
+export const referrals = pgTable('referrals', {
+  referredId: uuid('referred_id')
+    .primaryKey()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  referrerId: uuid('referrer_id')
+    .notNull()
+    .references(() => characters.id, { onDelete: 'cascade' }),
+  purchased: boolean('purchased').notNull().default(false),
+  rewarded: boolean('rewarded').notNull().default(false),
+});
+
+export const eventClaims = pgTable(
+  'event_claims',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    eventId: text('event_id').notNull(),
+    dayKey: text('day_key').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.eventId, t.dayKey] })],
+);
+
+export const patronClaims = pgTable(
+  'patron_claims',
+  {
+    characterId: uuid('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    dayKey: text('day_key').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.kind, t.dayKey] })],
 );
 
 export type LoreStateRow = typeof loreStates.$inferSelect;

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { ORDER_LIFE_MS } from '@game/shared';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { ManualClock } from '../../src/clock.js';
@@ -105,14 +105,31 @@ describe('Etap 5 — port i rynek', () => {
     expect(sellerGoods?.goods['crop:wormwood'] ?? 0).toBe(0);
     expect(buyerGoods?.goods['crop:wormwood']).toBe(1000);
 
+    // Vitest na czystym cache puszcza większe pliki pierwsze. Etap 9 zostawia
+    // wtedy jeden fill piołunu, więc liczymy tylko transakcje tej pary.
     const fills = await ctx.db
       .select()
       .from(marketFills)
-      .where(eq(marketFills.goodId, 'crop:wormwood'));
+      .where(
+        and(
+          eq(marketFills.goodId, 'crop:wormwood'),
+          eq(marketFills.sellerId, seller.characterId),
+          eq(marketFills.buyerId, buyer.characterId),
+        ),
+      );
     expect(fills).toHaveLength(1000);
     expect(fills.reduce((sum, fill) => sum + fill.quantity, 0)).toBe(1000);
-    const open = await ctx.db.select().from(marketOrders).where(eq(marketOrders.status, 'open'));
-    expect(open.filter((order) => order.goodId === 'crop:wormwood')).toHaveLength(0);
+    const open = await ctx.db
+      .select()
+      .from(marketOrders)
+      .where(
+        and(
+          eq(marketOrders.status, 'open'),
+          eq(marketOrders.goodId, 'crop:wormwood'),
+          eq(marketOrders.characterId, seller.characterId),
+        ),
+      );
+    expect(open).toHaveLength(0);
 
     expect(await ledgerMatches(seller.characterId)).toBe(2_000 - 1_000 + 97_000);
     expect(await ledgerMatches(buyer.characterId)).toBe(200_000 - 100_000 - 1_000);

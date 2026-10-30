@@ -19,10 +19,18 @@ import {
   echoStatMultiplier,
   echoUpgradeCost,
   effectiveStatsCenti,
+  KEY_REGEN_INTERVAL_MS,
+  abyssMutatorBp,
+  awakeningWeekStart,
   enemyDamage,
   enemyLevel,
   enemyLife,
   enemyStat,
+  keyRegenIntervalMs,
+  patronActive,
+  wellEnemyDamage,
+  wellEnemyLife,
+  wellEnemyStat,
   engraverSilverCost,
   findEcho,
   fightExperience,
@@ -107,6 +115,7 @@ import {
   statBlock,
 } from './avatar.js';
 import { lockCharacter } from './activities.js';
+import { noteClockAction, recordAbyssFloor } from './conjunction.js';
 import { loreExtras, loadLore, recordPortalKill } from './lore-state.js';
 import { materializeAll, resourceContext, saveResources } from './resources.js';
 import { giveItem } from './stage1.js';
@@ -136,8 +145,8 @@ function clearedOf(row: PortalStateRow) {
   return { domain: row.clearedDomain, stage: row.clearedStage, substage: row.clearedSubstage };
 }
 
-export function portalView(row: PortalStateRow, now: Date) {
-  const current = materializePortal(row, now);
+export function portalView(row: PortalStateRow, now: Date, intervalMs = KEY_REGEN_INTERVAL_MS) {
+  const current = materializePortal(row, now, intervalMs);
   const ring = ringOf(current);
   const next = nextPortalFight(clearedOf(row));
   const domain = portalDomain(Math.min(next.domain, PORTAL_DOMAINS_THIS_STAGE));
@@ -147,7 +156,7 @@ export function portalView(row: PortalStateRow, now: Date) {
       loot: ring.lootKeys,
       shards: ring.shards,
       total: dreamKeyCount(ring),
-      fullAt: keyRegenFullAt(row, now),
+      fullAt: keyRegenFullAt(row, now, intervalMs),
     },
     cleared: clearedOf(row),
     next: {
@@ -200,7 +209,9 @@ export function portalView(row: PortalStateRow, now: Date) {
 }
 
 export async function portalOf(db: Executor, character: CharacterRow, clock: Clock) {
-  return portalView(await loadPortal(db, character.id), clock.now());
+  const now = clock.now();
+  const patron = patronActive(character.patronUntil?.getTime() ?? null, now.getTime());
+  return portalView(await loadPortal(db, character.id), now, keyRegenIntervalMs(patron));
 }
 
 export async function dreamCombatant(
@@ -218,7 +229,8 @@ export async function dreamCombatant(
   const loadout = computeLoadout(equipped, journey.sealedItems);
   const effective = effectiveStatsCenti(base, loadout);
   const extras = loreExtras(lore);
-  const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty);
+  const patron = patronActive(character.patronUntil?.getTime() ?? null, now.getTime());
+  const ctx = resourceContext(character.level, extras.knowledge, extras.sanityPenalty, patron);
   const current = materializeAll(resources, ctx, now);
   const echo = row.activeEchoId ? findEcho(row.activeEchoId) : undefined;
   const echoLevel = echo ? (row.echoes[echo.id]?.level ?? 0) : 0;
@@ -450,6 +462,8 @@ export async function fightPortal(
     firstClear,
     experience: payout.experience,
   });
+  if (firstClear && stars === 0) await noteClockAction(db, locked.id, 'avatarFirst', now);
+  if (firstClear && stars > 0) await noteClockAction(db, locked.id, 'avatarStar', now);
 
   return {
     result: { winner: result.winner, rounds: result.rounds, sanityEnd: result.sanityEnd },
@@ -625,9 +639,6 @@ export async function fightWell(
   const locked = await lockCharacter(db, character.id);
   await assertCanAct(db, locked, now);
   let row = await loadPortal(db, locked.id, true);
-  if (row.wellFloor >= WELL_MAX_FLOOR_THIS_STAGE) {
-    throw new AppError(409, ERROR_CODES.requirement, 'Głębiej prowadzi dopiero Bezdeń');
-  }
   if (wellWhisperPending(row.wellFloor, row.whisperUntilFloor)) {
     throw new AppError(409, ERROR_CODES.requirement, 'Najpierw wybierz Szept Studni');
   }
@@ -647,16 +658,19 @@ export async function fightWell(
   );
   if (!vigor) throw new AppError(409, ERROR_CODES.insufficientResources, 'Za mało Wigoru');
   const guardian = isWellGuardian(floor);
-  const stat =
-    Math.round(enemyStat(floor) * (guardian ? 1.15 : 1)) * (whisper === 'plunder' ? 1.15 : 1);
+  const mutator = abyssMutatorBp(awakeningWeekStart(now.getTime()));
+  const statBase = floor > 100 ? wellEnemyStat(floor, mutator) : enemyStat(floor);
+  const lifeBase = floor > 100 ? wellEnemyLife(floor, mutator) : enemyLife(floor);
+  const damage = floor > 100 ? wellEnemyDamage(floor, mutator) : enemyDamage(floor);
+  const stat = Math.round(statBase * (guardian ? 1.15 : 1)) * (whisper === 'plunder' ? 1.15 : 1);
   const rounded = Math.round(stat);
   const seed = randomBytes(16).toString('base64url');
   const result = simulateCombat(
     { ...body.player, life: body.resources.life.value, maxLife: body.player.maxLife },
     {
       stats: { strength: rounded, defense: rounded, accuracy: rounded, evasion: rounded },
-      life: Math.round(enemyLife(floor) * (guardian ? 1.5 : 1)),
-      damage: enemyDamage(floor),
+      life: Math.round(lifeBase * (guardian ? 1.5 : 1)),
+      damage,
       dread: wellFightDread(floor, guardian, whisper === 'hush'),
       gaze: false,
     },
@@ -735,6 +749,10 @@ export async function fightWell(
     };
   }
   await saveResources(db, locked.id, resources);
+  if (floor > 100) await recordAbyssFloor(db, locked.id, floor, now);
+  if (guardian && floor >= 50 && keysGained > 0) {
+    await noteClockAction(db, locked.id, 'wellGuardian', now);
+  }
   await audit(db, who, locked.id, 'well.fight', { floor, experience, keysGained });
   return {
     result: { winner: 'player' as const, rounds: result.rounds },

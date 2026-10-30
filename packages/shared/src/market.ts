@@ -49,6 +49,7 @@ export function tradableGood(id: string): boolean {
   if (kind === 'book') return TOME_IDS.has(name);
   if (kind === 'fillet') return name === 'filet';
   if (kind === 'ration') return name === 'konserwa' || name === 'laudanum' || name === 'eksponat';
+  if (kind === 'seal') return name === 'patron';
   return false;
 }
 
