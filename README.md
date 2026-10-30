@@ -235,6 +235,24 @@ Kuter wymaga umiejętności _Flota_ i 20 000 srebra (założenie). _Coś Większ
 
 Portal: Domena 6, Król w Żółci, modyfikator Żółty Znak (Panika ×2; przy Poczytalności poniżej 30% obrażenia ×1,15). Przebudzenie Boga rotuje Domenę co poniedziałek UTC po kolei 1–6 (próg „10% aktywnych” nie ma jeszcze populacji — założenie). Wejście: pokonany awatar i Sigil. Wypłata rankingu (Kwity: miejsce 1 dostaje 3, miejsca 2–10 po 1) idzie dokładnie raz, pod blokadą tygodnia. Test wypłaty sadzi miejsca w bazie: gołe pięści nie zwalają awatara w 25 rundach, a krzywej awatara nie ruszano. Kto nie pokonał awatara budzącego się boga, dostaje +25% materiałów tej Domeny w Śnie. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 7. Patronat nie wchodzi w ten etap.
 
+## Etap 7 — Dom i Krąg
+
+Dom ma pięć typów z ceną, czasem budowy i utrzymaniem z GDD 5.21. Sprzedaż zwraca 70% ceny i czyści pokoje. Utrzymanie rozlicza się leniwie przy wejściu na próg: dzień bez srebra to zaległość i pokoje gasną. Koszt ulepszenia pokoju to założenie `1 000 × nowy poziom`, maksimum 5. Mosiądz, szkło, marmur i ichor domu kapitana i dworu nie mają liczb w GDD — założenie: 40, 20, 30 i 1.
+
+Sypialnia daje +5% Wigoru, a kaplica regenerację Poczytalności, ale tylko jako liczba na progu. Tik Wigoru zostaje 5 na 10 minut, żeby klient i serwer nie rozjechały się na każdym odczycie zasobów.
+
+Sześć kategorii rytuałów. Szansa i wagi są w `ritualChance` / `ritualWeightBp` (GDD 10.9). Przy `p = 0,5` wagi to 4000 / 1000 / 4250 / 750. Katastrofa otwiera krótką walkę w domu. Rytuał Pieczęci na ołtarzu i w piwnicy: 10 Odprysków daje 1 Sigil, 20% na drugi. Ołtarz jest natychmiastowy i nie wymaga piwnicy. Rytuał w piwnicy może się nie udać — Odpryski i tak giną przy starcie.
+
+Pętla wiedzy: Sprawa 3/3 kładzie Psałterz Soli i 12 świec na półkę. Bez półki tego tomu nie da się otworzyć. Lektura daje `round(wartość × max(0, 1 − Wiedza/100))`. Rytuał otwarcia kryjówki chce przeczytanego tomu i piwnicy. Kryjówka daje 250 srebra raz.
+
+Przysięga tylko w poniedziałek UTC, skutek od wtorku 00:00 UTC. Ten sam Śpiący podnosi Krąg do 5. Zmiana Śpiącego resetuje Krąg i nakłada Gniew Porzuconych (−5% statystyk na 7 dni). Pominięty tydzień Kręgu nie zeruje. W walce Portalu krawędź aspektu to +20% / −20% według cyklu Głębia → Zimny Ogień → Rój → Kość → Wicher → Pustka → Blade Światło. Krąg dodaje +1% za poziom (założenie) do premii własnego aspektu i +1% materiałów w Domenie tego aspektu. Poza Portalem i bez przysięgi mnożnik to 1, więc stare logi walki zostają.
+
+Kult od poziomu 20 i Kręgu 2. Rangi po liczbie zleceń: 0 słuchacz, 3 akolita, 8 kapłan, 15 hierofant (założenie). Zlecenie daje 200 srebra i 15 Podejrzenia (założenie). Przy 100: reputacja Zakonu 40, 500 srebra męczennika raz na dobę i 7 dni bez zleceń Zakonu.
+
+Skażenie ma część całkowitą i dziesiąte. Domena 7+ i przeklęty przedmiot dokładają 0,1 na walkę. Sól Gwiezdna +8. Progi 20/40/60/80 dają wybór 1 z 3 mutacji. Sól na Progu przez 4 godziny połowi szansę zasadzki. Rozkład poniżej 25 spada o 1 na dobę UTC.
+
+Portal: Domena 7, Shub-Niggurath, modyfikator Płodność. Co trzecią rundę obrażenia wroga rosną o 10% kumulatywnie i bez dodatkowego losu. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 8. Patronat nie wchodzi w ten etap. Krzywych tempa z wcześniejszych etapów nie ruszano.
+
 ## Konwencje
 
 - Interfejs, komentarze, commity i dokumentacja po polsku; identyfikatory w kodzie po angielsku.

@@ -99,6 +99,9 @@ export const pl = {
     lodgeTitle: 'Wspólnota',
     lodgeHint: 'Sala Lóż, Przyzwania i Przebudzenie Boga.',
     lodgeEnter: 'Sala Lóż',
+    hearthTitle: 'Próg',
+    hearthHint: 'Próg, Przysięga i Skażenie.',
+    hearthEnter: 'Próg domu',
     madnessOn: 'Efekty obłędu włączone',
     madnessOff: 'Efekty obłędu wyłączone',
     claim: 'Odbierz',
@@ -136,6 +139,15 @@ export const pl = {
   dark: {
     title: 'Mrok',
     description: 'Łowy, Studnia Bez Dna i wyprawy czekają, aż coś wypełznie z morza.',
+  },
+  hearth: {
+    title: 'Dom',
+    contamination: 'Skażenie: {value}',
+    oath: 'Przysięga: {name}, krąg {circle}',
+    oathEmpty: 'Przysięga Śpiącym czeka na poniedziałek.',
+    hideout: 'Kryjówka otwarta.',
+    hideoutClosed: 'Kryjówka zamknięta.',
+    cult: 'Kult: {rank}, podejrzenie {suspicion}',
   },
   community: {
     title: 'Wspólnota',

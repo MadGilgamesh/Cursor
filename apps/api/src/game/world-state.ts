@@ -49,6 +49,7 @@ export async function saveWorld(db: Executor, row: WorldStateRow): Promise<void>
       mountId: row.mountId,
       mountUntil: row.mountUntil,
       contamination: row.contamination,
+      contaminationTenths: row.contaminationTenths,
       sealDay: row.sealDay,
       sealCount: row.sealCount,
       sealedItems: row.sealedItems,

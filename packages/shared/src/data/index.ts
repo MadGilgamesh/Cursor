@@ -21,7 +21,7 @@ export * from './missions.js';
 export * from './portal.js';
 
 /** Wersja danych statycznych — rośnie przy każdej zmianie plików w `data/`. */
-export const STATIC_DATA_VERSION = 7;
+export const STATIC_DATA_VERSION = 8;
 
 /**
  * Waluty obecne w grze (GDD 4.2). `bank` to srebro zdeponowane w Kasie — odporne

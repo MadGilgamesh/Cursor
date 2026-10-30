@@ -74,7 +74,10 @@ test.describe('Etap 0 — główna ścieżka (GDD 11)', () => {
       .getByRole('button', { name: 'Rozpocznij: Bursztyn z odpływu' })
       .click({ force: true });
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('link', { name: 'Dom' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('link', { name: 'Dom', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await expect(resource(page, 'vigor')).toHaveAccessibleName(/^Wigor: 80\/100/);
     await page.evaluate(() => {
       window.scrollTo(0, 0);

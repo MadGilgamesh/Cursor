@@ -58,6 +58,7 @@ import {
 } from '../db/schema.js';
 import { AppError } from '../errors.js';
 import { lockCharacter } from './activities.js';
+import { saltThresholdActive } from './hearth.js';
 import { assertCanAct, enterSanatorium } from './avatar.js';
 import { loadLore } from './lore-state.js';
 import { loadPortal, materializePortal, savePortal } from './portal-state.js';
@@ -282,7 +283,11 @@ export async function depart(
   const duration = travelDurationMs(from, city, weather, mount);
   if (duration === null) throw new AppError(409, ERROR_CODES.requirement, 'Już tu jesteś');
   const seed = randomBytes(16).toString('base64url');
-  const ambush = rollAmbush(seed, ambushChanceBp(isWolfHour(now.getTime()), lore.stealth));
+  const baseChance = ambushChanceBp(isWolfHour(now.getTime()), lore.stealth);
+  const chance = (await saltThresholdActive(db, locked.id, now))
+    ? Math.floor(baseChance / 2)
+    : baseChance;
+  const ambush = rollAmbush(seed, chance);
   if (mount === 'faceless') {
     const nextResources = {
       ...resources,

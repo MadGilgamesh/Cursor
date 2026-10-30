@@ -57,6 +57,13 @@
       "when": 1793311918255,
       "tag": "0007_etap_6",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793313796205,
+      "tag": "0008_etap_7",
+      "breakpoints": true
     }
   ]
 }

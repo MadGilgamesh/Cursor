@@ -39,6 +39,8 @@ import {
   sanityTier,
   spendResource,
   tomeDurationMs,
+  tomeKnowledgeGain,
+  OPENING_TOME,
   tomeSanityCost,
   utcDay,
   type CaseQuestionId,
@@ -53,6 +55,7 @@ import type { Executor } from '../db/client.js';
 import { type CharacterRow, type LoreStateRow, type PortalStateRow } from '../db/schema.js';
 import { AppError } from '../errors.js';
 import { lockCharacter } from './activities.js';
+import { grantSolvedCase, holdsTome, orderErrandBlocked } from './hearth.js';
 import { assertCanAct, enterSanatorium } from './avatar.js';
 import { loadLore, loreExtras, saveLore } from './lore-state.js';
 import { loadPortal, materializePortal, ringOf, savePortal, withRing } from './portal-state.js';
@@ -479,6 +482,7 @@ export async function deduceCase(
       };
     }
     await savePortal(db, nextPortal);
+    await grantSolvedCase(db, locked.id);
   } else {
     lore = bumpReputation(lore, 'order', CASE_REWARDS.partial.reputation);
     lore = {
@@ -530,6 +534,9 @@ export async function startReading(
   if (tome.domain !== null && lore.knowledge < 3 * (tome.domain - 1)) {
     throw new AppError(409, ERROR_CODES.requirement, 'Za mało Wiedzy Zakazanej');
   }
+  if (tome.id === OPENING_TOME && !(await holdsTome(db, locked.id, tome.id))) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Ten tom leży przy Sprawie, nie na półce');
+  }
   const next = {
     ...lore,
     readingId: tome.id,
@@ -560,7 +567,10 @@ export async function claimReading(
   if (!tome) throw new AppError(404, ERROR_CODES.notFound, 'Tom zniknął z półki');
   lore = {
     ...lore,
-    knowledge: Math.min(KNOWLEDGE_MAX, lore.knowledge + tome.knowledge),
+    knowledge: Math.min(
+      KNOWLEDGE_MAX,
+      lore.knowledge + tomeKnowledgeGain(tome.knowledge, lore.knowledge),
+    ),
     booksRead: [...lore.booksRead, tome.id],
     extinctOpen: lore.extinctOpen || tome.extinct,
     readingId: null,
@@ -747,6 +757,9 @@ export async function runErrand(
   let { lore, resources } = state;
   if (!FACTIONS.some((entry) => entry.id === faction)) {
     throw new AppError(400, ERROR_CODES.validation, 'Nieznana frakcja');
+  }
+  if (faction === 'order' && (await orderErrandBlocked(db, locked.id, now))) {
+    throw new AppError(409, ERROR_CODES.requirement, 'Zakon nie daje zleceń zdemaskowanym');
   }
   const spent = spendResource(
     'toil',

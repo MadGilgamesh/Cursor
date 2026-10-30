@@ -166,6 +166,15 @@ export const TOMES: readonly TomeDef[] = [
     domain: 6,
     extinct: false,
   },
+  {
+    id: 'tome.shub',
+    name: 'Księga Tysiąca Młodych',
+    hours: 4,
+    knowledge: 1,
+    sanityPerQuarter: 4,
+    domain: 7,
+    extinct: false,
+  },
 ];
 
 export function findTome(id: string): TomeDef | undefined {
