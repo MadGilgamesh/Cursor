@@ -61,6 +61,6 @@ test('rejestracja odrzuca zajęte imię postaci', async ({ page }) => {
   await page.getByLabel('E-mail').fill(`inny-${account.email}`);
   await page.getByLabel('Imię postaci').fill(account.characterName.toUpperCase());
   await page.getByLabel('Hasło').fill(account.password);
-  await page.getByRole('button', { name: 'Przebudź się' }).click();
+  await clickInView(page.getByRole('button', { name: 'Przebudź się' }));
   await expect(page.getByRole('alert')).toHaveText('To imię nosi już inna postać');
 });
