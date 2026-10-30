@@ -1,5 +1,5 @@
 /**
- * Wyprawy 1–4 i eskorty (GDD 5.11, 5.23).
+ * Wyprawy 1–6 i eskorty (GDD 5.11, 5.23).
  * Snapshot klasy powstaje przy starcie. Rozliczenie czyta tylko ten zapis.
  */
 import { randomBytes } from 'node:crypto';
@@ -17,10 +17,10 @@ import {
   entrySilver,
   escortSanityLoss,
   expeditionDurationMs,
+  expeditionKnowledge,
   expeditionOpen,
   expeditionWeek,
   findExpedition,
-  grantExperience,
   halvedByEscort,
   resolveExpedition,
   resourceMax,
@@ -35,6 +35,7 @@ import type { Executor } from '../db/client.js';
 import {
   characters,
   escorts,
+  loreStates,
   expeditionEntries,
   expeditionMembers,
   expeditions,
@@ -43,6 +44,7 @@ import {
 } from '../db/schema.js';
 import { AppError } from '../errors.js';
 import { lockCharacter } from './activities.js';
+import { persistProgress } from './progress.js';
 import { equippedOf } from './avatar.js';
 import { loadLore, loreExtras, saveLore } from './lore-state.js';
 import { grantKeyShards } from './portal-state.js';
@@ -52,6 +54,20 @@ import { loadWorld } from './world-state.js';
 
 const OPEN_RUN = ['lobby', 'running'] as const;
 const OPEN_ESCORT = ['offered', 'active'] as const;
+
+async function knowledgeOf(db: Executor, characterId: string) {
+  const [row] = await db
+    .select({ knowledge: loreStates.knowledge })
+    .from(loreStates)
+    .where(eq(loreStates.characterId, characterId))
+    .limit(1);
+  return row?.knowledge ?? 0;
+}
+
+async function assertKnowledge(db: Executor, characterId: string, defId: ExpeditionId) {
+  const need = expeditionKnowledge(defId);
+  if (need > 0 && (await knowledgeOf(db, characterId)) < need) forbid('Za mało Wiedzy');
+}
 
 function forbid(message: string): never {
   throw new AppError(409, ERROR_CODES.requirement, message);
@@ -191,6 +207,7 @@ export async function createExpedition(
   if (!def) forbid('Nieznana wyprawa');
   const locked = await lockCharacter(db, character.id);
   if (locked.level < def.level) forbid('Za niski poziom');
+  await assertKnowledge(db, locked.id, def.id);
   if (await busyRun(db, locked.id)) forbid('Jesteś już w wyprawie');
   const [row] = await db
     .insert(expeditions)
@@ -229,6 +246,7 @@ export async function joinExpedition(
   if (!def) forbid('Nieznana wyprawa');
   const locked = await lockCharacter(db, character.id);
   if (locked.level < def.level) forbid('Za niski poziom');
+  if (!assist) await assertKnowledge(db, locked.id, def.id);
   if (await busyRun(db, locked.id)) forbid('Jesteś już w wyprawie');
   const members = await memberRows(db, run.id);
   if (members.length >= def.party) forbid('Drużyna jest pełna');
@@ -352,6 +370,7 @@ export async function startExpedition(
     const row = locked.get(member.characterId);
     if (!row || row.level < def.level) forbid('Ktoś w drużynie ma za niski poziom');
     if (member.assist) continue;
+    await assertKnowledge(db, member.characterId, def.id);
     const used = await entriesUsed(db, member.characterId, def.id, run.weekKey);
     if (used >= def.weekly) forbid('Wejścia na ten tydzień się skończyły');
   }
@@ -535,13 +554,7 @@ export async function splitExpedition(
     });
     const xp = shareExperience(share);
     const row = locked.get(member.characterId);
-    if (row && xp > 0) {
-      const progress = grantExperience(row, xp);
-      await db
-        .update(characters)
-        .set({ level: progress.level, experience: progress.experience })
-        .where(eq(characters.id, row.id));
-    }
+    if (row && xp > 0) await persistProgress(db, row, xp);
   }
   await db.update(expeditions).set({ status: 'split' }).where(eq(expeditions.id, run.id));
   await writeAudit(db, who, {

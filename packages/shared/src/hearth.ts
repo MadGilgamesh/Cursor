@@ -33,7 +33,7 @@ export function aspectEdge(attacker: Aspect, defender: Aspect): number {
   return 1;
 }
 
-/** Aspekt Domeny Portalu (GDD 5.12.2). Domena 9, Nyarlathotep, to Pustka. */
+/** Aspekt Domeny Portalu (GDD 5.12.2). Domena 9 to Pustka. Domeny 10 i 11 nie mają jednego aspektu. */
 const DOMAIN_ASPECTS: readonly Aspect[] = [
   'swarm',
   'depth',

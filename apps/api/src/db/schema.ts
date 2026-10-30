@@ -77,6 +77,12 @@ export const characters = pgTable(
     patronUntil: timestamp('patron_until', { withTimezone: true }),
     titles: jsonb('titles').$type<string[]>().notNull().default([]),
     cosmetics: jsonb('cosmetics').$type<string[]>().notNull().default([]),
+    descentCount: integer('descent_count').notNull().default(0),
+    markTraining: integer('mark_training').notNull().default(0),
+    markMutation: integer('mark_mutation').notNull().default(0),
+    markConstellation: integer('mark_constellation').notNull().default(0),
+    essence: integer('essence').notNull().default(0),
+    essenceXp: integer('essence_xp').notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [
@@ -84,6 +90,12 @@ export const characters = pgTable(
     uniqueIndex('characters_name_lower_unique').on(sql`lower(${t.name})`),
     check('characters_level_range', sql`${t.level} between 1 and 80`),
     check('characters_experience_non_negative', sql`${t.experience} >= 0`),
+    check('characters_descent_range', sql`${t.descentCount} between 0 and 10`),
+    check('characters_mark_training_range', sql`${t.markTraining} between 0 and 10`),
+    check('characters_mark_mutation_range', sql`${t.markMutation} between 0 and 10`),
+    check('characters_mark_constellation_range', sql`${t.markConstellation} between 0 and 10`),
+    check('characters_essence_non_negative', sql`${t.essence} >= 0`),
+    check('characters_essence_xp_non_negative', sql`${t.essenceXp} >= 0`),
   ],
 );
 
@@ -930,6 +942,7 @@ export const acts = pgTable('acts', {
   finale: text('finale').notNull().default('pending'),
   thresholds: jsonb('thresholds').$type<number[]>().notNull().default([]),
   pendingPk: integer('pending_pk').notNull().default(0),
+  generation: integer('generation').notNull().default(1),
 });
 
 export const actContributions = pgTable(

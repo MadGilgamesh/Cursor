@@ -1,18 +1,32 @@
 /**
- * Wyprawy 1–4 i eskorty (GDD 5.11, 5.23, rozdz. 11 — Etap 8).
+ * Wyprawy 1–6 i eskorty (GDD 5.11, 5.23, rozdz. 11 — Etapy 8 i 10).
  * GDD nie podaje tabeli utraty łupu ani ceny wejścia. Liczby poniżej są założeniem
  * i test akceptacyjny sprawdza właśnie je.
  */
 import type { ClassId } from './balance.js';
-import { HOUR_MS } from './balance.js';
+import { DAY_MS, HOUR_MS } from './balance.js';
 import { awakeningWeekStart } from './lodge.js';
 import type { Rng } from './rng.js';
 import { isWolfHour, tideAt } from './world.js';
 
-export const EXPEDITION_IDS = ['canals', 'wreck', 'archive', 'crypts'] as const;
+export const EXPEDITION_IDS = [
+  'canals',
+  'wreck',
+  'archive',
+  'crypts',
+  'ys-kahal',
+  'black-eye',
+] as const;
 export type ExpeditionId = (typeof EXPEDITION_IDS)[number];
 
-export const EXPEDITION_WINDOWS = ['always', 'tide', 'night', 'weekend'] as const;
+export const EXPEDITION_WINDOWS = [
+  'always',
+  'tide',
+  'night',
+  'weekend',
+  'saturday',
+  'act-end',
+] as const;
 export type ExpeditionWindow = (typeof EXPEDITION_WINDOWS)[number];
 
 export interface ExpeditionDef {
@@ -25,7 +39,16 @@ export interface ExpeditionDef {
   weekly: number;
 }
 
-/** Ys-Kahal i Oko Czerni są w Etapie 10. */
+/** Osiem tygodni aktu. Koniec aktu to ostatnia doba cyklu od epoki UTC. */
+export const ACT_CYCLE_MS = 56 * DAY_MS;
+
+/** Wiedza wymagana do zejścia. Reszta wypraw nie pyta o tomy (GDD 6.1). */
+export function expeditionKnowledge(id: ExpeditionId): number {
+  if (id === 'ys-kahal') return 30;
+  if (id === 'black-eye') return 50;
+  return 0;
+}
+
 export const EXPEDITIONS: readonly ExpeditionDef[] = [
   {
     id: 'canals',
@@ -62,6 +85,24 @@ export const EXPEDITIONS: readonly ExpeditionDef[] = [
     hours: 4,
     window: 'weekend',
     weekly: 3,
+  },
+  {
+    id: 'ys-kahal',
+    name: 'Ys-Kahal, Miasto Zatopione',
+    level: 55,
+    party: 6,
+    hours: 6,
+    window: 'saturday',
+    weekly: 2,
+  },
+  {
+    id: 'black-eye',
+    name: 'Oko Czerni',
+    level: 70,
+    party: 6,
+    hours: 8,
+    window: 'act-end',
+    weekly: 1,
   },
 ];
 
@@ -150,13 +191,19 @@ export function betrayalLoot(loot: number): number {
 }
 
 /**
- * Okno z GDD. Założenia Etapu 8: przypływ = wysoki pływ, noc = Godzina Wilka,
- * pt–nd = piątek, sobota i niedziela UTC.
+ * Okno z GDD. Założenia: przypływ = wysoki pływ, noc = Godzina Wilka,
+ * pt–nd = piątek, sobota i niedziela UTC, sobota = sama sobota,
+ * koniec aktu = ostatnia doba każdego cyklu 56 dób liczonego od epoki UTC.
  */
 export function expeditionOpen(window: ExpeditionWindow, now: number): boolean {
   if (window === 'always') return true;
   if (window === 'tide') return tideAt(now) === 'high';
   if (window === 'night') return isWolfHour(now);
+  if (window === 'saturday') return new Date(now).getUTCDay() === 6;
+  if (window === 'act-end') {
+    const into = ((now % ACT_CYCLE_MS) + ACT_CYCLE_MS) % ACT_CYCLE_MS;
+    return into >= 55 * DAY_MS;
+  }
   const day = new Date(now).getUTCDay();
   return day === 5 || day === 6 || day === 0;
 }

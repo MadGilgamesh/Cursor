@@ -78,6 +78,9 @@ import { loadWorld, saveWorld } from './world-state.js';
 
 const SUSPECT_REPUTATION = REPUTATION_THRESHOLDS[1];
 
+/** Dwór na Klifie. GDD 7.3 kładzie go w paśmie „pół roku +”, czyli około poziomu 55. */
+export const MANOR_MIN_LEVEL = 55;
+
 function forbid(message: string): never {
   throw new AppError(409, ERROR_CODES.requirement, message);
 }
@@ -272,6 +275,9 @@ export async function hearthOf(db: Executor, character: CharacterRow, now: Date)
 export async function buyHouse(db: Executor, character: CharacterRow, now: Date, houseId: string) {
   const house = findHouse(houseId);
   if (!house) forbid('Nie ma takiego domu');
+  if (house.id === 'manor' && character.level < MANOR_MIN_LEVEL) {
+    forbid('Dwór na Klifie otwiera się od poziomu 55');
+  }
   const row = await prepare(db, character.id, now);
   if (row.houseId) forbid('Masz już dom');
   const missing = missingMaterial(row.materials, house.materials);

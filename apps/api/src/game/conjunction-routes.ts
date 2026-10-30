@@ -23,6 +23,7 @@ import {
   claimPatronCandle,
   claimPatronVouchers,
   confirmPayment,
+  beginNextAct,
   contribute,
   lanternHall,
   openObservatory,
@@ -79,6 +80,11 @@ export function conjunctionRoutes(app: FastifyInstance, deps: AppDeps): void {
       const pace = z.object({ pace: z.enum(['live', 'accelerated']) }).parse(request.body).pace;
       return openObservatory(tx, character, clock.now(), pace, config.nodeEnv === 'test');
     }),
+  );
+
+  app.post(
+    '/conjunction/next',
+    mutate((tx) => beginNextAct(tx, clock.now())),
   );
 
   app.post(

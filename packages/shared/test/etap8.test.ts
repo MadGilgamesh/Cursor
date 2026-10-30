@@ -226,7 +226,8 @@ describe("Alienista, Studnia i Sny R'lyeh", () => {
   it('Domena 8 to Cthulhu, a echo boga pada na etapie 5 i 9', () => {
     expect(portalModifier(8)).toBe('rlyeh-dreams');
     expect(portalModifier(9)).toBe('shapeshift');
-    expect(portalModifier(10)).toBeNull();
+    expect(portalModifier(10)).toBe('gate');
+    expect(portalModifier(11)).toBe('chaos');
     expect(portalDomain(8)?.units[4]).toBe('Strażnicy Monolitów');
     expect(portalDomain(8)?.units[9]).toBe('Cthulhu Przebudzony');
     expect(godEchoForClear(8, 5, 8)?.id).toBe('echo.god.cthulhu.wraith');

@@ -1,5 +1,5 @@
 /**
- * Dane statyczne: przedmioty (GDD 5.5, 8.2 `ItemDef`). Etap 8: Stopnie 1–8,
+ * Dane statyczne: przedmioty (GDD 5.5, 8.2 `ItemDef`). Etap 10: Stopnie 1–10,
  * zestawy czterech klas (Rzeźnik, Okultysta, Strzelec, Alienista), akcesoria i talizmany
  * bez klasy, konsumpcja (mikstura, laudanum, Kawa z Kresu) i śmieci z Łowów.
  */
@@ -130,10 +130,15 @@ const CLASSLESS_NAMES: Record<'accessory' | 'talisman', readonly string[]> = {
   talisman: ['Ususzona rozgwiazda', 'Relikwia z kości palca', 'Fetysz z włosów topielca'],
 };
 
-const TIERS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const TIERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-const gearName = (list: readonly string[], tier: number) =>
-  list[tier - 1] ?? list[0] ?? 'Bez nazwy';
+/** Stopnie 9–10 nie mają własnej nazwy w GDD — dostają dopisek do najwyższej znanej. */
+const gearName = (list: readonly string[], tier: number) => {
+  const named = list[tier - 1];
+  if (named) return named;
+  const last = list[list.length - 1] ?? 'Bez nazwy';
+  return `${last}, stopień ${tier}`;
+};
 
 function buildGear(): GearDef[] {
   const gear: GearDef[] = [];

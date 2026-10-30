@@ -291,6 +291,22 @@ Portal: Domena 9, Nyarlathotep, Piramidy pod Czarnym Niebem, aspekt Pustka, mody
 
 Rozjazdu tempa Domeny 1 (dzień 13 wobec dnia 11 w GDD) ten etap nie rusza. Krzywych z wcześniejszych etapów też nie. Panel personelu i pakiet treści nie są na tej gałęzi.
 
+## Etap 10 — Zstąpienie
+
+Zstąpienie od poziomu 60, najwyżej 10 razy. Poziom i XP wracają do 1 i 0. Klasy powyżej 0 schodzą do poziomu 1 z zerowym XP klasy; klasa 0 zostaje 0. Zostają sprzęt, Echa, dom, Wiedza, zbiory i postęp Portalu. Tytuł to `Piętno n`. Punkt idzie w Szkolenie, Mutację albo Konstelację. Szkolenie dodaje 3% przyrostu Fechtowni za punkt (`round(zysk · (10000 + punkty · 300) / 10000)`). Mutacja i Konstelacja są licznikami: GDD nie podaje dalszego wzoru. Skażenie 100 nie jest osobną furtką — próg to poziom.
+
+Na poziomie 80 bieżące XP zostaje 0, a nadmiar składa się w Esencję: 1 punkt za każdy pełny milion. Reszta czeka w `essence_xp`.
+
+Wyprawy 5–6: Ys-Kahal (poziom 55, drużyna 6, 6 h, sobota UTC, 2 na tydzień, Wiedza 30) i Oko Czerni (poziom 70, drużyna 6, 8 h, 1 na tydzień, Wiedza 50). Koniec aktu to ostatnia doba cyklu 56 dób liczonego od epoki UTC, żeby wyprawa nie importowała Zegara. Brak Wiedzy odpowiada „Za mało Wiedzy”.
+
+Stopnie 9–10 mają przedmioty. GDD nie podaje ich nazw, więc nazwa to ostatnia znana z dopiskiem „, stopień N”. Dwór na Klifie (`manor`) wymaga poziomu 55 — założenie z pasma „pół roku +” w GDD 7.3. Pozostałe domy bez tego progu.
+
+Portal: Domeny 10 i 11, Yog-Sothoth (Brama, aspekt etapu bez losu, od etapu 8 wraca na początek cyklu siedmiu aspektów) i Azathoth (Chaos, aspekt z osobnego ziarna `seed:chaos`). Materiały „Odłamek Srebrnego Klucza” i „Pył Centrum” to założenie. Gwiazdki ★1–★5 są otwarte dla wszystkich 11 Domen. Przy pierwszym zejściu ★3 na awatarze Domen 10 i 11 spada Echo Spoza Gwiazd. Pula Seansu zostaje przy 30 echach. Kolejny akt nie zakłada nowego wiersza: podnosi `generation`, zeruje zegar i wkłady, a rodzaje nagród dostają sufiks generacji, więc drugi akt znowu płaci.
+
+Sen w Portalu do Domeny 11 nie kończy się w dniu 472. Model tempa, oparty na krzywej statystyk z tabeli 10.3, staje w dniu 450 i zwraca sufit 800. Nie dociągamy krzywej. Rozjazd Domeny 1 (dzień 13 wobec 11) też zostaje.
+
+Opakowania Capacitora nie ma. Podpis sklepu i toolchain natywny są poza tą pętlą serwera. `BALANCE_VERSION` 11.
+
 ## Konwencje
 
 - Interfejs, komentarze, commity i dokumentacja po polsku; identyfikatory w kodzie po angielsku.

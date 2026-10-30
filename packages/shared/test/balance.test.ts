@@ -11,7 +11,7 @@ import {
   resourceTimers,
   spendResource,
 } from '../src/balance.js';
-import { grantExperience } from '../src/progression.js';
+import { experienceToNextLevel, grantExperience } from '../src/progression.js';
 
 const T0 = Date.UTC(2026, 9, 29, 12, 0, 0);
 const ctx = { level: 1, knowledge: 0 };
@@ -127,14 +127,17 @@ describe('grantExperience', () => {
       level: 3,
       experience: 5,
       levelsGained: 2,
+      overflow: 0,
     });
   });
 
-  it('na poziomie maksymalnym nadmiar przepada', () => {
+  it('na poziomie maksymalnym nadmiar wraca jako overflow', () => {
+    const gate = experienceToNextLevel(79);
     expect(grantExperience({ level: 79, experience: 0 }, 10_000_000)).toEqual({
       level: 80,
       experience: 0,
       levelsGained: 1,
+      overflow: 10_000_000 - gate,
     });
   });
 

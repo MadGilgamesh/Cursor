@@ -53,11 +53,14 @@ export interface ExperienceState {
   experience: number;
 }
 
-/** Dodaje doświadczenie i rozlicza awanse; nadmiar na poziomie maksymalnym przepada. */
+/**
+ * Dodaje doświadczenie i rozlicza awanse. Na poziomie 80 bieżące XP zostaje 0,
+ * a nadmiar wraca w `overflow`, żeby serwer złożył go w Esencję (1 punkt / 1 mln).
+ */
 export function grantExperience(
   state: ExperienceState,
   amount: number,
-): ExperienceState & { levelsGained: number } {
+): ExperienceState & { levelsGained: number; overflow: number } {
   assertLevel(state.level);
   if (!Number.isSafeInteger(amount) || amount < 0) {
     throw new RangeError(`Niepoprawna ilość doświadczenia: ${amount}`);
@@ -68,6 +71,24 @@ export function grantExperience(
     experience -= experienceToNextLevel(level);
     level++;
   }
-  if (level === CHARACTER_MAX_LEVEL) experience = 0;
-  return { level, experience, levelsGained: level - state.level };
+  let overflow = 0;
+  if (level === CHARACTER_MAX_LEVEL) {
+    overflow = experience;
+    experience = 0;
+  }
+  return { level, experience, levelsGained: level - state.level, overflow };
+}
+
+/** 1 punkt Esencji za każdy pełny milion XP zebrany na poziomie 80 (GDD 7.3). */
+export const ESSENCE_XP_PER_POINT = 1_000_000;
+
+export function bankEssence(
+  storedXp: number,
+  overflow: number,
+): { essence: number; essenceXp: number } {
+  const total = Math.max(0, storedXp) + Math.max(0, overflow);
+  return {
+    essence: Math.floor(total / ESSENCE_XP_PER_POINT),
+    essenceXp: total % ESSENCE_XP_PER_POINT,
+  };
 }

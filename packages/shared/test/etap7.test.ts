@@ -64,6 +64,7 @@ describe('Dom, rytuały i Domena 7', () => {
     expect(domainAspect(8)).toBe('depth');
     expect(domainAspect(9)).toBe('void');
     expect(domainAspect(10)).toBeNull();
+    expect(domainAspect(11)).toBeNull();
     expect(domainContaminationTenths(6)).toBe(0);
     expect(domainContaminationTenths(7)).toBe(1);
   });

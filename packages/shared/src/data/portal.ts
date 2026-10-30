@@ -1,6 +1,6 @@
 /**
- * Domeny 1–9 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
- * Echa bogów (boss Etapu 5 i herold Etapu 9) są poza pulą Seansu.
+ * Domeny 1–11 Portalu (GDD 5.12.2–5.12.4) i 30 Ech Seansu do rzadkości Widma.
+ * Echa bogów (boss Etapu 5, herold Etapu 9 i ★3 Spoza Gwiazd) są poza pulą Seansu.
  */
 import type { EchoRarity, PortalModifier } from '../portal.js';
 
@@ -206,6 +206,48 @@ export const PORTAL_DOMAINS: readonly PortalDomainDef[] = [
       'Nyarlathotep, Pełzający Chaos',
     ],
   },
+  {
+    domain: 10,
+    god: 'Yog-Sothoth',
+    place: 'Za Bramą: Wzgórza Dunwich i Przestrzeń poza Czasem',
+    modifier: 'gate',
+    modifierName: 'Brama',
+    materialId: 'silver-key-shard',
+    materialName: 'Odłamek Srebrnego Klucza',
+    units: [
+      'Słudzy ze Wzgórz Dunwich',
+      'Przyzywacze Kamiennych Kręgów',
+      'Półludzie z Dunwich',
+      'Zagubieni Przechodnie Bram',
+      'Strażnicy Progu',
+      'Pożeracze Chwil',
+      'Echa Wszystkich Czasów',
+      'Niewidzialny Bliźniak',
+      'Wartownik Bramy',
+      'Yog-Sothoth, Brama i Klucz',
+    ],
+  },
+  {
+    domain: 11,
+    god: 'Azathoth',
+    place: 'Centrum Chaosu',
+    modifier: 'chaos',
+    modifierName: 'Chaos',
+    materialId: 'chaos-dust',
+    materialName: 'Pył Centrum',
+    units: [
+      'Bezmyślni Fleciści',
+      'Tancerze Pustki',
+      'Odpryski Gwiazd',
+      'Bębniarze Chaosu',
+      'Inni Bogowie',
+      'Wiry Materii',
+      'Pomioty Pierwszego Krzyku',
+      'Dwór Sułtana',
+      'Nyarlathotep, Dusza i Posłaniec',
+      'Azathoth, Ślepy Bóg-Idiota',
+    ],
+  },
 ];
 
 export function portalDomain(domain: number): PortalDomainDef | undefined {
@@ -404,6 +446,48 @@ export const GOD_ECHOES: readonly EchoDef[] = [
     aspect: 'evasion',
     godDomain: 9,
   },
+  {
+    id: 'echo.god.yog.wraith',
+    name: 'Strażnicy Progu',
+    rarity: 'wraith',
+    aspect: 'defense',
+    godDomain: 10,
+  },
+  {
+    id: 'echo.god.yog.phantom',
+    name: 'Wartownik Bramy',
+    rarity: 'phantom',
+    aspect: 'evasion',
+    godDomain: 10,
+  },
+  {
+    id: 'echo.god.yog.beyond',
+    name: 'Yog-Sothoth poza Gwiazdami',
+    rarity: 'beyond',
+    aspect: 'accuracy',
+    godDomain: 10,
+  },
+  {
+    id: 'echo.god.azathoth.wraith',
+    name: 'Bębniarze Chaosu',
+    rarity: 'wraith',
+    aspect: 'strength',
+    godDomain: 11,
+  },
+  {
+    id: 'echo.god.azathoth.phantom',
+    name: 'Nyarlathotep, Dusza i Posłaniec',
+    rarity: 'phantom',
+    aspect: 'accuracy',
+    godDomain: 11,
+  },
+  {
+    id: 'echo.god.azathoth.beyond',
+    name: 'Azathoth, Ślepy Bóg-Idiota',
+    rarity: 'beyond',
+    aspect: 'strength',
+    godDomain: 11,
+  },
 ];
 
 export const ECHOES: readonly EchoDef[] = [...SEANCE_ECHOES, ...GOD_ECHOES];
@@ -426,4 +510,9 @@ export function godEchoForClear(
   const rarity = stage === 5 ? 'wraith' : stage === 9 ? 'phantom' : null;
   if (!rarity) return undefined;
   return GOD_ECHOES.find((echo) => echo.godDomain === domain && echo.rarity === rarity);
+}
+
+/** ★3 boga Spoza Gwiazd (GDD 11, Etap 10). Domeny 10 i 11. */
+export function beyondStarEcho(domain: number): EchoDef | undefined {
+  return GOD_ECHOES.find((echo) => echo.godDomain === domain && echo.rarity === 'beyond');
 }

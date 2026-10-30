@@ -25,7 +25,6 @@ import {
   clinicSilver,
   findCrop,
   fisheryFor,
-  grantExperience,
   isWolfHour,
   planCast,
   plotPhase,
@@ -50,7 +49,6 @@ import { writeAudit, type AuditActor } from '../audit.js';
 import type { Clock } from '../clock.js';
 import type { Executor } from '../db/client.js';
 import {
-  characters,
   itemInstances,
   timedActivities,
   type CharacterRow,
@@ -58,6 +56,7 @@ import {
 } from '../db/schema.js';
 import { AppError } from '../errors.js';
 import { lockCharacter } from './activities.js';
+import { persistProgress } from './progress.js';
 import {
   absorbEscortFight,
   activeWardEscort,
@@ -328,11 +327,7 @@ export async function depart(
 }
 
 async function grant(db: Executor, character: CharacterRow, amount: number) {
-  const progress = grantExperience(character, amount);
-  await db
-    .update(characters)
-    .set({ level: progress.level, experience: progress.experience })
-    .where(eq(characters.id, character.id));
+  await persistProgress(db, character, amount);
 }
 
 export async function rentMount(

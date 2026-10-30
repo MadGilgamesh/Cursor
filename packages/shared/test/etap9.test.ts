@@ -154,7 +154,9 @@ describe('Etap 9 — Bezdeń i Domena 9', () => {
     expect(portalDomain(9)?.god).toBe('Nyarlathotep');
     expect(portalDomain(9)?.modifier).toBe('shapeshift');
     expect(portalDomain(9)?.units).toHaveLength(10);
-    expect(portalDomain(10)).toBeUndefined();
+    expect(portalDomain(10)?.god).toBe('Yog-Sothoth');
+    expect(portalDomain(11)?.god).toBe('Azathoth');
+    expect(portalDomain(12)).toBeUndefined();
     const enemy = {
       stats: { strength: 80, defense: 80, accuracy: 1, evasion: 100 },
       life: 5_000,
