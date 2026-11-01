@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # Statyczny build PWA i Kancelarii. nginx serwuje oba i przekazuje /api dalej.
-#   docker build -f apps/web/Dockerfile .
+# Kontekst to katalog główny repozytorium:
+#   docker build -f instalacja/web.Dockerfile .
 
 FROM node:24-alpine AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0

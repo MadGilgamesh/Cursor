@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# Kancelaria: API personelu. Budowany z katalogu głównego repozytorium.
-#   docker build -f apps/panel/Dockerfile .
+# Kancelaria: API personelu. Kontekst to katalog główny repozytorium:
+#   docker build -f instalacja/panel.Dockerfile .
 
 FROM node:24-alpine AS base
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0

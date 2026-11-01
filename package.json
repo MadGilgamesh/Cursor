@@ -18,8 +18,8 @@
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @game/api db:generate",
     "db:migrate": "pnpm --filter @game/api db:migrate",
-    "infra:up": "docker compose up -d postgres redis",
-    "infra:down": "docker compose down"
+    "infra:up": "docker compose -f instalacja/docker-compose.yml up -d postgres redis",
+    "infra:down": "docker compose -f instalacja/docker-compose.yml down"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

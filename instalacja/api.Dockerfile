@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# Obraz serwera API i workera kolejki. Budowany z katalogu głównego repozytorium:
-#   docker build -f apps/api/Dockerfile .
+# Obraz serwera API i workera kolejki. Kontekst to katalog główny repozytorium:
+#   docker build -f instalacja/api.Dockerfile .
 
 FROM node:24-alpine AS base
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0

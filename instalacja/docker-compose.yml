@@ -1,4 +1,4 @@
-# Lokalna paczka.
+# Lokalna paczka. Uruchamiaj z tego katalogu:
 #   docker compose up --build                 → baza, Redis, migracje, API, worker, gra, Kancelaria
 #   docker compose up -d postgres redis       → tylko infrastruktura do `pnpm dev`
 name: zapomniany-brzeg
@@ -15,6 +15,10 @@ x-api-env: &api-env
   # Web Push włącza się po ustawieniu kluczy (pnpm --filter @game/api vapid:generate).
   VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
   VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+
+x-build: &repo-build
+  context: ..
+  dockerfile: instalacja/api.Dockerfile
 
 services:
   postgres:
@@ -48,24 +52,20 @@ services:
       retries: 20
 
   migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    build: *repo-build
     command: ['node', 'dist/db/bootstrap.js']
     environment:
       <<: *api-env
       # Seed lokalnej paczki. Hasło nie jest wypisywane w logach.
-      SEED_ADMIN_LOGIN: Gilgamesh
-      SEED_ADMIN_PASSWORD: admin
+      SEED_ADMIN_LOGIN: ${SEED_ADMIN_LOGIN:-Gilgamesh}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin}
     depends_on:
       postgres:
         condition: service_healthy
     restart: 'no'
 
   api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    build: *repo-build
     environment: *api-env
     depends_on:
       migrate:
@@ -86,9 +86,7 @@ services:
       start_period: 20s
 
   worker:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    build: *repo-build
     command: ['node', 'dist/worker.js']
     environment: *api-env
     depends_on:
@@ -99,14 +97,14 @@ services:
 
   panel:
     build:
-      context: .
-      dockerfile: apps/panel/Dockerfile
+      context: ..
+      dockerfile: instalacja/panel.Dockerfile
     environment:
       <<: *api-env
       PORT: '3210'
       # Ten sam login co konto gry. Rola administratora ma pełny panel.
-      PANEL_STAFF_EMAIL: Gilgamesh
-      PANEL_STAFF_PASSWORD: admin
+      PANEL_STAFF_EMAIL: ${SEED_ADMIN_LOGIN:-Gilgamesh}
+      PANEL_STAFF_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin}
       PANEL_STAFF_ROLE: administrator
     depends_on:
       migrate:
@@ -126,8 +124,8 @@ services:
 
   web:
     build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+      context: ..
+      dockerfile: instalacja/web.Dockerfile
     ports:
       - '8080:80'
       - '8081:81'

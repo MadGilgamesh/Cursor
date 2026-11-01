@@ -58,10 +58,11 @@ apps/
 packages/
   shared/       kontrakty API (Zod), balans, dane statyczne, deterministyczny RNG, krzywa XP
   content/      paczka treści (bestiariusz, przedmioty, lokacje, eventy) i publikacje
+instalacja/     compose, obrazy Dockera, przykładowy env, skrypt startu i instrukcja
 tools/
   balance/      symulacje Monte Carlo balansu (GDD 10.12)
 e2e/            testy Playwright na widoku mobilnym
-docker-compose.yml, turbo.json, eslint.config.js, .github/workflows/ci.yml
+turbo.json, eslint.config.js, .github/workflows/ci.yml
 ```
 
 ## Szybki start
@@ -72,7 +73,7 @@ Wymagania: **Node.js 24 LTS** (minimum 22.22), **corepack** (dostarcza pnpm w we
 corepack enable
 pnpm install
 cp .env.example .env
-docker compose up -d postgres redis   # PostgreSQL 18 + Redis 8
+pnpm infra:up                         # PostgreSQL 18 + Redis 8 (katalog instalacja)
 pnpm db:migrate                       # migracje bazy
 pnpm dev                              # API na :3000, PWA na :5173 (proxy /api → API)
 pnpm --filter @game/api dev:worker    # opcjonalnie: worker kolejki timerów
@@ -80,13 +81,14 @@ pnpm --filter @game/api dev:worker    # opcjonalnie: worker kolejki timerów
 
 Otwórz <http://localhost:5173> (najlepiej w trybie urządzenia mobilnego w DevTools) i załóż konto.
 
-Pełny stos w kontenerach — baza, Redis, migracje, API, worker, gra i Kancelaria:
+Pełny stos w kontenerach — baza, Redis, migracje, API, worker, gra i Kancelaria — startuje z katalogu `instalacja`:
 
 ```bash
+cd instalacja
 docker compose up --build
 ```
 
-Gra: <http://localhost:8080>. Kancelaria: <http://localhost:8081>.
+Gra: <http://localhost:8080>. Kancelaria: <http://localhost:8081>. Krótka instrukcja: `instalacja/INSTRUKCJA.md`.
 
 Przy pierwszym starcie powstaje jedno konto lokalnej paczki. Login `Gilgamesh`, hasło `admin` — te same dane wchodzą do gry i do Kancelarii (rola administratora: gracze, audyt, ogłoszenia, treść, eventy, publikacje). Drugi start nie zakłada konta drugi raz i nie zmienia haseł. Hasło nie jest wypisywane w logach.
 
@@ -109,7 +111,7 @@ Przy pierwszym starcie powstaje jedno konto lokalnej paczki. Login `Gilgamesh`, 
 ## Testy
 
 - **Jednostkowe** (`pnpm test`) — nie wymagają infrastruktury.
-- **Integracyjne** (`pnpm test:integration`) — wymagają `docker compose up -d postgres redis`. Używają osobnej bazy `game_test` (tworzonej automatycznie) i bazy Redis nr 1, więc nie dotykają danych deweloperskich. Adresy można nadpisać zmiennymi `TEST_DATABASE_URL` i `TEST_REDIS_URL`. Kancelaria używa bazy `game_panel_test`.
+- **Integracyjne** (`pnpm test:integration`) — wymagają `pnpm infra:up` (to samo co `docker compose up -d postgres redis` w katalogu `instalacja`). Używają osobnej bazy `game_test` (tworzonej automatycznie) i bazy Redis nr 1, więc nie dotykają danych deweloperskich. Adresy można nadpisać zmiennymi `TEST_DATABASE_URL` i `TEST_REDIS_URL`. Kancelaria używa bazy `game_panel_test`.
 - **E2E** (`pnpm test:e2e`) — wymagają PostgreSQL i Redisa. Za pierwszym razem zainstaluj przeglądarki: `pnpm --filter @game/e2e exec playwright install chromium webkit`. Playwright uruchamia zbudowane API (port 3100, z migracjami), worker kolejki i `vite preview` (port 4173). API działa wtedy z `ENABLE_TEST_CONTROLS=true`: zegar serwera można przesunąć (`POST /api/test/clock/advance`), a rozstrzyganie timerów wywołać ręcznie (`POST /api/test/jobs/activities-sweep`). Konfiguracja odrzuca tę flagę na produkcji. Zegar jest wspólny, więc testy E2E idą po kolei.
 - **Balans** (`pnpm --filter @game/balance simulate`) — symulacja Monte Carlo 600 dni gracza-bota (GDD 10.12) na tych samych funkcjach co serwer; testy pakietu `tools/balance` (część `pnpm test`) zgłaszają alarm przy odchyleniu > 15% od tabel GDD.
 
