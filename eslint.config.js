@@ -39,7 +39,12 @@ export default defineConfig(
     extends: [tseslint.configs.disableTypeChecked],
   },
   {
-    files: ['apps/web/src/**/*.{ts,tsx}', 'apps/web/test/**/*.{ts,tsx}'],
+    files: [
+      'apps/web/src/**/*.{ts,tsx}',
+      'apps/web/test/**/*.{ts,tsx}',
+      'apps/panel/src/**/*.{ts,tsx}',
+      'apps/panel/test/**/*.{ts,tsx}',
+    ],
     extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     languageOptions: { globals: globals.browser },
   },
@@ -55,6 +60,8 @@ export default defineConfig(
       '**/scripts/**',
       'tools/*/src/report.ts',
       'apps/api/src/db/migrate.ts',
+      'apps/api/src/db/bootstrap.ts',
+      'apps/api/src/db/seed-local.ts',
       'apps/api/src/worker.ts',
     ],
     rules: {

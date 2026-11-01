@@ -29,4 +29,14 @@ describe('loginRequestSchema', () => {
   it('wymaga hasła', () => {
     expect(loginRequestSchema.safeParse({ email: 'a@b.pl', password: '' }).success).toBe(false);
   });
+
+  it('przyjmuje login Gilgamesh obok adresu e-mail', () => {
+    expect(loginRequestSchema.parse({ email: ' Gilgamesh ', password: 'admin' })).toEqual({
+      email: 'gilgamesh',
+      password: 'admin',
+    });
+    expect(loginRequestSchema.parse({ email: 'Latarnik@Sol.PL', password: 'x' }).email).toBe(
+      'latarnik@sol.pl',
+    );
+  });
 });

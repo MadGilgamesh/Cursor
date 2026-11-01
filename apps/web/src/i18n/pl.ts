@@ -20,6 +20,7 @@ export const pl = {
   },
   auth: {
     email: 'E-mail',
+    loginId: 'E-mail lub login',
     characterName: 'Imię postaci',
     password: 'Hasło',
     loginHeading: 'Powrót na Brzeg',

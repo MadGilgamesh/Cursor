@@ -1,26 +1,16 @@
-import {
-  CHARACTER_START_LEVEL,
-  ERROR_CODES,
-  loginRequestSchema,
-  registerRequestSchema,
-} from '@game/shared';
+import { ERROR_CODES, loginRequestSchema, registerRequestSchema } from '@game/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import type { AppDeps } from '../app.js';
 import { playerActor, writeAudit } from '../audit.js';
-import { insertStartingStats } from '../game/avatar.js';
-import { insertLoreState } from '../game/lore-state.js';
-import { insertMarketState, insertWorkshopState } from '../game/port-state.js';
-import { insertWorldState } from '../game/world-state.js';
-import { issueReferralCode } from '../game/conjunction.js';
-import { insertPortalState } from '../game/portal-state.js';
-import { initialResources, insertResources, resourceContext } from '../game/resources.js';
 import { accounts, characters } from '../db/schema.js';
 import { AppError, uniqueViolationConstraint } from '../errors.js';
 import { toSessionResponse } from '../serializers.js';
+import { assertAccountActive } from './ban.js';
 import { burnPasswordCheck, hashPassword, verifyPassword } from './password.js';
 import { clearSessionCookie, setSessionCookie } from './plugin.js';
+import { provisionAccount } from './provision.js';
 import { createSession, deleteSession, SESSION_COOKIE } from './session.js';
 
 export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps): void {
@@ -35,39 +25,12 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
 
     const created = await db
       .transaction(async (tx) => {
-        const issued = issueReferralCode();
-        const [account] = await tx
-          .insert(accounts)
-          .values({
-            email: input.email,
-            passwordHash,
-            referralCode: issued.code,
-            emailVerifyCode: issued.verify,
-          })
-          .returning();
-        if (!account) throw new Error('INSERT nie zwrócił konta');
-        const [character] = await tx
-          .insert(characters)
-          .values({
-            accountId: account.id,
-            name: input.characterName,
-            level: CHARACTER_START_LEVEL,
-            experience: 0,
-          })
-          .returning();
-        if (!character) throw new Error('INSERT nie zwrócił postaci');
         const now = clock.now();
-        await insertResources(
-          tx,
-          character.id,
-          initialResources(resourceContext(character.level), now),
-        );
-        await insertStartingStats(tx, character.id);
-        await insertPortalState(tx, character.id, now);
-        await insertLoreState(tx, character.id);
-        await insertWorldState(tx, character.id);
-        await insertMarketState(tx, character.id);
-        await insertWorkshopState(tx, character.id);
+        const { account, character } = await provisionAccount(tx, now, {
+          email: input.email,
+          passwordHash,
+          characterName: input.characterName,
+        });
         await writeAudit(tx, playerActor(request, account.id), {
           action: 'account.register',
           characterId: character.id,
@@ -106,6 +69,7 @@ export function authRoutes(app: FastifyInstance, { db, config, clock }: AppDeps)
     if (!row || !(await verifyPassword(row.account.passwordHash, input.password))) {
       throw new AppError(401, ERROR_CODES.invalidCredentials, 'Nieprawidłowy e-mail lub hasło');
     }
+    await assertAccountActive(db, row.account.id);
 
     await db
       .update(accounts)

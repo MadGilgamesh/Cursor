@@ -8,6 +8,11 @@ import { registerAuth } from './auth/plugin.js';
 import { authRoutes } from './auth/routes.js';
 import { characterRoutes } from './character/routes.js';
 import type { Clock } from './clock.js';
+import {
+  assertPublishedContent,
+  assertStartupContent,
+  ensurePanelSchema,
+} from './content/startup.js';
 import type { AppConfig } from './config.js';
 import type { Database } from './db/client.js';
 import { registerErrorHandling } from './errors.js';
@@ -41,13 +46,22 @@ export interface AppDeps {
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const { config } = deps;
   // Dane statyczne są częścią kontraktu gry — z błędnymi danymi serwer nie startuje (GDD 8.3).
+  // Ta sama paczka przechodzi przez potok treści; opublikowana rewizja też musi być poprawna.
   validateStaticData();
+  assertStartupContent();
+  await ensurePanelSchema(deps.db);
+  await assertPublishedContent(deps.db);
   const app = Fastify({
     trustProxy: (_address, hop) => hop < config.trustProxyHops,
     bodyLimit: 16 * 1024,
     logger: {
       level: config.logLevel,
-      redact: ['req.headers.cookie', 'req.headers.authorization', 'res.headers["set-cookie"]'],
+      redact: [
+        'req.headers.cookie',
+        'req.headers.authorization',
+        'res.headers["set-cookie"]',
+        'req.body.password',
+      ],
       ...(config.nodeEnv === 'development'
         ? { transport: { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss' } } }
         : {}),

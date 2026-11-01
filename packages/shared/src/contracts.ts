@@ -13,6 +13,7 @@ export const ERROR_CODES = {
   validation: 'VALIDATION_ERROR',
   unauthorized: 'UNAUTHORIZED',
   invalidCredentials: 'INVALID_CREDENTIALS',
+  accountBanned: 'ACCOUNT_BANNED',
   emailTaken: 'EMAIL_TAKEN',
   characterNameTaken: 'CHARACTER_NAME_TAKEN',
   rateLimited: 'RATE_LIMITED',
@@ -65,6 +66,22 @@ export const characterNameSchema = z
   .max(20, 'Imię postaci może mieć najwyżej 20 znaków')
   .regex(CHARACTER_NAME_PATTERN, 'Dozwolone są litery, cyfry, „_” i „-”');
 
+/**
+ * Login do gry i Kancelarii: adres e-mail albo krótka nazwa (np. konto z paczki
+ * Dockera). Rejestracja nadal wymaga e-maila.
+ */
+const LOGIN_NAME = /^[\p{L}\p{N}_.-]{3,64}$/u;
+
+export const loginIdentifierSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(254, 'Login jest za długi')
+  .refine(
+    (value) => z.email().safeParse(value).success || LOGIN_NAME.test(value),
+    'Podaj e-mail albo login',
+  );
+
 export const PASSWORD_MIN_LENGTH = 10;
 
 export const passwordSchema = z
@@ -80,7 +97,7 @@ export const registerRequestSchema = z.object({
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
 export const loginRequestSchema = z.object({
-  email: emailSchema,
+  email: loginIdentifierSchema,
   password: z.string().min(1, 'Podaj hasło').max(128),
 });
 export type LoginRequest = z.infer<typeof loginRequestSchema>;

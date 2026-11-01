@@ -30,7 +30,7 @@ describe('AuthScreen', () => {
     );
     renderWithProviders(<AuthScreen mode="login" />);
 
-    await userEvent.type(screen.getByLabelText('E-mail'), 'latarnik@sol.pl');
+    await userEvent.type(screen.getByLabelText('E-mail lub login'), 'latarnik@sol.pl');
     await userEvent.type(screen.getByLabelText('Hasło'), 'złe-hasło');
     await userEvent.click(screen.getByRole('button', { name: 'Wejdź' }));
 

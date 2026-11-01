@@ -119,4 +119,4 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - run: docker compose --profile app build
+      - run: docker compose build

@@ -99,11 +99,12 @@ export function AuthScreen({ mode }: { mode: Mode }) {
           {text.heading}
         </h2>
         <TextField
-          label={t('auth.email')}
+          label={mode === 'login' ? t('auth.loginId') : t('auth.email')}
           name="email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
+          type={mode === 'login' ? 'text' : 'email'}
+          autoComplete={mode === 'login' ? 'username' : 'email'}
+          autoCapitalize="off"
+          inputMode={mode === 'login' ? 'text' : 'email'}
           error={fieldErrors.email}
         />
         {mode === 'register' ? (

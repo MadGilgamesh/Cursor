@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Statyczny build PWA serwowany przez nginx, który przekazuje /api do kontenera `api`.
+# Statyczny build PWA i Kancelarii. nginx serwuje oba i przekazuje /api dalej.
 #   docker build -f apps/web/Dockerfile .
 
 FROM node:24-alpine AS build
@@ -8,10 +8,11 @@ RUN corepack enable
 WORKDIR /repo
 COPY . .
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --filter "@game/web..."
-RUN pnpm exec turbo run build --filter=@game/web
+    pnpm install --frozen-lockfile --filter "@game/web..." --filter "@game/panel..."
+RUN pnpm exec turbo run build --filter=@game/web --filter=@game/panel
 
 FROM nginx:1-alpine AS runtime
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /repo/apps/web/dist /usr/share/nginx/html
-EXPOSE 80
+COPY --from=build /repo/apps/panel/dist/client /usr/share/nginx/panel
+EXPOSE 80 81

@@ -19,7 +19,7 @@ To repozytorium zawiera **fundament techniczny** i kolejne etapy gry według GDD
 | Uwierzytelnianie | E-mail + hasło, **Argon2id**, sesje w PostgreSQL, ciasteczko `httpOnly` `SameSite=Lax` | Sesje nieprzezroczyste (w bazie tylko skrót SHA-256 tokenu) można natychmiast unieważnić (wylogowanie, ban) — w przeciwieństwie do JWT. API i PWA dzielą origin (proxy), więc nie potrzeba CORS.                                                                                                  |
 | Testy            | **Vitest 5**, Testing Library, **Playwright 1.64**                                     | Jednostkowe i integracyjne (prawdziwy PostgreSQL i Redis), E2E na emulowanych telefonach: Pixel 7 (Chromium) i iPhone 14 (WebKit; ekran 390×844, jak w definicji ukończenia GDD).                                                                                                                 |
 | Jakość           | **ESLint 10** (typescript-eslint `strictTypeChecked`, react-hooks), **Prettier 3**, CI | Reguły z informacją o typach łapią błędy asynchroniczne i niebezpieczne `any`. GitHub Actions uruchamia wszystko przy każdym PR.                                                                                                                                                                  |
-| Uruchomienie     | **Docker Compose**, Node.js **24 LTS**                                                 | Jedno polecenie stawia bazę i Redisa do developmentu albo pełny stos (API, worker, migracje, PWA za nginx).                                                                                                                                                                                       |
+| Uruchomienie     | **Docker Compose**, Node.js **24 LTS**                                                 | Jedno polecenie stawia bazę i Redisa do developmentu albo pełny stos (API, worker, migracje, gra i Kancelaria za nginx).                                                                                                                                                                          |
 
 ## Architektura
 
@@ -54,8 +54,10 @@ Zgodnie z GDD (rozdz. 9) **klient jest tylko oknem**:
 apps/
   api/          serwer Fastify, schemat bazy (Drizzle), migracje SQL (drizzle/), worker BullMQ
   web/          klient PWA (React, Vite, Tailwind), ikony, konfiguracja nginx
+  panel/        Kancelaria: API personelu i edytor treści, eventów, graczy i księgi
 packages/
   shared/       kontrakty API (Zod), balans, dane statyczne, deterministyczny RNG, krzywa XP
+  content/      paczka treści (bestiariusz, przedmioty, lokacje, eventy) i publikacje
 tools/
   balance/      symulacje Monte Carlo balansu (GDD 10.12)
 e2e/            testy Playwright na widoku mobilnym
@@ -70,7 +72,7 @@ Wymagania: **Node.js 24 LTS** (minimum 22.22), **corepack** (dostarcza pnpm w we
 corepack enable
 pnpm install
 cp .env.example .env
-docker compose up -d                  # PostgreSQL 18 + Redis 8
+docker compose up -d postgres redis   # PostgreSQL 18 + Redis 8
 pnpm db:migrate                       # migracje bazy
 pnpm dev                              # API na :3000, PWA na :5173 (proxy /api → API)
 pnpm --filter @game/api dev:worker    # opcjonalnie: worker kolejki timerów
@@ -78,11 +80,15 @@ pnpm --filter @game/api dev:worker    # opcjonalnie: worker kolejki timerów
 
 Otwórz <http://localhost:5173> (najlepiej w trybie urządzenia mobilnego w DevTools) i załóż konto.
 
-Pełny stos w kontenerach (migracje, API, worker, PWA za nginx):
+Pełny stos w kontenerach — baza, Redis, migracje, API, worker, gra i Kancelaria:
 
 ```bash
-docker compose --profile app up --build   # → http://localhost:8080
+docker compose up --build
 ```
+
+Gra: <http://localhost:8080>. Kancelaria: <http://localhost:8081>.
+
+Przy pierwszym starcie powstaje jedno konto lokalnej paczki. Login `Gilgamesh`, hasło `admin` — te same dane wchodzą do gry i do Kancelarii (rola administratora: gracze, audyt, ogłoszenia, treść, eventy, publikacje). Drugi start nie zakłada konta drugi raz i nie zmienia haseł. Hasło nie jest wypisywane w logach.
 
 ## Polecenia
 
@@ -103,7 +109,7 @@ docker compose --profile app up --build   # → http://localhost:8080
 ## Testy
 
 - **Jednostkowe** (`pnpm test`) — nie wymagają infrastruktury.
-- **Integracyjne** (`pnpm test:integration`) — wymagają `docker compose up -d`. Używają osobnej bazy `game_test` (tworzonej automatycznie) i bazy Redis nr 1, więc nie dotykają danych deweloperskich. Adresy można nadpisać zmiennymi `TEST_DATABASE_URL` i `TEST_REDIS_URL`.
+- **Integracyjne** (`pnpm test:integration`) — wymagają `docker compose up -d postgres redis`. Używają osobnej bazy `game_test` (tworzonej automatycznie) i bazy Redis nr 1, więc nie dotykają danych deweloperskich. Adresy można nadpisać zmiennymi `TEST_DATABASE_URL` i `TEST_REDIS_URL`. Kancelaria używa bazy `game_panel_test`.
 - **E2E** (`pnpm test:e2e`) — wymagają PostgreSQL i Redisa. Za pierwszym razem zainstaluj przeglądarki: `pnpm --filter @game/e2e exec playwright install chromium webkit`. Playwright uruchamia zbudowane API (port 3100, z migracjami), worker kolejki i `vite preview` (port 4173). API działa wtedy z `ENABLE_TEST_CONTROLS=true`: zegar serwera można przesunąć (`POST /api/test/clock/advance`), a rozstrzyganie timerów wywołać ręcznie (`POST /api/test/jobs/activities-sweep`). Konfiguracja odrzuca tę flagę na produkcji. Zegar jest wspólny, więc testy E2E idą po kolei.
 - **Balans** (`pnpm --filter @game/balance simulate`) — symulacja Monte Carlo 600 dni gracza-bota (GDD 10.12) na tych samych funkcjach co serwer; testy pakietu `tools/balance` (część `pnpm test`) zgłaszają alarm przy odchyleniu > 15% od tabel GDD.
 
@@ -289,7 +295,7 @@ Bezdeń zdejmuje ścianę piętra 100. Szepty idą dalej co 5 pięter. Do 100 st
 
 Portal: Domena 9, Nyarlathotep, Piramidy pod Czarnym Niebem, aspekt Pustka, modyfikator Zmienna Postać, materiał Odłamek Trapezoedru. Wróg losuje aspekt i kopiuje klasę gracza. Ten rzut jest tylko przy tym modyfikatorze, więc zwykłe walki trzymają to samo ziarno. Domena 10 zostaje zamknięta. Gwiazdki zostają przy Domenach 1–3. `BALANCE_VERSION` 10.
 
-Rozjazdu tempa Domeny 1 (dzień 13 wobec dnia 11 w GDD) ten etap nie rusza. Krzywych z wcześniejszych etapów też nie. Panel personelu i pakiet treści nie są na tej gałęzi.
+Rozjazdu tempa Domeny 1 (dzień 13 wobec dnia 11 w GDD) ten etap nie rusza. Krzywych z wcześniejszych etapów też nie. Kancelaria (`apps/panel`) i paczka treści (`packages/content`) są w repozytorium i czytają aktualny schemat oraz dane z `main`: pięć walut, cztery klasy łącznie z Alienistą, miasta, Domeny 1–11, wyprawy i tempo regeneracji z progu domu.
 
 ## Etap 10 — Zstąpienie
 
