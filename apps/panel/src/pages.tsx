@@ -1,5 +1,5 @@
 import type { CollectionName, ContentPack, GameEvent } from '@game/content';
-import { CURRENCIES, type Currency } from '@game/shared';
+import { CURRENCIES, randomUuid, type Currency } from '@game/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router';
@@ -457,7 +457,7 @@ export function PlayerPage() {
     mutationFn: (delta: number) =>
       api(`/api/panel/players/${accountId}/ledger`, {
         method: 'POST',
-        headers: { 'idempotency-key': crypto.randomUUID() },
+        headers: { 'idempotency-key': randomUuid() },
         body: JSON.stringify({ currency, delta }),
       }),
     onSuccess: async () => {

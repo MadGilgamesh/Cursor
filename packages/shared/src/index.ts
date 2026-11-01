@@ -21,3 +21,4 @@ export * from './golden-vectors.js';
 export * from './missions.js';
 export * from './progression.js';
 export * from './rng.js';
+export * from './uuid.js';

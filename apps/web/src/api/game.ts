@@ -2,6 +2,7 @@ import {
   API_PREFIX,
   claimResponseSchema,
   dashboardResponseSchema,
+  randomUuid,
   startActivityResponseSchema,
   type ClaimResponse,
   type DashboardResponse,
@@ -68,7 +69,7 @@ function useGameAction<TInput>(
 }
 
 /** Każde dotknięcie przycisku to nowa intencja z własnym kluczem idempotencji. */
-export const newIdempotencyKey = () => crypto.randomUUID();
+export const newIdempotencyKey = (): string => randomUuid();
 
 export const useStartMission = () =>
   useGameAction<{ missionId: string; loop?: boolean }>(({ missionId, loop, idempotencyKey }) =>
